@@ -1,20 +1,25 @@
 # Loris PMO
 
-Loris PMO is a personal project management and project intelligence application. The repository includes the production-shaped technical foundation plus the Projects Core: secure authentication, owner-scoped projects, objectives and success criteria, portfolio aggregation, versioned APIs, PostgreSQL migrations, bilingual UI, themes, testing, Docker Compose, and a provider-neutral AI boundary.
+Loris PMO is a personal project management and project intelligence application. The repository includes the production-shaped foundation, Projects Core, and Work Planning Core: secure authentication, owner-scoped projects, objectives, success criteria, tasks, subtasks, milestones, dependencies, shared List/Kanban/Timeline views, portfolio aggregation, versioned APIs, PostgreSQL migrations, bilingual UI, themes, testing, Docker Compose, and a provider-neutral AI boundary.
 
 The remaining product areas described in `PROJECT_INTELLIGENCE_SPEC.md` are intentionally delivered incrementally rather than represented with fake functionality or sample production data.
 
-## Projects Core
+## Projects and Work Planning Core
 
 An authenticated user can:
 
 - create a project through a three-step wizard, including initial objectives and success criteria;
 - view, search, filter, sort, edit, and archive only their own projects;
 - maintain project objectives and success criteria;
+- create tasks and one-level subtasks with validated dates, effort, priority, status, milestone, and completion data;
+- connect project tasks with blocking, dependency, and related relationships while preventing scheduling cycles;
+- create milestones whose progress is derived from their linked non-cancelled tasks;
+- use the same persisted task data in searchable List, draggable Kanban, and date-based Timeline views;
+- see real total, completed, overdue, upcoming-milestone, and deterministic task-progress metrics on a project;
 - see real total, active, on-hold, and completed counts in the portfolio;
 - use the application in English or Italian and in light or dark mode.
 
-Archived projects remain available through the archive filter but are read-only. Project, objective, and success-criterion mutations create append-only audit events. Planned-versus-actual, earned-value, and health metrics remain unavailable until their source domains are implemented.
+Archived projects remain available through the archive filter but are read-only. Project, objective, success-criterion, task, dependency, and milestone mutations create append-only audit events. Planned-versus-actual, earned-value, health, risk, financial, and resource metrics remain unavailable until their source domains are implemented.
 
 ## Quick start with Docker
 

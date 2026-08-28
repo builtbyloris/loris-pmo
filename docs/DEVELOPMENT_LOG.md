@@ -41,3 +41,29 @@ Reason: Atomic audit recording preserves a trustworthy history without allowing 
 Decision: Keep portfolio metrics limited to counts supported by Projects Core data.
 
 Reason: Budget variance, earned value, health, schedule, and progress metrics require finance and work-planning sources that do not exist yet; presenting them would imply unsupported calculations.
+
+## 2026-08-29
+
+Decision: Model tasks, milestones, and dependencies as project-owned records with composite same-project foreign keys.
+
+Reason: Ownership checks remain explicit at the service boundary while database constraints prevent cross-project parent, milestone, or dependency relationships even if a future caller bypasses application validation.
+
+Decision: Support one level of subtasks and archive tasks with `archived_at`.
+
+Reason: One level covers the current planning need without introducing tree-maintenance complexity. Archiving preserves identifiers, dependency history, and auditability.
+
+Decision: Derive milestone and project task progress as the arithmetic mean of completion percentages for non-cancelled tasks; return unavailable when no eligible tasks exist.
+
+Reason: A single deterministic rule avoids conflicting stored progress and does not invent values for empty plans. Effort-weighted and earned-value calculations remain deferred until their prerequisite domains are available.
+
+Decision: Normalize scheduling semantics for validation while preserving the user-facing dependency type.
+
+Reason: `A BLOCKS B` and `B DEPENDS_ON A` represent the same directed scheduling edge. Treating them equivalently prevents semantic duplicates and cycles; `RELATED_TO` remains non-directional and is excluded from cycle analysis.
+
+Decision: Keep List, Kanban, Timeline, and Milestones as projections of one frontend work-planning state.
+
+Reason: A Kanban mutation persists through the API and refreshes the shared state, ensuring every view reflects the database rather than maintaining divergent client models. Optimistic status changes roll back on failure.
+
+Decision: Defer Timeline drag/resize, editable dependency lines, and critical-path analysis.
+
+Reason: The V1 timeline is useful with real task bars, milestone markers, dates, dependency counts, and completion state. More advanced scheduling interactions should be added only with reliable persistence, rollback, and calculation behavior.

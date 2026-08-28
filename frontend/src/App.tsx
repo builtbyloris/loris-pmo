@@ -4,6 +4,7 @@ import { ProtectedRoute } from "./features/auth/ProtectedRoute";
 import { PortfolioPage } from "./features/projects/pages/PortfolioPage";
 import { ProjectOverviewPage } from "./features/projects/pages/ProjectOverviewPage";
 import { ProjectsPage } from "./features/projects/pages/ProjectsPage";
+import { WorkPlanningPage } from "./features/work-planning/pages/WorkPlanningPage";
 import { AppShell } from "./layouts/AppShell";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
@@ -19,6 +20,7 @@ export function App() {
           <Route path="portfolio" element={<PortfolioPage />} />
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="projects/:projectId" element={<ProjectOverviewPage />} />
+          <Route path="projects/:projectId/work" element={<WorkPlanningPage />} />
           <Route path="copilot" element={<PlaceholderPage area="copilot" />} />
           <Route path="settings" element={<PlaceholderPage area="settings" />} />
         </Route>

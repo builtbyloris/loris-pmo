@@ -79,3 +79,9 @@ class Project(UUIDTimestampMixin, Base):
     success_criteria: Mapped[list["SuccessCriterion"]] = relationship(  # noqa: F821
         back_populates="project", cascade="all, delete-orphan", passive_deletes=True
     )
+    tasks: Mapped[list["Task"]] = relationship(  # noqa: F821
+        back_populates="project", cascade="all, delete-orphan", passive_deletes=True
+    )
+    milestones: Mapped[list["Milestone"]] = relationship(  # noqa: F821
+        back_populates="project", cascade="all, delete-orphan", passive_deletes=True
+    )

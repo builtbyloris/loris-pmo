@@ -1,12 +1,12 @@
 # Loris PMO architecture
 
-Status: foundation and Projects Core architecture  
-Date: 2026-08-28  
+Status: foundation, Projects Core, and Work Planning Core architecture
+Date: 2026-08-29
 Product authority: `PROJECT_INTELLIGENCE_SPEC.md`
 
 ## 1. Scope
 
-This document defines the technical foundation for Loris PMO and the Projects Core increment. The application now supplies the shell, authentication, owned project records, objectives, success criteria, real portfolio counts, persistence and migration infrastructure, API conventions, testing, Docker-based local development, and replaceable AI boundaries. Remaining product areas are introduced incrementally.
+This document defines the technical foundation for Loris PMO plus the Projects and Work Planning Core increments. The application now supplies the shell, authentication, owned project records, objectives, success criteria, tasks, subtasks, task dependencies, milestones, shared work-plan views, deterministic planning metrics, real portfolio counts, persistence and migration infrastructure, API conventions, testing, Docker-based local development, and replaceable AI boundaries. Remaining product areas are introduced incrementally.
 
 The application starts empty. No production project, task, financial, risk, or other business fixture is created.
 
@@ -124,7 +124,9 @@ The foundation migration creates `users`, including:
 - password hash, active flag, and timestamps;
 - an index supporting login lookup.
 
-Projects Core adds `projects`, `objectives`, `success_criteria`, and `audit_events`. They use UUID primary keys, explicit foreign keys, UTC-aware timestamps, constraints, and indexes for owner, archive, status, and relationship access patterns. `projects.owner_user_id` makes ownership explicit even during the personal phase. Project creation and every mutation commit the domain change and its audit event in one transaction.
+Projects Core adds `projects`, `objectives`, `success_criteria`, and `audit_events`. Work Planning adds `tasks`, `milestones`, and `task_dependencies`. They use UUID primary keys, explicit foreign keys, UTC-aware timestamps, constraints, and indexes for owner, archive, status, dates, and relationship access patterns. Composite foreign keys ensure parent tasks, milestones, and dependency endpoints remain in the same project. `projects.owner_user_id` makes ownership explicit even during the personal phase. Domain mutations and their audit events commit in one transaction.
+
+Tasks use an `archived_at` timestamp rather than destructive deletion. One subtask level is supported deliberately. Milestone progress is not stored: it is the arithmetic mean of completion percentages for linked, non-cancelled tasks, or unavailable when no eligible task exists. Project task progress uses the same rule across all active project tasks.
 
 Historical records will be append-oriented where required (especially activity/audit and AI decisions). Soft deletion will be introduced only for entities where history and restore behavior justify its added complexity.
 
@@ -164,6 +166,18 @@ POST /api/v1/projects
 GET  /api/v1/projects/{project_id}
 PATCH /api/v1/projects/{project_id}
 POST /api/v1/projects/{project_id}/archive
+GET  /api/v1/projects/{project_id}/tasks
+POST /api/v1/projects/{project_id}/tasks
+GET  /api/v1/projects/{project_id}/tasks/{task_id}
+PATCH /api/v1/projects/{project_id}/tasks/{task_id}
+POST /api/v1/projects/{project_id}/tasks/{task_id}/archive
+GET  /api/v1/projects/{project_id}/milestones
+POST /api/v1/projects/{project_id}/milestones
+PATCH /api/v1/projects/{project_id}/milestones/{milestone_id}
+GET  /api/v1/projects/{project_id}/task-dependencies
+POST /api/v1/projects/{project_id}/task-dependencies
+DELETE /api/v1/projects/{project_id}/task-dependencies/{dependency_id}
+GET  /api/v1/projects/{project_id}/work-planning/summary
 ```
 
 Nested objective and success-criterion routes support list, create, update, and delete operations under their owning project.
@@ -190,7 +204,9 @@ Errors use a stable envelope:
 
 Request IDs are accepted or generated per request and returned in `X-Request-ID`. Validation failures, expected application errors, and unexpected failures are normalized; normal responses never expose stack traces or ORM objects.
 
-The portfolio response aggregates real, non-archived project counts for the authenticated owner. It reports total, active, on-hold, and completed projects and returns zeroes for a new account; it never uses sample content.
+The portfolio response aggregates real, non-archived project counts for the authenticated owner. It reports total, active, on-hold, and completed projects and returns zeroes for a new account; it never uses sample content. Work-planning responses use the same owner-scoped project lookup and return `404` for foreign identifiers.
+
+Scheduling dependencies are stored as the user-facing `BLOCKS`, `DEPENDS_ON`, or `RELATED_TO` relation. Cycle analysis normalizes `A BLOCKS B` and `B DEPENDS_ON A` to the same directed edge. Equivalent scheduling duplicates are rejected; related links are symmetric and normalized by identifier order.
 
 ## 8. Frontend structure
 
@@ -201,7 +217,9 @@ Public routes contain the login screen. Protected routes render an `AppShell` co
 - main outlet area with route-level loading and error states;
 - placeholder pages only for future areas, without simulating their functionality.
 
-The portfolio and project routes fetch authenticated API data. Projects provide a searchable and filterable card view, a three-step creation wizard, editable overview data, objectives, success criteria, and archive confirmation. The first-project call to action opens the same creation wizard. Unsupported future metrics are labelled unavailable instead of derived from incomplete data.
+The portfolio and project routes fetch authenticated API data. Projects provide a searchable and filterable card view, a three-step creation wizard, editable overview data, objectives, success criteria, planning metrics, and archive confirmation. The first-project call to action opens the same creation wizard. Unsupported future metrics are labelled unavailable instead of derived from incomplete data.
+
+Work Planning loads tasks, milestones, dependencies, and summary data into one shared feature state. List, Kanban, Timeline, and Milestone views are projections of that same state. Kanban status moves update optimistically, persist through the API, refresh all projections, and roll back with localized feedback on failure. The V1 Timeline renders real task bars and milestone markers. Drag/resize, editable connection lines, and critical-path analysis are deferred until they can be implemented reliably without implying an enterprise scheduling engine.
 
 Localization keys live in language resource files. Components do not duplicate Italian/English literals. Theme variables cover both light and dark modes, honor the device preference initially, and persist an explicit user preference locally.
 
@@ -253,6 +271,7 @@ Frontend tests cover:
 - login form behavior and error feedback;
 - protected-route loading/authentication decisions;
 - shell navigation, language switching, theme switching, portfolio rendering, project listing, and creation-wizard behavior.
+- work-planning empty/list/filter states, Kanban rendering and status persistence, milestone progress, task creation, and shared-state refresh behavior.
 
 CI-ready commands run backend tests, frontend tests, TypeScript compilation, and the production frontend build. Each future feature must add tests near the business logic it introduces.
 
@@ -272,7 +291,7 @@ No migration or startup hook inserts business records.
 
 1. Foundation (complete): architecture, auth, shell, i18n, themes, migrations, AI boundary, Docker, tests.
 2. Projects (complete): project ownership, creation wizard, objectives, criteria, archive workflow, audit events, and portfolio aggregation.
-3. Work planning: tasks, dependencies, milestones, and shared list/Kanban/timeline data.
+3. Work planning (complete): tasks, one-level subtasks, dependencies, milestones, deterministic progress, project overview metrics, and shared List/Kanban/Timeline data.
 4. People and finance: people, membership, workload, budgets, expenses, and deterministic calculations.
 5. Control and memory: risks, issues, changes, meetings, decisions, logs, alerts, and automation.
 6. Intelligence: centralized KPIs/health, context packages, AI proposals, recommendations, and scenario isolation.

@@ -1,9 +1,11 @@
-import { AlertCircle, Archive, ArrowLeft, Building2, CalendarDays, CheckCircle2, CircleDollarSign, Edit3, Plus, Target, Trash2 } from "lucide-react";
+import { AlertCircle, Archive, ArrowLeft, Building2, CalendarDays, CheckCircle2, CircleDollarSign, Edit3, Flag, ListChecks, Plus, Target, TimerOff, Trash2 } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { ApiError } from "../../../services/api";
+import { workPlanningApi } from "../../work-planning/api/workPlanningApi";
+import type { WorkPlanningSummary } from "../../work-planning/types";
 import { projectsApi } from "../api/projectsApi";
 import { Modal } from "../components/Modal";
 import { ProjectEditModal } from "../components/ProjectEditModal";
@@ -17,6 +19,7 @@ export function ProjectOverviewPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [project, setProject] = useState<ProjectDetail | null>(null);
+  const [workSummary, setWorkSummary] = useState<WorkPlanningSummary | null>(null);
   const [error, setError] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -26,7 +29,12 @@ export function ProjectOverviewPage() {
   const [selectedObjective, setSelectedObjective] = useState("");
   const [actionError, setActionError] = useState("");
   const [saving, setSaving] = useState(false);
-  const load = useCallback(() => { setError(false); projectsApi.get(projectId).then(setProject).catch(() => setError(true)); }, [projectId]);
+  const load = useCallback(() => {
+    setError(false);
+    Promise.all([projectsApi.get(projectId), workPlanningApi.summary(projectId)])
+      .then(([nextProject, summary]) => { setProject(nextProject); setWorkSummary(summary); })
+      .catch(() => setError(true));
+  }, [projectId]);
   useEffect(load, [load]);
   async function addObjective(event: FormEvent) { event.preventDefault(); if (!input.trim()) return; setSaving(true); setActionError(""); try { await projectsApi.addObjective(projectId, input); setInput(""); setObjectiveOpen(false); load(); } catch (reason) { setActionError(reason instanceof ApiError ? reason.message : t("projects.actions.error")); } finally { setSaving(false); } }
   async function addCriterion(event: FormEvent) { event.preventDefault(); if (!input.trim()) return; setSaving(true); setActionError(""); try { await projectsApi.addCriterion(projectId, input, selectedObjective); setInput(""); setSelectedObjective(""); setCriterionOpen(false); load(); } catch (reason) { setActionError(reason instanceof ApiError ? reason.message : t("projects.actions.error")); } finally { setSaving(false); } }
@@ -44,6 +52,7 @@ export function ProjectOverviewPage() {
       <section className="overview-section"><header><div><p className="eyebrow">{t("projects.objectives.eyebrow")}</p><h2>{t("projects.objectives.title")}</h2></div>{!archived && <button className="text-button" onClick={() => { setInput(""); setActionError(""); setObjectiveOpen(true); }}><Plus size={16} />{t("projects.objectives.add")}</button>}</header>{project.objectives.length === 0 ? <div className="section-empty"><Target size={22} /><p>{t("projects.objectives.empty")}</p></div> : <ul className="record-list">{project.objectives.map((objective) => <li key={objective.id}><div><strong>{objective.title}</strong><StatusBadge value={objective.status} kind="objective" /></div>{!archived && <div className="record-actions"><select aria-label={t("projects.objectives.statusLabel", { title: objective.title })} value={objective.status} onChange={(e) => void projectsApi.updateObjective(projectId, objective.id, { status: e.target.value as ObjectiveStatus }).then(load)}>{(["NOT_STARTED", "IN_PROGRESS", "ACHIEVED", "CANCELLED"] as ObjectiveStatus[]).map((value) => <option value={value} key={value}>{t(`projects.objective.${value}`)}</option>)}</select><button className="icon-button danger" onClick={() => window.confirm(t("projects.objectives.deleteConfirm")) && void projectsApi.deleteObjective(projectId, objective.id).then(load)} aria-label={t("common.delete")}><Trash2 size={15} /></button></div>}</li>)}</ul>}</section>
       <section className="overview-section"><header><div><p className="eyebrow">{t("projects.success_criteria.eyebrow")}</p><h2>{t("projects.success_criteria.title")}</h2></div>{!archived && <button className="text-button" onClick={() => { setInput(""); setSelectedObjective(""); setActionError(""); setCriterionOpen(true); }}><Plus size={16} />{t("projects.success_criteria.add")}</button>}</header>{project.success_criteria.length === 0 ? <div className="section-empty"><CheckCircle2 size={22} /><p>{t("projects.success_criteria.empty")}</p></div> : <ul className="record-list criteria">{project.success_criteria.map((criterion) => <li key={criterion.id}><div><strong>{criterion.description}</strong>{criterion.objective_id && <small>{project.objectives.find((item) => item.id === criterion.objective_id)?.title}</small>}</div>{!archived && <button className="icon-button danger" onClick={() => window.confirm(t("projects.success_criteria.deleteConfirm")) && void projectsApi.deleteCriterion(projectId, criterion.id).then(load)} aria-label={t("common.delete")}><Trash2 size={15} /></button>}</li>)}</ul>}</section>
     </div>
+    <section className="overview-section planning-overview"><header><div><p className="eyebrow">{t("workPlanning.overview.eyebrow")}</p><h2>{t("workPlanning.overview.title")}</h2><p>{t("workPlanning.overview.description")}</p></div><Link className="secondary-button" to={`/projects/${projectId}/work`}>{t("workPlanning.overview.open")}</Link></header>{workSummary && <div className="planning-overview-grid"><article><ListChecks /><span>{t("workPlanning.summary.total")}</span><strong>{workSummary.total_tasks}</strong></article><article><CheckCircle2 /><span>{t("workPlanning.summary.completed")}</span><strong>{workSummary.completed_tasks}</strong></article><article className={workSummary.overdue_tasks ? "attention" : ""}><TimerOff /><span>{t("workPlanning.summary.overdue")}</span><strong>{workSummary.overdue_tasks}</strong></article><article><Flag /><span>{t("workPlanning.summary.upcoming")}</span><strong>{workSummary.upcoming_milestones}</strong></article><article><CalendarDays /><span>{t("workPlanning.summary.progress")}</span><strong>{workSummary.progress === null ? t("workPlanning.overview.noProgress") : `${workSummary.progress}%`}</strong></article></div>}</section>
     <section className="future-metrics"><Target size={22} /><div><h2>{t("projects.overview.futureMetrics")}</h2><p>{t("projects.overview.futureMetricsBody")}</p></div></section>
     <ProjectEditModal project={project} open={editOpen} onClose={() => setEditOpen(false)} onSaved={(next) => { setProject(next); setEditOpen(false); }} />
     <Modal open={archiveOpen} onClose={() => setArchiveOpen(false)} title={t("projects.archive.title")} description={t("projects.archive.description")} footer={<><button className="secondary-button" onClick={() => setArchiveOpen(false)}>{t("common.cancel")}</button><button className="danger-button" onClick={() => void archive()} disabled={saving}>{saving ? t("common.saving") : t("projects.archive.confirm")}</button></>}><div className="confirm-content"><Archive size={28} /><p>{t("projects.archive.preservation")}</p></div>{actionError && <div className="inline-error">{actionError}</div>}</Modal>
