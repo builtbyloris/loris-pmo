@@ -1,0 +1,33 @@
+from functools import lru_cache
+from typing import Literal
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    app_name: str = "Loris PMO"
+    app_env: Literal["development", "test", "production"] = "development"
+    database_url: str = "postgresql+asyncpg://loris:loris@db:5432/loris_pmo"
+    secret_key: str = Field(min_length=32)
+    access_token_minutes: int = Field(default=30, ge=5, le=1440)
+    frontend_url: str = "http://localhost:5173"
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-2.5-flash"
+    log_level: str = "INFO"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        case_sensitive=False,
+    )
+
+    @property
+    def secure_cookies(self) -> bool:
+        return self.app_env == "production"
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()  # type: ignore[call-arg]

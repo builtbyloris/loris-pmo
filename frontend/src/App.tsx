@@ -1,0 +1,29 @@
+import { Navigate, Route, Routes } from "react-router-dom";
+
+import { ProtectedRoute } from "./features/auth/ProtectedRoute";
+import { PortfolioPage } from "./features/projects/pages/PortfolioPage";
+import { ProjectOverviewPage } from "./features/projects/pages/ProjectOverviewPage";
+import { ProjectsPage } from "./features/projects/pages/ProjectsPage";
+import { AppShell } from "./layouts/AppShell";
+import { LoginPage } from "./pages/LoginPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
+import { PlaceholderPage } from "./pages/PlaceholderPage";
+
+export function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppShell />}>
+          <Route index element={<Navigate to="/portfolio" replace />} />
+          <Route path="portfolio" element={<PortfolioPage />} />
+          <Route path="projects" element={<ProjectsPage />} />
+          <Route path="projects/:projectId" element={<ProjectOverviewPage />} />
+          <Route path="copilot" element={<PlaceholderPage area="copilot" />} />
+          <Route path="settings" element={<PlaceholderPage area="settings" />} />
+        </Route>
+      </Route>
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  );
+}
