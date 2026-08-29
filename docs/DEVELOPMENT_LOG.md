@@ -87,3 +87,23 @@ Reason: Person creation is significant but may occur before project membership e
 Decision: Use an availability-aware task-slot heuristic for workload rather than inventing weekly hours.
 
 Reason: Availability percentage, task assignments, due dates, and stored effort exist, but time-phased capacity and effort allocation do not. One active-task slot per 20% availability yields a documented warning signal; overdue work and zero availability with active work are always high. Missing estimates are exposed explicitly instead of imputed.
+
+Decision: Keep `projects.planned_budget` as the authoritative project budget and add normalized categories and expenses around it.
+
+Reason: The project model already contains the product's budget value. Reusing it avoids duplicate sources of truth while categories provide an allocation breakdown and expenses preserve transaction-level history.
+
+Decision: Derive all finance analytics from stored expense statuses with decimal arithmetic.
+
+Reason: Paid expenses are actual, pending expenses are committed, planned expenses affect forecast only, and cancelled expenses are excluded. Centralizing the formulas in the backend keeps the dashboard, project overview, and future consumers consistent and avoids floating-point money errors.
+
+Decision: Define financial status from actual plus committed utilization: warning at 75%, critical above 90%, and unavailable for a zero budget.
+
+Reason: The thresholds provide deterministic early warning without conflating plans with commitments. A zero denominator cannot yield a meaningful utilization percentage and must not be represented as zero health risk.
+
+Decision: Preserve expense history by making cancellation terminal and preventing deletion of categories referenced by expenses.
+
+Reason: Financial records and their audit trail must remain explainable. Cancellation expresses business reversal without destructive deletion, while restricting category deletion keeps historical classifications valid.
+
+Decision: Enforce optional expense category, task, and milestone links with composite same-project foreign keys.
+
+Reason: Service ownership checks provide safe API behavior, and database constraints independently prevent cross-project financial associations.

@@ -1,9 +1,11 @@
-import { AlertCircle, AlertTriangle, Archive, ArrowLeft, Building2, CalendarDays, CheckCircle2, CircleDollarSign, Edit3, Flag, ListChecks, Network, Plus, Target, TimerOff, Trash2, UsersRound } from "lucide-react";
+import { AlertCircle, AlertTriangle, Archive, ArrowLeft, Banknote, Building2, CalendarDays, CheckCircle2, CircleDollarSign, Edit3, Flag, Gauge, ListChecks, Network, Plus, Target, TimerOff, Trash2, UsersRound, WalletCards } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { ApiError } from "../../../services/api";
+import { financeApi } from "../../finance/api/financeApi";
+import type { BudgetAnalytics } from "../../finance/types";
 import { peopleApi } from "../../people/api/peopleApi";
 import type { PeopleSummary } from "../../people/types";
 import { workPlanningApi } from "../../work-planning/api/workPlanningApi";
@@ -23,6 +25,7 @@ export function ProjectOverviewPage() {
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [workSummary, setWorkSummary] = useState<WorkPlanningSummary | null>(null);
   const [peopleSummary, setPeopleSummary] = useState<PeopleSummary | null>(null);
+  const [financeSummary, setFinanceSummary] = useState<BudgetAnalytics | null>(null);
   const [error, setError] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -34,8 +37,8 @@ export function ProjectOverviewPage() {
   const [saving, setSaving] = useState(false);
   const load = useCallback(() => {
     setError(false);
-    Promise.all([projectsApi.get(projectId), workPlanningApi.summary(projectId), peopleApi.summary(projectId)])
-      .then(([nextProject, summary, nextPeopleSummary]) => { setProject(nextProject); setWorkSummary(summary); setPeopleSummary(nextPeopleSummary); })
+    Promise.all([projectsApi.get(projectId), workPlanningApi.summary(projectId), peopleApi.summary(projectId), financeApi.analytics(projectId)])
+      .then(([nextProject, summary, nextPeopleSummary, nextFinanceSummary]) => { setProject(nextProject); setWorkSummary(summary); setPeopleSummary(nextPeopleSummary); setFinanceSummary(nextFinanceSummary); })
       .catch(() => setError(true));
   }, [projectId]);
   useEffect(load, [load]);
@@ -57,6 +60,7 @@ export function ProjectOverviewPage() {
     </div>
     <section className="overview-section planning-overview"><header><div><p className="eyebrow">{t("workPlanning.overview.eyebrow")}</p><h2>{t("workPlanning.overview.title")}</h2><p>{t("workPlanning.overview.description")}</p></div><Link className="secondary-button" to={`/projects/${projectId}/work`}>{t("workPlanning.overview.open")}</Link></header>{workSummary && <div className="planning-overview-grid"><article><ListChecks /><span>{t("workPlanning.summary.total")}</span><strong>{workSummary.total_tasks}</strong></article><article><CheckCircle2 /><span>{t("workPlanning.summary.completed")}</span><strong>{workSummary.completed_tasks}</strong></article><article className={workSummary.overdue_tasks ? "attention" : ""}><TimerOff /><span>{t("workPlanning.summary.overdue")}</span><strong>{workSummary.overdue_tasks}</strong></article><article><Flag /><span>{t("workPlanning.summary.upcoming")}</span><strong>{workSummary.upcoming_milestones}</strong></article><article><CalendarDays /><span>{t("workPlanning.summary.progress")}</span><strong>{workSummary.progress === null ? t("workPlanning.overview.noProgress") : `${workSummary.progress}%`}</strong></article></div>}</section>
     <section className="overview-section planning-overview"><header><div><p className="eyebrow">{t("people.overview.eyebrow")}</p><h2>{t("people.overview.title")}</h2><p>{t("people.overview.description")}</p></div><Link className="secondary-button" to={`/projects/${projectId}/people`}>{t("people.overview.open")}</Link></header>{peopleSummary && <div className="planning-overview-grid people-overview-grid"><article><UsersRound /><span>{t("people.overview.team")}</span><strong>{peopleSummary.team_size}</strong></article><article><Network /><span>{t("people.overview.stakeholders")}</span><strong>{peopleSummary.stakeholder_count}</strong></article><article className={peopleSummary.workload_warning_count ? "attention" : ""}><AlertTriangle /><span>{t("people.overview.warnings")}</span><strong>{peopleSummary.workload_warning_count}</strong></article></div>}</section>
+    <section className="overview-section planning-overview"><header><div><p className="eyebrow">{t("finance.overview.eyebrow")}</p><h2>{t("finance.overview.title")}</h2><p>{t("finance.overview.description")}</p></div><Link className="secondary-button" to={`/projects/${projectId}/finance`}>{t("finance.overview.open")}</Link></header>{financeSummary && <div className="planning-overview-grid"><article><CircleDollarSign /><span>{t("finance.metrics.totalBudget")}</span><strong>{formatCurrency(financeSummary.totals.planned_budget, i18n.resolvedLanguage)}</strong></article><article><Banknote /><span>{t("finance.metrics.actual")}</span><strong>{formatCurrency(financeSummary.totals.actual_cost, i18n.resolvedLanguage)}</strong></article><article><WalletCards /><span>{t("finance.metrics.committed")}</span><strong>{formatCurrency(financeSummary.totals.committed_cost, i18n.resolvedLanguage)}</strong></article><article className={Number(financeSummary.totals.remaining_budget) < 0 ? "attention" : ""}><CircleDollarSign /><span>{t("finance.metrics.remaining")}</span><strong>{formatCurrency(financeSummary.totals.remaining_budget, i18n.resolvedLanguage)}</strong></article><article className={financeSummary.totals.financial_status === "CRITICAL" ? "attention" : ""}><Gauge /><span>{t("finance.metrics.utilization")}</span><strong>{financeSummary.totals.budget_utilization === null ? "—" : `${financeSummary.totals.budget_utilization}%`}</strong></article></div>}</section>
     <section className="future-metrics"><Target size={22} /><div><h2>{t("projects.overview.futureMetrics")}</h2><p>{t("projects.overview.futureMetricsBody")}</p></div></section>
     <ProjectEditModal project={project} open={editOpen} onClose={() => setEditOpen(false)} onSaved={(next) => { setProject(next); setEditOpen(false); }} />
     <Modal open={archiveOpen} onClose={() => setArchiveOpen(false)} title={t("projects.archive.title")} description={t("projects.archive.description")} footer={<><button className="secondary-button" onClick={() => setArchiveOpen(false)}>{t("common.cancel")}</button><button className="danger-button" onClick={() => void archive()} disabled={saving}>{saving ? t("common.saving") : t("projects.archive.confirm")}</button></>}><div className="confirm-content"><Archive size={28} /><p>{t("projects.archive.preservation")}</p></div>{actionError && <div className="inline-error">{actionError}</div>}</Modal>

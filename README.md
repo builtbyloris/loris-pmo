@@ -1,10 +1,10 @@
 # Loris PMO
 
-Loris PMO is a personal project management and project intelligence application. The repository includes the production-shaped foundation, Projects Core, Work Planning Core, and People Core: secure authentication, owner-scoped projects and reusable people, objectives, success criteria, tasks, subtasks, milestones, dependencies, project membership, stakeholders, normalized task assignees, deterministic workload analytics, shared List/Kanban/Timeline views, portfolio aggregation, versioned APIs, PostgreSQL migrations, bilingual UI, themes, testing, Docker Compose, and a provider-neutral AI boundary.
+Loris PMO is a personal project management and project intelligence application. The repository includes the production-shaped foundation, Projects Core, Work Planning Core, People Core, and Finance Core: secure authentication, owner-scoped projects and reusable people, objectives, success criteria, tasks, subtasks, milestones, dependencies, project membership, stakeholders, normalized task assignees, deterministic workload and budget analytics, shared List/Kanban/Timeline views, budget categories and expenses, portfolio aggregation, versioned APIs, PostgreSQL migrations, bilingual UI, themes, testing, Docker Compose, and a provider-neutral AI boundary.
 
 The remaining product areas described in `PROJECT_INTELLIGENCE_SPEC.md` are intentionally delivered incrementally rather than represented with fake functionality or sample production data.
 
-## Projects, Work Planning, and People Core
+## Projects, Work Planning, People, and Finance Core
 
 An authenticated user can:
 
@@ -21,9 +21,11 @@ An authenticated user can:
 - assign one or more valid project members to tasks and see them across planning views;
 - manage linked or standalone stakeholders and inspect their influence/interest matrix;
 - review backend-calculated workload counts, effort totals, incomplete-data indicators, and documented heuristic states;
+- set a project budget, organize planned allocation into categories, and record planned, pending, paid, or cancelled expenses;
+- review deterministic budget totals, utilization status, category breakdown, uncategorized spend, monthly trends, and recent expenses;
 - use the application in English or Italian and in light or dark mode.
 
-Archived projects remain available through the archive filter but are read-only. Project, objective, success-criterion, task, dependency, milestone, membership, assignment, and stakeholder mutations create append-only audit events. Workload uses real task assignments and stored effort without inventing hours. Planned-versus-actual financials, earned value, health, and risk metrics remain unavailable until their source domains are implemented.
+Archived projects remain available through the archive filter but are read-only. Project, objective, success-criterion, task, dependency, milestone, membership, assignment, stakeholder, budget, category, and expense mutations create append-only audit events. Workload uses real task assignments and stored effort without inventing hours. Finance uses the project budget plus stored expense statuses: paid is actual, pending is committed, planned is forecast-only, and cancelled is excluded. Earned value, generalized project health, and risk metrics remain unavailable until their source domains are implemented.
 
 ## Quick start with Docker
 

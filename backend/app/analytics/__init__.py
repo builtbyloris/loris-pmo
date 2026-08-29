@@ -1,1 +1,1 @@
-"""Deterministic project analytics will live here."""
+"""Deterministic analytics owned by backend application logic."""

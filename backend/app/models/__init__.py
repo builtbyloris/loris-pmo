@@ -1,5 +1,6 @@
 from app.models.audit import AuditEvent
 from app.models.base import Base
+from app.models.finance import BudgetCategory, Expense, ExpenseStatus
 from app.models.milestone import Milestone, MilestoneStatus
 from app.models.objective import Objective, ObjectiveStatus
 from app.models.people import (
@@ -19,7 +20,10 @@ from app.models.user import User
 __all__ = [
     "AuditEvent",
     "Base",
+    "BudgetCategory",
     "DependencyType",
+    "Expense",
+    "ExpenseStatus",
     "Milestone",
     "MilestoneStatus",
     "Objective",

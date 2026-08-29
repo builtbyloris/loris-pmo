@@ -163,6 +163,19 @@ class ProjectService:
             entity_id=project.id,
             changes={"before": before, "fields": list(changes)},
         )
+        if "planned_budget" in changes and before["planned_budget"] != str(
+            project.planned_budget
+        ):
+            self.audit.record(
+                project_id=project.id,
+                action="budget.changed",
+                entity_type="project_budget",
+                entity_id=project.id,
+                changes={
+                    "from": before["planned_budget"],
+                    "to": str(project.planned_budget),
+                },
+            )
         await self._commit(code_conflict=bool(code))
         return await self._project_or_404(project.id, with_children=True)
 

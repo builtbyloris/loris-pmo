@@ -1,12 +1,12 @@
 # Loris PMO architecture
 
-Status: foundation, Projects Core, Work Planning Core, and People Core architecture
+Status: foundation, Projects Core, Work Planning Core, People Core, and Finance Core architecture
 Date: 2026-08-29
 Product authority: `PROJECT_INTELLIGENCE_SPEC.md`
 
 ## 1. Scope
 
-This document defines the technical foundation for Loris PMO plus the Projects, Work Planning, and People Core increments. The application now supplies the shell, authentication, owned project records, objectives, success criteria, tasks, subtasks, task dependencies, milestones, reusable people, project membership, structured stakeholders, normalized task assignees, deterministic workload metrics, shared work-plan and people views, real portfolio counts, persistence and migration infrastructure, API conventions, testing, Docker-based local development, and replaceable AI boundaries. Remaining product areas are introduced incrementally.
+This document defines the technical foundation for Loris PMO plus the Projects, Work Planning, People, and Finance Core increments. The application now supplies the shell, authentication, owned project records, objectives, success criteria, tasks, subtasks, task dependencies, milestones, reusable people, project membership, structured stakeholders, normalized task assignees, deterministic workload metrics, project budgets, budget categories, expenses, deterministic budget analytics, shared work-plan, people, and finance views, real portfolio counts, persistence and migration infrastructure, API conventions, testing, Docker-based local development, and replaceable AI boundaries. Remaining product areas are introduced incrementally.
 
 The application starts empty. No production project, task, financial, risk, or other business fixture is created.
 
@@ -124,11 +124,13 @@ The foundation migration creates `users`, including:
 - password hash, active flag, and timestamps;
 - an index supporting login lookup.
 
-Projects Core adds `projects`, `objectives`, `success_criteria`, and `audit_events`. Work Planning adds `tasks`, `milestones`, and `task_dependencies`. People Core adds `people`, `project_members`, `stakeholders`, and `task_assignees`. They use UUID primary keys, explicit foreign keys, UTC-aware timestamps, constraints, and indexes for owner, archive, status, dates, and relationship access patterns. Composite foreign keys ensure parent tasks, milestones, dependency endpoints, and task assignees remain in the same project. `projects.owner_user_id` and `people.owner_user_id` make ownership explicit even during the personal phase. Domain mutations and their audit events commit in one transaction.
+Projects Core adds `projects`, `objectives`, `success_criteria`, and `audit_events`. Work Planning adds `tasks`, `milestones`, and `task_dependencies`. People Core adds `people`, `project_members`, `stakeholders`, and `task_assignees`. Finance Core adds `budget_categories` and `expenses` while retaining `projects.planned_budget` as the single authoritative project budget. They use UUID primary keys, explicit foreign keys, UTC-aware timestamps, constraints, and indexes for owner, archive, status, dates, and relationship access patterns. Composite foreign keys ensure parent tasks, milestones, dependency endpoints, task assignees, expense categories, and optional expense task or milestone links remain in the same project. `projects.owner_user_id` and `people.owner_user_id` make ownership explicit even during the personal phase. Domain mutations and their audit events commit in one transaction.
 
 People are owner-scoped reusable records and are deliberately separate from authentication users. A project member relates a person to a project and stores the stable role, responsibilities, and availability percentage. Removing a membership never deletes the person. Tasks support multiple assignees through `task_assignees`; each assignee references a project member, and composite constraints prevent cross-project assignment even if application validation is bypassed. `audit_events.project_id` is nullable only for owner-level events such as person creation; project-domain events remain project-scoped.
 
 Tasks use an `archived_at` timestamp rather than destructive deletion. One subtask level is supported deliberately. Milestone progress is not stored: it is the arithmetic mean of completion percentages for linked, non-cancelled tasks, or unavailable when no eligible task exists. Project task progress uses the same rule across all active project tasks.
+
+Expenses are append-oriented financial records. They may be updated while active, but cancellation is terminal and preserves their history. A category referenced by any expense cannot be deleted. Amount constraints are enforced in both API validation and the database. Category, task, and milestone associations use composite project foreign keys so cross-project links are impossible even if application validation is bypassed.
 
 Historical records will be append-oriented where required (especially activity/audit and AI decisions). Soft deletion will be introduced only for entities where history and restore behavior justify its added complexity.
 
@@ -193,6 +195,18 @@ PATCH /api/v1/projects/{project_id}/stakeholders/{stakeholder_id}
 DELETE /api/v1/projects/{project_id}/stakeholders/{stakeholder_id}
 GET  /api/v1/projects/{project_id}/workload
 GET  /api/v1/projects/{project_id}/people/summary
+GET  /api/v1/projects/{project_id}/budget
+PATCH /api/v1/projects/{project_id}/budget
+GET  /api/v1/projects/{project_id}/budget/categories
+POST /api/v1/projects/{project_id}/budget/categories
+PATCH /api/v1/projects/{project_id}/budget/categories/{category_id}
+DELETE /api/v1/projects/{project_id}/budget/categories/{category_id}
+GET  /api/v1/projects/{project_id}/expenses
+POST /api/v1/projects/{project_id}/expenses
+GET  /api/v1/projects/{project_id}/expenses/{expense_id}
+PATCH /api/v1/projects/{project_id}/expenses/{expense_id}
+POST /api/v1/projects/{project_id}/expenses/{expense_id}/cancel
+GET  /api/v1/projects/{project_id}/budget/analytics
 ```
 
 Nested objective and success-criterion routes support list, create, update, and delete operations under their owning project.
@@ -238,6 +252,8 @@ Work Planning loads tasks, milestones, dependencies, and summary data into one s
 
 The People workspace uses Team, Stakeholders, and Workload projections. Team supports reusable person creation/editing and membership management. The stakeholder matrix places stored influence and interest values without generating recommendations. Workload rows consume backend-calculated facts and status; the frontend does not reproduce the formula. Task creation and List assignment editing use the same normalized member identifiers, while List, Kanban, and Timeline resolve display names from current membership data.
 
+The Finance workspace uses Dashboard, Expenses, and Categories projections. The dashboard consumes backend-calculated totals and thresholds; it does not recalculate financial status in the browser. Expense filters and sorting are server-backed, while forms reuse the project's real categories, tasks, and milestones. Archived projects expose finance data read-only.
+
 Localization keys live in language resource files. Components do not duplicate Italian/English literals. Theme variables cover both light and dark modes, honor the device preference initially, and persist an explicit user preference locally.
 
 ## 9. AI architecture
@@ -277,6 +293,12 @@ Workload is a deterministic, explicitly heuristic status rather than an hours-ca
 
 The availability heuristic supplies one active-task slot per 20 availability percentage points, with a minimum of one slot when availability is positive. `HIGH` means an overdue task exists, active work exists at zero availability, or active task count exceeds slots. `MEDIUM` begins at 60% of slots, `LOW` is below that threshold, and `NO_DATA` means no active assigned tasks. Multiple assignees each receive the full task count and stored effort because the model does not yet capture effort allocation shares.
 
+### Budget formula
+
+Budget analytics use decimal arithmetic and are calculated only by the backend. `actual` is the sum of paid expenses, `committed` is the sum of pending expenses, and `planned expenses` is the sum of planned expenses. Cancelled expenses contribute zero everywhere. `forecast = actual + committed + planned expenses`; `remaining = budget - actual - committed`; `actual variance = budget - actual`; and `utilization = (actual + committed) / budget * 100`. Utilization is unavailable when the budget is zero.
+
+Financial status is `NORMAL` below 75% utilization, `WARNING` from 75% through 90%, and `CRITICAL` above 90%. A zero budget produces `UNAVAILABLE` rather than an invented percentage. Category analytics use the same rules, uncategorized expenses remain visible as an explicit bucket, and the monthly trend groups expenses by their stored expense date and status.
+
 ## 11. Testing strategy
 
 Backend tests cover:
@@ -296,6 +318,7 @@ Frontend tests cover:
 - shell navigation, language switching, theme switching, portfolio rendering, project listing, and creation-wizard behavior.
 - work-planning empty/list/filter states, Kanban rendering and status persistence, milestone progress, task creation, and shared-state refresh behavior.
 - team empty/create/add/edit flows, stakeholder list/matrix rendering, workload facts/incomplete-data display, and task assignment display/update behavior.
+- finance dashboard totals and empty states, expense creation/filter behavior, and budget-category create/edit flows.
 
 CI-ready commands run backend tests, frontend tests, TypeScript compilation, and the production frontend build. Each future feature must add tests near the business logic it introduces.
 
@@ -317,7 +340,7 @@ No migration or startup hook inserts business records.
 2. Projects (complete): project ownership, creation wizard, objectives, criteria, archive workflow, audit events, and portfolio aggregation.
 3. Work planning (complete): tasks, one-level subtasks, dependencies, milestones, deterministic progress, project overview metrics, and shared List/Kanban/Timeline data.
 4. People (complete): reusable people, membership, roles, stakeholders, task assignees, workload analytics, and project overview signals.
-5. Finance: budgets, expenses, and deterministic financial calculations.
+5. Finance (complete): budgets, categories, expenses, deterministic analytics, thresholds, project overview signals, and audit events.
 6. Control and memory: risks, issues, changes, meetings, decisions, logs, alerts, and automation.
 7. Intelligence: centralized KPIs/health, context packages, AI proposals, recommendations, and scenario isolation.
 8. Documents and delivery: retrieval, reports, validated import/export, notifications, and release hardening.
