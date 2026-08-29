@@ -4,6 +4,7 @@ import { ProtectedRoute } from "./features/auth/ProtectedRoute";
 import { ControlWorkspacePage } from "./features/control/pages/ControlWorkspacePage";
 import { FinanceWorkspacePage } from "./features/finance/pages/FinanceWorkspacePage";
 import { PeopleWorkspacePage } from "./features/people/pages/PeopleWorkspacePage";
+import { ProjectMemoryPage } from "./features/memory/pages/ProjectMemoryPage";
 import { PortfolioPage } from "./features/projects/pages/PortfolioPage";
 import { ProjectOverviewPage } from "./features/projects/pages/ProjectOverviewPage";
 import { ProjectsPage } from "./features/projects/pages/ProjectsPage";
@@ -27,6 +28,7 @@ export function App() {
           <Route path="projects/:projectId/people" element={<PeopleWorkspacePage />} />
           <Route path="projects/:projectId/finance" element={<FinanceWorkspacePage />} />
           <Route path="projects/:projectId/control" element={<ControlWorkspacePage />} />
+          <Route path="projects/:projectId/memory" element={<ProjectMemoryPage />} />
           <Route path="copilot" element={<PlaceholderPage area="copilot" />} />
           <Route path="settings" element={<PlaceholderPage area="settings" />} />
         </Route>

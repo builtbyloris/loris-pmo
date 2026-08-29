@@ -1,10 +1,10 @@
 # Loris PMO
 
-Loris PMO is a personal project management and project intelligence application. The repository includes the production-shaped foundation, Projects Core, Work Planning Core, People Core, Finance Core, and Control Core: secure authentication, owner-scoped projects and reusable people, objectives, success criteria, tasks, subtasks, milestones, dependencies, project membership, stakeholders, normalized task assignees, deterministic workload, budget, and risk analytics, shared List/Kanban/Timeline views, budget categories and expenses, risk and issue registers, governed change requests, portfolio aggregation, versioned APIs, PostgreSQL migrations, bilingual UI, themes, testing, Docker Compose, and a provider-neutral AI boundary.
+Loris PMO is a personal project management and project intelligence application. The repository includes the production-shaped foundation, Projects Core, Work Planning Core, People Core, Finance Core, Control Core, and Project Memory Core: secure authentication, owner-scoped projects and reusable people, objectives, success criteria, tasks, subtasks, milestones, dependencies, project membership, stakeholders, normalized task assignees, deterministic workload, budget, and risk analytics, shared List/Kanban/Timeline views, budget categories and expenses, risk and issue registers, governed change requests, project logs, meetings, action items, decisions, read-only activity, portfolio aggregation, versioned APIs, PostgreSQL migrations, bilingual UI, themes, testing, Docker Compose, and a provider-neutral AI boundary.
 
 The remaining product areas described in `PROJECT_INTELLIGENCE_SPEC.md` are intentionally delivered incrementally rather than represented with fake functionality or sample production data.
 
-## Projects, Work Planning, People, Finance, and Control Core
+## Projects, Work Planning, People, Finance, Control, and Project Memory Core
 
 An authenticated user can:
 
@@ -26,9 +26,14 @@ An authenticated user can:
 - assess risks with probability and impact, deterministic severity bands, owner and work links, mitigations, contingencies, and a 5×5 matrix;
 - track issues through explicit analysis, action, resolution, and closure with schedule, budget, scope, and quality impacts;
 - submit, approve, reject, implement, or cancel change requests with recorded rationale and no automatic mutation of project plans;
+- preserve durable project context in a searchable chronological Project Log with normalized record links;
+- plan and complete meetings with project-member participants and reviewable action items;
+- confirm, complete, or dismiss meeting actions explicitly, with optional links to existing tasks;
+- record decisions, rationale, impact, lifecycle history, and same-project links without hard deletion;
+- inspect the existing append-only technical audit stream separately from meaningful Project Log memory;
 - use the application in English or Italian and in light or dark mode.
 
-Archived projects remain available through the archive filter but are read-only. Project, objective, success-criterion, task, dependency, milestone, membership, assignment, stakeholder, budget, category, expense, risk, issue, and change-request mutations create append-only audit events. Workload uses real task assignments and stored effort without inventing hours. Finance uses the project budget plus stored expense statuses: paid is actual, pending is committed, planned is forecast-only, and cancelled is excluded. Risk severity is derived from probability × impact. Earned value and generalized project health remain unavailable until their complete source domains are implemented.
+Archived projects remain available through the archive filter but are read-only. Project, objective, success-criterion, task, dependency, milestone, membership, assignment, stakeholder, budget, category, expense, risk, issue, change-request, log, meeting, action-item, and decision mutations create append-only audit events. Workload uses real task assignments and stored effort without inventing hours. Finance uses the project budget plus stored expense statuses: paid is actual, pending is committed, planned is forecast-only, and cancelled is excluded. Risk severity is derived from probability × impact. Earned value and generalized project health remain unavailable until their complete source domains are implemented.
 
 ## Quick start with Docker
 

@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
+from app.models.memory import MemoryEntityType, ProjectLogType
 from app.models.milestone import Milestone, MilestoneStatus
 from app.models.people import TaskAssignee
 from app.models.project import Project
@@ -25,6 +26,7 @@ from app.schemas.work_planning import (
     WorkPlanningSummary,
 )
 from app.services.audit import AuditService
+from app.services.memory import MemoryService
 
 
 class WorkPlanningService:
@@ -361,6 +363,16 @@ class WorkPlanningService:
                 project_id=project_id,
                 action="milestone.completed",
                 entity_type="milestone",
+                entity_id=milestone.id,
+            )
+            MemoryService.record_system_log(
+                self.session,
+                actor_user_id=self.owner_user_id,
+                project_id=project_id,
+                entry_type=ProjectLogType.MILESTONE,
+                title=f"Milestone completed: {milestone.title}",
+                description=milestone.description,
+                entity_type=MemoryEntityType.MILESTONE,
                 entity_id=milestone.id,
             )
         await self._commit()

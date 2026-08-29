@@ -19,6 +19,21 @@ from app.models.control import (
     RiskTaskLink,
 )
 from app.models.finance import BudgetCategory, Expense, ExpenseStatus
+from app.models.memory import (
+    ActionItemStatus,
+    Decision,
+    DecisionLink,
+    DecisionStatus,
+    Meeting,
+    MeetingActionItem,
+    MeetingParticipant,
+    MeetingStatus,
+    MemoryEntityType,
+    MemorySource,
+    ProjectLogEntry,
+    ProjectLogLink,
+    ProjectLogType,
+)
 from app.models.milestone import Milestone, MilestoneStatus
 from app.models.objective import Objective, ObjectiveStatus
 from app.models.people import (
@@ -37,6 +52,7 @@ from app.models.user import User
 
 __all__ = [
     "AuditEvent",
+    "ActionItemStatus",
     "Base",
     "BudgetCategory",
     "ChangeRequest",
@@ -47,6 +63,9 @@ __all__ = [
     "ChangeStatus",
     "ControlPriority",
     "DependencyType",
+    "Decision",
+    "DecisionLink",
+    "DecisionStatus",
     "Expense",
     "ExpenseStatus",
     "ImpactLevel",
@@ -56,10 +75,19 @@ __all__ = [
     "IssueTaskLink",
     "Milestone",
     "MilestoneStatus",
+    "Meeting",
+    "MeetingActionItem",
+    "MeetingParticipant",
+    "MeetingStatus",
+    "MemoryEntityType",
+    "MemorySource",
     "Objective",
     "ObjectiveStatus",
     "Person",
     "Project",
+    "ProjectLogEntry",
+    "ProjectLogLink",
+    "ProjectLogType",
     "ProjectPriority",
     "ProjectMember",
     "ProjectRole",

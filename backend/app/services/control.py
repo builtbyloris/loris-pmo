@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.analytics.control import risk_score, risk_severity
 from app.core.errors import AppError
 from app.models.control import ChangeRequest, ChangeStatus, Issue, IssueStatus, Risk, RiskStatus
+from app.models.memory import MemoryEntityType, ProjectLogType
 from app.models.project import Project
 from app.repositories.control import ControlRepository
 from app.schemas.control import (
@@ -26,6 +27,7 @@ from app.schemas.control import (
     RiskUpdate,
 )
 from app.services.audit import AuditService
+from app.services.memory import MemoryService
 
 ISSUE_TRANSITIONS: dict[IssueStatus, set[IssueStatus]] = {
     IssueStatus.OPEN: {
@@ -320,6 +322,16 @@ class ControlService:
                     entity_type="risk",
                     entity_id=risk.id,
                 )
+                MemoryService.record_system_log(
+                    self.session,
+                    actor_user_id=self.owner_user_id,
+                    project_id=project_id,
+                    entry_type=ProjectLogType.RISK_UPDATE,
+                    title=f"Risk closed: {risk.title}",
+                    description=risk.notes,
+                    entity_type=MemoryEntityType.RISK,
+                    entity_id=risk.id,
+                )
         await self.session.commit()
         return self._risk_read(await self._risk_or_404(project_id, risk.id))
 
@@ -424,6 +436,16 @@ class ControlService:
                     project_id=project_id,
                     action="issue.resolved",
                     entity_type="issue",
+                    entity_id=issue.id,
+                )
+                MemoryService.record_system_log(
+                    self.session,
+                    actor_user_id=self.owner_user_id,
+                    project_id=project_id,
+                    entry_type=ProjectLogType.ISSUE,
+                    title=f"Issue resolved: {issue.title}",
+                    description=issue.resolution,
+                    entity_type=MemoryEntityType.ISSUE,
                     entity_id=issue.id,
                 )
             if issue.status == IssueStatus.CLOSED:
@@ -578,6 +600,17 @@ class ControlService:
             entity_id=change.id,
             changes={"from": previous.value, "to": target.value, "decision": decision},
         )
+        if target == ChangeStatus.APPROVED:
+            MemoryService.record_system_log(
+                self.session,
+                actor_user_id=self.owner_user_id,
+                project_id=project_id,
+                entry_type=ProjectLogType.CHANGE,
+                title=f"Change approved: {change.title}",
+                description=decision,
+                entity_type=MemoryEntityType.CHANGE_REQUEST,
+                entity_id=change.id,
+            )
         await self.session.commit()
         return self._change_read(await self._change_or_404(project_id, change.id))
 

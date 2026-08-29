@@ -154,7 +154,7 @@ class PeopleService:
         if await self.repository.member_owns_control_records(project_id, member_id):
             raise AppError(
                 code="member_in_use",
-                message="This member owns project control records and cannot be removed.",
+                message="This member is referenced by project records and cannot be removed.",
                 status_code=409,
             )
         assignments = await self.repository.list_member_assignments(project_id, member_id)
@@ -184,7 +184,7 @@ class PeopleService:
             await self.session.rollback()
             raise AppError(
                 code="member_in_use",
-                message="This member owns project control records and cannot be removed.",
+                message="This member is referenced by project records and cannot be removed.",
                 status_code=409,
             ) from exc
 

@@ -324,6 +324,14 @@ Risk score is the integer product of stored probability and impact, each constra
 
 Issues follow a forward-only operational workflow from open analysis and action states to resolved and closed. Resolution text is mandatory before resolution or closure. Change requests start as draft, are explicitly submitted, and may then be approved or rejected with mandatory rationale; only approved requests can be marked implemented. Cancellation is explicit. These transitions record audit events but never execute the requested change.
 
+### Project memory and activity separation
+
+The Project Log is the durable, human-facing memory of meaningful project context. Manual entries may link to same-project tasks, milestones, risks, issues, changes, meetings, and decisions through normalized link records. Automatic entries are intentionally limited to milestone completion, risk closure, issue resolution, change approval, meeting completion, and a decision becoming decided. They are written in the same transaction as the source mutation and are read-only.
+
+Meetings reference project members through composite same-project constraints. Action items start as proposed and require explicit confirmation before completion; they never create tasks automatically, but may be linked to an existing same-project task. Decisions preserve their lifecycle instead of supporting hard deletion and may reference a meeting, decision maker, and normalized same-project entities.
+
+Activity is a read-only projection of existing append-only audit events. It remains technically complete and exposes actor, action, entity, recorded changes, and a resolvable entity name where possible. Project Log and Activity are separate because user-relevant memory and implementation-level audit history have different purposes.
+
 ## 11. Testing strategy
 
 Backend tests cover:
@@ -345,6 +353,7 @@ Frontend tests cover:
 - team empty/create/add/edit flows, stakeholder list/matrix rendering, workload facts/incomplete-data display, and task assignment display/update behavior.
 - finance dashboard totals and empty states, expense creation/filter behavior, and budget-category create/edit flows.
 - exact risk severity boundaries, control ownership, cross-project and member protections, issue resolution, change decisions, audit events, risk-matrix rendering, normalized relationship forms, and decision validation.
+- project-log chronology and links, meeting/action review states, decision history, meaningful automatic memory events, activity projection, overview signals, cross-project protection, and EN/IT memory navigation.
 
 CI-ready commands run backend tests, frontend tests, TypeScript compilation, and the production frontend build. Each future feature must add tests near the business logic it introduces.
 
@@ -367,9 +376,10 @@ No migration or startup hook inserts business records.
 3. Work planning (complete): tasks, one-level subtasks, dependencies, milestones, deterministic progress, project overview metrics, and shared List/Kanban/Timeline data.
 4. People (complete): reusable people, membership, roles, stakeholders, task assignees, workload analytics, and project overview signals.
 5. Finance (complete): budgets, categories, expenses, deterministic analytics, thresholds, project overview signals, and audit events.
-6. Control (complete): risks, deterministic scoring and matrix, issues, governed change requests, project overview signals, and audit events. Memory, meetings, alerts, and automation remain deferred.
-7. Intelligence: centralized KPIs/health, context packages, AI proposals, recommendations, and scenario isolation.
-8. Documents and delivery: retrieval, reports, validated import/export, notifications, and release hardening.
+6. Control (complete): risks, deterministic scoring and matrix, issues, governed change requests, project overview signals, and audit events.
+7. Project memory (complete): project log, meetings, reviewable action items, decisions, read-only activity, meaningful automatic entries, overview signals, and bilingual UI. Alerts and automation remain deferred.
+8. Intelligence: centralized KPIs/health, context packages, AI proposals, recommendations, and scenario isolation.
+9. Documents and delivery: retrieval, reports, validated import/export, notifications, and release hardening.
 
 Each phase adds schema via migrations, implements use cases behind services, exposes typed APIs, and completes UI/empty/error states with tests.
 

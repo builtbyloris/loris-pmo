@@ -127,3 +127,19 @@ Reason: Submission, approval, rejection, implementation, and cancellation are ex
 Decision: Keep the 5×5 risk matrix as a frontend projection of backend-derived severity and stored probability/impact.
 
 Reason: The visual provides useful control context without introducing a second scoring implementation or mutable matrix state.
+
+Decision: Separate meaningful Project Log memory from technical Activity audit history.
+
+Reason: Audit events must remain append-only and implementation-complete, while the Project Log should stay concise and useful to project users. Only six meaningful domain transitions create automatic log entries, atomically with their source change.
+
+Decision: Normalize polymorphic memory links and validate every target against the owning project service-side.
+
+Reason: A compact link model supports tasks, milestones, risks, issues, changes, meetings, and decisions without duplicating near-identical tables. Composite database constraints still protect meeting participants, owners, task traceability, meeting references, and decision makers; service validation rejects every cross-project polymorphic link.
+
+Decision: Keep meeting action items proposed until explicit confirmation and never create tasks automatically.
+
+Reason: Meeting notes frequently contain tentative commitments. A proposed/confirmed/completed/dismissed lifecycle preserves human review, while an optional same-project task link provides traceability without hidden plan mutations.
+
+Decision: Preserve decisions through lifecycle states instead of exposing hard deletion.
+
+Reason: Proposed, decided, reversed, and superseded states retain the rationale and historical record required for project memory. A transition to decided creates the meaningful log entry; later reversal or supersession remains visible without rewriting history.
