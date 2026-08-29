@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
 from app.models.milestone import Milestone, MilestoneStatus
+from app.models.people import TaskAssignee
 from app.models.project import Project
 from app.models.task import Task, TaskStatus
 from app.models.task_dependency import DependencyType, TaskDependency
@@ -121,6 +122,26 @@ class WorkPlanningService:
                     status_code=422,
                 )
 
+    async def _validate_assignees(self, project_id: UUID, member_ids: list[UUID]) -> None:
+        members = await self.repository.get_members(project_id, member_ids)
+        if len(members) != len(member_ids):
+            raise AppError(
+                code="invalid_task_assignee",
+                message="Every assignee must be a member of this project.",
+                status_code=422,
+            )
+
+    @staticmethod
+    def _set_assignees(task: Task, member_ids: list[UUID]) -> None:
+        task.assignees[:] = [
+            TaskAssignee(
+                project_id=task.project_id,
+                task_id=task.id,
+                project_member_id=member_id,
+            )
+            for member_id in member_ids
+        ]
+
     async def create_task(self, project_id: UUID, data: TaskCreate) -> Task:
         project = await self._project_or_404(project_id)
         self._ensure_mutable(project)
@@ -130,9 +151,14 @@ class WorkPlanningService:
             parent_task_id=data.parent_task_id,
             milestone_id=data.milestone_id,
         )
-        task = Task(project_id=project_id, **data.model_dump())
+        values = data.model_dump()
+        assignee_ids = values.pop("assignee_ids")
+        await self._validate_assignees(project_id, assignee_ids)
+        task = Task(project_id=project_id, **values)
+        task.assignees = []
         self.session.add(task)
         await self.session.flush()
+        self._set_assignees(task, assignee_ids)
         self.audit.record(
             project_id=project_id,
             action="task.created",
@@ -140,8 +166,17 @@ class WorkPlanningService:
             entity_id=task.id,
             changes={"title": task.title, "status": task.status.value},
         )
+        if assignee_ids:
+            self.audit.record(
+                project_id=project_id,
+                action="task.assignee_changed",
+                entity_type="task",
+                entity_id=task.id,
+                changes={"from": [], "to": sorted(str(value) for value in assignee_ids)},
+            )
         await self._commit()
         await self.session.refresh(task)
+        await self.session.refresh(task, attribute_names=["assignees"])
         return task
 
     async def get_task(self, project_id: UUID, task_id: UUID) -> Task:
@@ -158,8 +193,11 @@ class WorkPlanningService:
         self._ensure_mutable(project)
         task = await self._task_or_404(project_id, task_id)
         changes = data.model_dump(exclude_unset=True)
-        if not changes:
+        assignee_ids = changes.pop("assignee_ids", None)
+        if not changes and assignee_ids is None:
             return task
+        if assignee_ids is not None:
+            await self._validate_assignees(project_id, assignee_ids)
         final_start = changes.get("start_date", task.start_date)
         final_due = changes.get("due_date", task.due_date)
         if final_start and final_due and final_due < final_start:
@@ -183,6 +221,18 @@ class WorkPlanningService:
         }
         for key, value in changes.items():
             setattr(task, key, value)
+        if assignee_ids is not None:
+            before_assignees = sorted(str(value) for value in task.assignee_ids)
+            next_assignees = sorted(str(value) for value in assignee_ids)
+            if before_assignees != next_assignees:
+                self._set_assignees(task, assignee_ids)
+                self.audit.record(
+                    project_id=project_id,
+                    action="task.assignee_changed",
+                    entity_type="task",
+                    entity_id=task.id,
+                    changes={"from": before_assignees, "to": next_assignees},
+                )
         await self.session.flush()
         self.audit.record(
             project_id=project_id,
@@ -201,6 +251,7 @@ class WorkPlanningService:
             )
         await self._commit()
         await self.session.refresh(task)
+        await self.session.refresh(task, attribute_names=["assignees"])
         return task
 
     async def archive_task(self, project_id: UUID, task_id: UUID) -> Task:
@@ -223,6 +274,7 @@ class WorkPlanningService:
             )
             await self._commit()
         await self.session.refresh(task)
+        await self.session.refresh(task, attribute_names=["assignees"])
         return task
 
     @staticmethod

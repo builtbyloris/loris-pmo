@@ -1,12 +1,12 @@
 # Loris PMO architecture
 
-Status: foundation, Projects Core, and Work Planning Core architecture
+Status: foundation, Projects Core, Work Planning Core, and People Core architecture
 Date: 2026-08-29
 Product authority: `PROJECT_INTELLIGENCE_SPEC.md`
 
 ## 1. Scope
 
-This document defines the technical foundation for Loris PMO plus the Projects and Work Planning Core increments. The application now supplies the shell, authentication, owned project records, objectives, success criteria, tasks, subtasks, task dependencies, milestones, shared work-plan views, deterministic planning metrics, real portfolio counts, persistence and migration infrastructure, API conventions, testing, Docker-based local development, and replaceable AI boundaries. Remaining product areas are introduced incrementally.
+This document defines the technical foundation for Loris PMO plus the Projects, Work Planning, and People Core increments. The application now supplies the shell, authentication, owned project records, objectives, success criteria, tasks, subtasks, task dependencies, milestones, reusable people, project membership, structured stakeholders, normalized task assignees, deterministic workload metrics, shared work-plan and people views, real portfolio counts, persistence and migration infrastructure, API conventions, testing, Docker-based local development, and replaceable AI boundaries. Remaining product areas are introduced incrementally.
 
 The application starts empty. No production project, task, financial, risk, or other business fixture is created.
 
@@ -124,7 +124,9 @@ The foundation migration creates `users`, including:
 - password hash, active flag, and timestamps;
 - an index supporting login lookup.
 
-Projects Core adds `projects`, `objectives`, `success_criteria`, and `audit_events`. Work Planning adds `tasks`, `milestones`, and `task_dependencies`. They use UUID primary keys, explicit foreign keys, UTC-aware timestamps, constraints, and indexes for owner, archive, status, dates, and relationship access patterns. Composite foreign keys ensure parent tasks, milestones, and dependency endpoints remain in the same project. `projects.owner_user_id` makes ownership explicit even during the personal phase. Domain mutations and their audit events commit in one transaction.
+Projects Core adds `projects`, `objectives`, `success_criteria`, and `audit_events`. Work Planning adds `tasks`, `milestones`, and `task_dependencies`. People Core adds `people`, `project_members`, `stakeholders`, and `task_assignees`. They use UUID primary keys, explicit foreign keys, UTC-aware timestamps, constraints, and indexes for owner, archive, status, dates, and relationship access patterns. Composite foreign keys ensure parent tasks, milestones, dependency endpoints, and task assignees remain in the same project. `projects.owner_user_id` and `people.owner_user_id` make ownership explicit even during the personal phase. Domain mutations and their audit events commit in one transaction.
+
+People are owner-scoped reusable records and are deliberately separate from authentication users. A project member relates a person to a project and stores the stable role, responsibilities, and availability percentage. Removing a membership never deletes the person. Tasks support multiple assignees through `task_assignees`; each assignee references a project member, and composite constraints prevent cross-project assignment even if application validation is bypassed. `audit_events.project_id` is nullable only for owner-level events such as person creation; project-domain events remain project-scoped.
 
 Tasks use an `archived_at` timestamp rather than destructive deletion. One subtask level is supported deliberately. Milestone progress is not stored: it is the arithmetic mean of completion percentages for linked, non-cancelled tasks, or unavailable when no eligible task exists. Project task progress uses the same rule across all active project tasks.
 
@@ -178,6 +180,19 @@ GET  /api/v1/projects/{project_id}/task-dependencies
 POST /api/v1/projects/{project_id}/task-dependencies
 DELETE /api/v1/projects/{project_id}/task-dependencies/{dependency_id}
 GET  /api/v1/projects/{project_id}/work-planning/summary
+GET  /api/v1/people
+POST /api/v1/people
+PATCH /api/v1/people/{person_id}
+GET  /api/v1/projects/{project_id}/members
+POST /api/v1/projects/{project_id}/members
+PATCH /api/v1/projects/{project_id}/members/{member_id}
+DELETE /api/v1/projects/{project_id}/members/{member_id}
+GET  /api/v1/projects/{project_id}/stakeholders
+POST /api/v1/projects/{project_id}/stakeholders
+PATCH /api/v1/projects/{project_id}/stakeholders/{stakeholder_id}
+DELETE /api/v1/projects/{project_id}/stakeholders/{stakeholder_id}
+GET  /api/v1/projects/{project_id}/workload
+GET  /api/v1/projects/{project_id}/people/summary
 ```
 
 Nested objective and success-criterion routes support list, create, update, and delete operations under their owning project.
@@ -221,6 +236,8 @@ The portfolio and project routes fetch authenticated API data. Projects provide 
 
 Work Planning loads tasks, milestones, dependencies, and summary data into one shared feature state. List, Kanban, Timeline, and Milestone views are projections of that same state. Kanban status moves update optimistically, persist through the API, refresh all projections, and roll back with localized feedback on failure. The V1 Timeline renders real task bars and milestone markers. Drag/resize, editable connection lines, and critical-path analysis are deferred until they can be implemented reliably without implying an enterprise scheduling engine.
 
+The People workspace uses Team, Stakeholders, and Workload projections. Team supports reusable person creation/editing and membership management. The stakeholder matrix places stored influence and interest values without generating recommendations. Workload rows consume backend-calculated facts and status; the frontend does not reproduce the formula. Task creation and List assignment editing use the same normalized member identifiers, while List, Kanban, and Timeline resolve display names from current membership data.
+
 Localization keys live in language resource files. Components do not duplicate Italian/English literals. Theme variables cover both light and dark modes, honor the device preference initially, and persist an explicit user preference locally.
 
 ## 9. AI architecture
@@ -254,6 +271,12 @@ Notification request -> preferences/policy -> channel adapter
 
 Only package boundaries are created now. Queueing, Redis, schedulers, and email providers are deferred until a feature requires them.
 
+### Workload formula
+
+Workload is a deterministic, explicitly heuristic status rather than an hours-capacity forecast. For each project member, the backend counts non-archived assigned tasks excluding `DONE` and `CANCELLED`, overdue tasks, and tasks due within 14 days. It sums only stored estimated and actual effort. A zero estimate on any active task marks effort data incomplete; the service never substitutes hours.
+
+The availability heuristic supplies one active-task slot per 20 availability percentage points, with a minimum of one slot when availability is positive. `HIGH` means an overdue task exists, active work exists at zero availability, or active task count exceeds slots. `MEDIUM` begins at 60% of slots, `LOW` is below that threshold, and `NO_DATA` means no active assigned tasks. Multiple assignees each receive the full task count and stored effort because the model does not yet capture effort allocation shares.
+
 ## 11. Testing strategy
 
 Backend tests cover:
@@ -272,6 +295,7 @@ Frontend tests cover:
 - protected-route loading/authentication decisions;
 - shell navigation, language switching, theme switching, portfolio rendering, project listing, and creation-wizard behavior.
 - work-planning empty/list/filter states, Kanban rendering and status persistence, milestone progress, task creation, and shared-state refresh behavior.
+- team empty/create/add/edit flows, stakeholder list/matrix rendering, workload facts/incomplete-data display, and task assignment display/update behavior.
 
 CI-ready commands run backend tests, frontend tests, TypeScript compilation, and the production frontend build. Each future feature must add tests near the business logic it introduces.
 
@@ -292,10 +316,11 @@ No migration or startup hook inserts business records.
 1. Foundation (complete): architecture, auth, shell, i18n, themes, migrations, AI boundary, Docker, tests.
 2. Projects (complete): project ownership, creation wizard, objectives, criteria, archive workflow, audit events, and portfolio aggregation.
 3. Work planning (complete): tasks, one-level subtasks, dependencies, milestones, deterministic progress, project overview metrics, and shared List/Kanban/Timeline data.
-4. People and finance: people, membership, workload, budgets, expenses, and deterministic calculations.
-5. Control and memory: risks, issues, changes, meetings, decisions, logs, alerts, and automation.
-6. Intelligence: centralized KPIs/health, context packages, AI proposals, recommendations, and scenario isolation.
-7. Documents and delivery: retrieval, reports, validated import/export, notifications, and release hardening.
+4. People (complete): reusable people, membership, roles, stakeholders, task assignees, workload analytics, and project overview signals.
+5. Finance: budgets, expenses, and deterministic financial calculations.
+6. Control and memory: risks, issues, changes, meetings, decisions, logs, alerts, and automation.
+7. Intelligence: centralized KPIs/health, context packages, AI proposals, recommendations, and scenario isolation.
+8. Documents and delivery: retrieval, reports, validated import/export, notifications, and release hardening.
 
 Each phase adds schema via migrations, implements use cases behind services, exposes typed APIs, and completes UI/empty/error states with tests.
 

@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, renderHook, screen, waitFor } from "@t
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import i18n from "../../i18n/config";
+import { peopleApi } from "../people/api/peopleApi";
 import { workPlanningApi } from "./api/workPlanningApi";
 import { KanbanBoard } from "./components/KanbanBoard";
 import { MilestonePanel } from "./components/MilestonePanel";
@@ -25,6 +26,7 @@ const task: Task = {
   actual_effort: "2.00",
   completion_percentage: 25,
   notes: null,
+  assignee_ids: [],
   archived_at: null,
   created_at: "2026-08-29T00:00:00Z",
   updated_at: "2026-08-29T00:00:00Z",
@@ -67,6 +69,8 @@ describe("work-planning views", () => {
       dependencies: [],
       readOnly: false,
       onStatusChange: vi.fn().mockResolvedValue(true),
+      onAssigneeChange: vi.fn().mockResolvedValue(true),
+      members: [],
     };
     const { rerender } = render(<TaskListView tasks={[]} {...properties} />);
     expect(screen.getByRole("heading", { name: "No tasks yet" })).toBeInTheDocument();
@@ -84,7 +88,7 @@ describe("work-planning views", () => {
 
   it("renders every Kanban status and persists a drag status move", async () => {
     const onMove = vi.fn().mockResolvedValue(true);
-    render(<KanbanBoard tasks={[task]} milestones={[milestone]} readOnly={false} error="" onMove={onMove} />);
+    render(<KanbanBoard tasks={[task]} milestones={[milestone]} members={[]} readOnly={false} error="" onMove={onMove} />);
     expect(screen.getByLabelText("Backlog")).toBeInTheDocument();
     expect(screen.getByLabelText("Done")).toBeInTheDocument();
 
@@ -114,7 +118,7 @@ describe("work-planning views", () => {
 
   it("validates and submits the task creation form", async () => {
     const onCreate = vi.fn().mockResolvedValue(true);
-    render(<TaskFormModal open onClose={vi.fn()} onCreate={onCreate} tasks={[]} milestones={[milestone]} />);
+    render(<TaskFormModal open onClose={vi.fn()} onCreate={onCreate} tasks={[]} milestones={[milestone]} members={[]} />);
     fireEvent.click(screen.getByRole("button", { name: "Create task" }));
     expect(screen.getByRole("alert")).toHaveTextContent("Task title is required");
     fireEvent.change(screen.getByLabelText(/Task title/), { target: { value: "Draft release notes" } });
@@ -134,6 +138,7 @@ it("refreshes the shared task state after a Kanban-style status update", async (
   vi.spyOn(workPlanningApi, "listMilestones").mockResolvedValue([milestone]);
   vi.spyOn(workPlanningApi, "listDependencies").mockResolvedValue([]);
   vi.spyOn(workPlanningApi, "summary").mockResolvedValue(summary);
+  vi.spyOn(peopleApi, "listMembers").mockResolvedValue([]);
   const updateTask = vi.spyOn(workPlanningApi, "updateTask").mockResolvedValue(doneTask);
 
   const { result } = renderHook(() => useWorkPlanning("project-1"));

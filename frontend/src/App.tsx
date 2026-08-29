@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { ProtectedRoute } from "./features/auth/ProtectedRoute";
+import { PeopleWorkspacePage } from "./features/people/pages/PeopleWorkspacePage";
 import { PortfolioPage } from "./features/projects/pages/PortfolioPage";
 import { ProjectOverviewPage } from "./features/projects/pages/ProjectOverviewPage";
 import { ProjectsPage } from "./features/projects/pages/ProjectsPage";
@@ -21,6 +22,7 @@ export function App() {
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="projects/:projectId" element={<ProjectOverviewPage />} />
           <Route path="projects/:projectId/work" element={<WorkPlanningPage />} />
+          <Route path="projects/:projectId/people" element={<PeopleWorkspacePage />} />
           <Route path="copilot" element={<PlaceholderPage area="copilot" />} />
           <Route path="settings" element={<PlaceholderPage area="settings" />} />
         </Route>

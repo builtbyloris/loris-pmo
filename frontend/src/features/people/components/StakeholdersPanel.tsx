@@ -1,0 +1,16 @@
+import { Pencil, Plus, Trash2, UsersRound } from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+
+import type { Person, Stakeholder, StakeholderInput, StakeholderLevel } from "../types";
+import { StakeholderFormModal } from "./StakeholderFormModal";
+
+const levels: StakeholderLevel[] = ["HIGH", "MEDIUM", "LOW"];
+
+export function StakeholdersPanel({ people, stakeholders, readOnly, onCreate, onUpdate, onRemove }: { people: Person[]; stakeholders: Stakeholder[]; readOnly: boolean; onCreate: (input: StakeholderInput) => Promise<boolean>; onUpdate: (id: string, input: StakeholderInput) => Promise<boolean>; onRemove: (id: string) => Promise<boolean> }) {
+  const { t } = useTranslation(); const [open, setOpen] = useState(false); const [editing, setEditing] = useState<Stakeholder | null>(null);
+  return <div className="people-panel"><header className="panel-toolbar"><div><h2>{t("people.stakeholders.title")}</h2><p>{t("people.stakeholders.description")}</p></div>{!readOnly && <button className="primary-button" onClick={() => { setEditing(null); setOpen(true); }}><Plus size={16} />{t("people.stakeholders.add")}</button>}</header>
+    {stakeholders.length === 0 ? <div className="work-empty"><UsersRound size={28} /><h2>{t("people.stakeholders.emptyTitle")}</h2><p>{t("people.stakeholders.emptyBody")}</p></div> : <><div className="stakeholder-list">{stakeholders.map((item) => <article key={item.id}><div><h3>{item.display_name}</h3><p>{[item.organization, item.role].filter(Boolean).join(" · ") || t("common.notProvided")}</p></div><div className="stakeholder-levels"><span>{t("people.fields.influence")}: <strong>{t(`people.levels.${item.influence}`)}</strong></span><span>{t("people.fields.interest")}: <strong>{t(`people.levels.${item.interest}`)}</strong></span></div><p>{[item.communication_frequency, item.communication_channel].filter(Boolean).join(" · ") || t("people.stakeholders.noCommunication")}</p>{!readOnly && <footer><button className="text-button" onClick={() => { setEditing(item); setOpen(true); }}><Pencil size={14} />{t("common.edit")}</button><button className="icon-button danger" aria-label={t("people.stakeholders.remove", { name: item.display_name })} onClick={() => window.confirm(t("people.stakeholders.removeConfirm")) && void onRemove(item.id)}><Trash2 size={15} /></button></footer>}</article>)}</div><section className="stakeholder-matrix"><header><h2>{t("people.matrix.title")}</h2><p>{t("people.matrix.description")}</p></header><div className="matrix-grid"><span /><strong>{t("people.matrix.interestHigh")}</strong><strong>{t("people.matrix.interestMedium")}</strong><strong>{t("people.matrix.interestLow")}</strong>{levels.flatMap((influence) => [<strong key={`label-${influence}`}>{t(`people.levels.${influence}`)}</strong>, ...levels.map((interest) => <div className={`matrix-cell matrix-${influence.toLowerCase()}-${interest.toLowerCase()}`} key={`${influence}-${interest}`}>{stakeholders.filter((item) => item.influence === influence && item.interest === interest).map((item) => <span key={item.id}>{item.display_name}</span>)}</div>)])}</div></section></>}
+    <StakeholderFormModal open={open} stakeholder={editing} people={people} onClose={() => setOpen(false)} onSave={(input) => editing ? onUpdate(editing.id, input) : onCreate(input)} />
+  </div>;
+}

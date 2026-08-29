@@ -67,3 +67,23 @@ Reason: A Kanban mutation persists through the API and refreshes the shared stat
 Decision: Defer Timeline drag/resize, editable dependency lines, and critical-path analysis.
 
 Reason: The V1 timeline is useful with real task bars, milestone markers, dates, dependency counts, and completion state. More advanced scheduling interactions should be added only with reliable persistence, rollback, and calculation behavior.
+
+Decision: Model people independently from authentication users and relate them to projects through project memberships.
+
+Reason: A resource may participate in multiple projects with different roles, responsibilities, and availability. Removing one membership must not destroy the reusable person record or turn project resources into login identities.
+
+Decision: Support multiple task assignees through a normalized relation to project members.
+
+Reason: Composite same-project foreign keys make cross-project assignments impossible at the database boundary, while normalized assignments remain compatible with List, Kanban, Timeline, workload analytics, and future reporting. Each member currently receives the full task effort because allocation shares are not part of V1.
+
+Decision: Store stakeholders as project records that may optionally reference an owner-scoped person.
+
+Reason: Known people can be reused without requiring every external stakeholder to become a team member, while standalone names still support matrix and communication tracking.
+
+Decision: Make account-level audit events possible by allowing a nullable project reference.
+
+Reason: Person creation is significant but may occur before project membership exists. Project mutations continue to record their project ID; only owner-level entity events omit it.
+
+Decision: Use an availability-aware task-slot heuristic for workload rather than inventing weekly hours.
+
+Reason: Availability percentage, task assignments, due dates, and stored effort exist, but time-phased capacity and effort allocation do not. One active-task slot per 20% availability yields a documented warning signal; overdue work and zero availability with active work are always high. Missing estimates are exposed explicitly instead of imputed.

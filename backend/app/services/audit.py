@@ -13,7 +13,7 @@ class AuditService:
     def record(
         self,
         *,
-        project_id: UUID,
+        project_id: UUID | None,
         action: str,
         entity_type: str,
         entity_id: UUID,

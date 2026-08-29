@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Modal } from "../../projects/components/Modal";
+import type { ProjectMember } from "../../people/types";
 import type { Milestone, Task, TaskInput, TaskPriority, TaskStatus } from "../types";
 
 const initial: TaskInput = {
@@ -17,9 +18,10 @@ const initial: TaskInput = {
   actual_effort: "0",
   completion_percentage: 0,
   notes: "",
+  assignee_ids: [],
 };
 
-export function TaskFormModal({ open, onClose, onCreate, tasks, milestones }: { open: boolean; onClose: () => void; onCreate: (input: TaskInput) => Promise<boolean>; tasks: Task[]; milestones: Milestone[] }) {
+export function TaskFormModal({ open, onClose, onCreate, tasks, milestones, members }: { open: boolean; onClose: () => void; onCreate: (input: TaskInput) => Promise<boolean>; tasks: Task[]; milestones: Milestone[]; members: ProjectMember[] }) {
   const { t } = useTranslation();
   const [values, setValues] = useState<TaskInput>(initial);
   const [error, setError] = useState("");
@@ -45,6 +47,7 @@ export function TaskFormModal({ open, onClose, onCreate, tasks, milestones }: { 
       <label className="span-2"><span>{t("workPlanning.fields.description")}</span><textarea rows={3} value={values.description ?? ""} onChange={(event) => update("description", event.target.value)} /></label>
       <label><span>{t("workPlanning.fields.parent")}</span><select value={values.parent_task_id ?? ""} onChange={(event) => update("parent_task_id", event.target.value || null)}><option value="">{t("workPlanning.taskForm.noParent")}</option>{topLevelTasks.map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}</select></label>
       <label><span>{t("workPlanning.fields.milestone")}</span><select value={values.milestone_id ?? ""} onChange={(event) => update("milestone_id", event.target.value || null)}><option value="">{t("workPlanning.taskForm.noMilestone")}</option>{milestones.map((milestone) => <option key={milestone.id} value={milestone.id}>{milestone.title}</option>)}</select></label>
+      <label className="span-2"><span>{t("workPlanning.fields.assignees")}</span><select multiple className="multi-select" value={values.assignee_ids} onChange={(event) => update("assignee_ids", Array.from(event.target.selectedOptions, (option) => option.value))}>{members.map((member) => <option key={member.id} value={member.id}>{member.person.name} · {t(`people.roles.${member.role}`)}</option>)}</select><small>{members.length ? t("workPlanning.taskForm.assigneeHint") : t("workPlanning.taskForm.noMembers")}</small></label>
       <label><span>{t("workPlanning.fields.startDate")}</span><input type="date" value={values.start_date ?? ""} onChange={(event) => update("start_date", event.target.value || null)} /></label>
       <label><span>{t("workPlanning.fields.dueDate")}</span><input type="date" value={values.due_date ?? ""} onChange={(event) => update("due_date", event.target.value || null)} /></label>
       <label><span>{t("workPlanning.fields.estimatedEffort")}</span><input type="number" min="0" step="0.25" value={values.estimated_effort} onChange={(event) => update("estimated_effort", event.target.value)} /></label>
@@ -54,4 +57,3 @@ export function TaskFormModal({ open, onClose, onCreate, tasks, milestones }: { 
     </form>{error && <div className="inline-error" role="alert">{error}</div>}
   </Modal>;
 }
-

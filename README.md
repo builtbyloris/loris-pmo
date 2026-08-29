@@ -1,10 +1,10 @@
 # Loris PMO
 
-Loris PMO is a personal project management and project intelligence application. The repository includes the production-shaped foundation, Projects Core, and Work Planning Core: secure authentication, owner-scoped projects, objectives, success criteria, tasks, subtasks, milestones, dependencies, shared List/Kanban/Timeline views, portfolio aggregation, versioned APIs, PostgreSQL migrations, bilingual UI, themes, testing, Docker Compose, and a provider-neutral AI boundary.
+Loris PMO is a personal project management and project intelligence application. The repository includes the production-shaped foundation, Projects Core, Work Planning Core, and People Core: secure authentication, owner-scoped projects and reusable people, objectives, success criteria, tasks, subtasks, milestones, dependencies, project membership, stakeholders, normalized task assignees, deterministic workload analytics, shared List/Kanban/Timeline views, portfolio aggregation, versioned APIs, PostgreSQL migrations, bilingual UI, themes, testing, Docker Compose, and a provider-neutral AI boundary.
 
 The remaining product areas described in `PROJECT_INTELLIGENCE_SPEC.md` are intentionally delivered incrementally rather than represented with fake functionality or sample production data.
 
-## Projects and Work Planning Core
+## Projects, Work Planning, and People Core
 
 An authenticated user can:
 
@@ -17,9 +17,13 @@ An authenticated user can:
 - use the same persisted task data in searchable List, draggable Kanban, and date-based Timeline views;
 - see real total, completed, overdue, upcoming-milestone, and deterministic task-progress metrics on a project;
 - see real total, active, on-hold, and completed counts in the portfolio;
+- create reusable people and add them to projects with roles, responsibilities, and availability;
+- assign one or more valid project members to tasks and see them across planning views;
+- manage linked or standalone stakeholders and inspect their influence/interest matrix;
+- review backend-calculated workload counts, effort totals, incomplete-data indicators, and documented heuristic states;
 - use the application in English or Italian and in light or dark mode.
 
-Archived projects remain available through the archive filter but are read-only. Project, objective, success-criterion, task, dependency, and milestone mutations create append-only audit events. Planned-versus-actual, earned-value, health, risk, financial, and resource metrics remain unavailable until their source domains are implemented.
+Archived projects remain available through the archive filter but are read-only. Project, objective, success-criterion, task, dependency, milestone, membership, assignment, and stakeholder mutations create append-only audit events. Workload uses real task assignments and stored effort without inventing hours. Planned-versus-actual financials, earned value, health, and risk metrics remain unavailable until their source domains are implemented.
 
 ## Quick start with Docker
 

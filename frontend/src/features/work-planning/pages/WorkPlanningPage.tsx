@@ -30,7 +30,7 @@ export function WorkPlanningPage() {
   useEffect(() => { projectsApi.get(projectId).then(setProject).catch(() => setProjectError(true)); }, [projectId]);
   if (projectError || planning.error) return <div className="content-state error-state" role="alert"><AlertCircle /><h1>{t("workPlanning.loadError")}</h1><Link className="secondary-button" to="/projects">{t("projects.backToProjects")}</Link></div>;
   if (!project || !planning.data) return <div className="content-state"><span className="spinner" />{t("common.loading")}</div>;
-  const { tasks, milestones, dependencies, summary } = planning.data;
+  const { tasks, milestones, dependencies, summary, members } = planning.data;
   const readOnly = Boolean(project.archived_at);
   const tabs: Array<[View, typeof ListChecks]> = [["list", ListChecks], ["kanban", Columns3], ["timeline", CalendarRange], ["milestones", Flag]];
   return <div className="work-planning-page page-stack">
@@ -41,12 +41,12 @@ export function WorkPlanningPage() {
     {planning.mutationError && <div className="inline-error" role="alert"><AlertCircle size={15} />{planning.mutationError}</div>}
     <nav className="work-tabs" aria-label={t("workPlanning.views.label")}>{tabs.map(([key, Icon]) => <button type="button" key={key} className={view === key ? "active" : ""} onClick={() => setView(key)}><Icon size={16} />{t(`workPlanning.views.${key}`)}</button>)}</nav>
     <section className="work-surface">
-      {view === "list" && <TaskListView tasks={tasks} milestones={milestones} dependencies={dependencies} readOnly={readOnly} onStatusChange={planning.updateTaskStatus} />}
-      {view === "kanban" && <KanbanBoard tasks={tasks} milestones={milestones} readOnly={readOnly} error={planning.mutationError} movingTaskId={planning.movingTaskId} onMove={planning.updateTaskStatus} />}
-      {view === "timeline" && <TimelineView tasks={tasks} milestones={milestones} dependencies={dependencies} />}
+      {view === "list" && <TaskListView tasks={tasks} milestones={milestones} dependencies={dependencies} members={members} readOnly={readOnly} onStatusChange={planning.updateTaskStatus} onAssigneeChange={planning.updateTaskAssignees} />}
+      {view === "kanban" && <KanbanBoard tasks={tasks} milestones={milestones} members={members} readOnly={readOnly} error={planning.mutationError} movingTaskId={planning.movingTaskId} onMove={planning.updateTaskStatus} />}
+      {view === "timeline" && <TimelineView tasks={tasks} milestones={milestones} dependencies={dependencies} members={members} />}
       {view === "milestones" && <MilestonePanel milestones={milestones} tasks={tasks} dependencies={dependencies} readOnly={readOnly} onStatus={(id, status: MilestoneStatus) => planning.updateMilestone(id, { status })} onDeleteDependency={planning.deleteDependency} />}
     </section>
-    <TaskFormModal open={taskOpen} onClose={() => setTaskOpen(false)} onCreate={planning.createTask} tasks={tasks} milestones={milestones} />
+    <TaskFormModal open={taskOpen} onClose={() => setTaskOpen(false)} onCreate={planning.createTask} tasks={tasks} milestones={milestones} members={members} />
     <MilestoneFormModal open={milestoneOpen} onClose={() => setMilestoneOpen(false)} onCreate={planning.createMilestone} />
     <DependencyFormModal open={dependencyOpen} onClose={() => setDependencyOpen(false)} onCreate={planning.createDependency} tasks={tasks} />
   </div>;

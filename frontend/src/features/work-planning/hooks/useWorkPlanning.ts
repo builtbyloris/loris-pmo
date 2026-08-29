@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { peopleApi } from "../../people/api/peopleApi";
 import { workPlanningApi } from "../api/workPlanningApi";
 import type { MilestoneInput, Task, TaskInput, TaskStatus, WorkPlanningData } from "../types";
 
@@ -14,13 +15,14 @@ export function useWorkPlanning(projectId: string) {
   const load = useCallback(async () => {
     setError("");
     try {
-      const [taskList, milestones, dependencies, summary] = await Promise.all([
+      const [taskList, milestones, dependencies, summary, members] = await Promise.all([
         workPlanningApi.listTasks(projectId),
         workPlanningApi.listMilestones(projectId),
         workPlanningApi.listDependencies(projectId),
         workPlanningApi.summary(projectId),
+        peopleApi.listMembers(projectId),
       ]);
-      setData({ tasks: taskList.items, milestones, dependencies, summary });
+      setData({ tasks: taskList.items, milestones, dependencies, summary, members });
     } catch {
       setError(t("workPlanning.loadError"));
     }
@@ -69,6 +71,7 @@ export function useWorkPlanning(projectId: string) {
     reload: load,
     createTask: (input: TaskInput) => mutate(() => workPlanningApi.createTask(projectId, input)),
     updateTaskStatus: moveTask,
+    updateTaskAssignees: (taskId: string, assigneeIds: string[]) => mutate(() => workPlanningApi.updateTask(projectId, taskId, { assignee_ids: assigneeIds })),
     archiveTask: (taskId: string) => mutate(() => workPlanningApi.archiveTask(projectId, taskId)),
     createMilestone: (input: MilestoneInput) => mutate(() => workPlanningApi.createMilestone(projectId, input)),
     updateMilestone: (milestoneId: string, input: Partial<MilestoneInput>) => mutate(() => workPlanningApi.updateMilestone(projectId, milestoneId, input)),

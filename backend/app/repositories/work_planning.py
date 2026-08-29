@@ -4,9 +4,10 @@ from uuid import UUID
 
 from sqlalchemy import Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, selectinload
 
 from app.models.milestone import Milestone
+from app.models.people import ProjectMember
 from app.models.project import Project
 from app.models.task import Task, TaskPriority, TaskStatus
 from app.models.task_dependency import DependencyType, TaskDependency
@@ -31,6 +32,7 @@ class WorkPlanningRepository:
     ) -> Task | None:
         query = (
             select(Task)
+            .options(selectinload(Task.assignees))
             .join(Project, Project.id == Task.project_id)
             .where(
                 Task.id == task_id,
@@ -83,9 +85,24 @@ class WorkPlanningRepository:
         }[sort_by]
         ordering = sort_column.asc() if sort_order == SortOrder.ASC else sort_column.desc()
         result = await self.session.execute(
-            select(Task).join(Project).where(*filters).order_by(ordering, Task.id)
+            select(Task)
+            .options(selectinload(Task.assignees))
+            .join(Project)
+            .where(*filters)
+            .order_by(ordering, Task.id)
         )
         return list(result.scalars()), int(count)
+
+    async def get_members(self, project_id: UUID, member_ids: list[UUID]) -> list[ProjectMember]:
+        if not member_ids:
+            return []
+        result = await self.session.execute(
+            select(ProjectMember).where(
+                ProjectMember.project_id == project_id,
+                ProjectMember.id.in_(member_ids),
+            )
+        )
+        return list(result.scalars())
 
     async def task_has_children(self, project_id: UUID, task_id: UUID) -> bool:
         count = (

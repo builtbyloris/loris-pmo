@@ -32,6 +32,7 @@ class TaskCreate(BaseModel):
     actual_effort: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=10, decimal_places=2)
     completion_percentage: int = Field(default=0, ge=0, le=100)
     notes: str | None = Field(default=None, max_length=10000)
+    assignee_ids: list[UUID] = Field(default_factory=list, max_length=20)
 
     _strip_title = field_validator("title")(_required_text)
 
@@ -41,6 +42,7 @@ class TaskCreate(BaseModel):
             raise ValueError("due_date must not precede start_date")
         if self.status == TaskStatus.DONE:
             self.completion_percentage = 100
+        self.assignee_ids = list(dict.fromkeys(self.assignee_ids))
         return self
 
 
@@ -57,6 +59,7 @@ class TaskUpdate(BaseModel):
     actual_effort: Decimal | None = Field(default=None, ge=0, max_digits=10, decimal_places=2)
     completion_percentage: int | None = Field(default=None, ge=0, le=100)
     notes: str | None = Field(default=None, max_length=10000)
+    assignee_ids: list[UUID] | None = Field(default=None, max_length=20)
 
     @field_validator("title")
     @classmethod
@@ -79,6 +82,8 @@ class TaskUpdate(BaseModel):
             raise ValueError("due_date must not precede start_date")
         if self.status == TaskStatus.DONE:
             self.completion_percentage = 100
+        if self.assignee_ids is not None:
+            self.assignee_ids = list(dict.fromkeys(self.assignee_ids))
         return self
 
 
@@ -97,6 +102,7 @@ class TaskRead(BaseModel):
     actual_effort: Decimal
     completion_percentage: int
     notes: str | None
+    assignee_ids: list[UUID]
     archived_at: datetime | None
     created_at: datetime
     updated_at: datetime

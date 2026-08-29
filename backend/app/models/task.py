@@ -101,3 +101,13 @@ class Task(UUIDTimestampMixin, Base):
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     project: Mapped["Project"] = relationship(back_populates="tasks")  # noqa: F821
+    assignees: Mapped[list["TaskAssignee"]] = relationship(  # noqa: F821
+        back_populates="task",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        overlaps="assignments,project_member",
+    )
+
+    @property
+    def assignee_ids(self) -> list[UUID]:
+        return [assignment.project_member_id for assignment in self.assignees]

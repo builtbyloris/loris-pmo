@@ -2,6 +2,7 @@ import { CalendarClock, Diamond, GitBranch } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
+import type { ProjectMember } from "../../people/types";
 import { formatDate } from "../../projects/utils/format";
 import type { Milestone, Task, TaskDependency } from "../types";
 import { WorkBadge } from "./WorkBadge";
@@ -9,7 +10,7 @@ import { WorkBadge } from "./WorkBadge";
 const day = 86_400_000;
 const toTime = (value: string) => new Date(`${value}T00:00:00Z`).getTime();
 
-export function TimelineView({ tasks, milestones, dependencies }: { tasks: Task[]; milestones: Milestone[]; dependencies: TaskDependency[] }) {
+export function TimelineView({ tasks, milestones, dependencies, members }: { tasks: Task[]; milestones: Milestone[]; dependencies: TaskDependency[]; members: ProjectMember[] }) {
   const { t, i18n } = useTranslation();
   const scheduled = tasks.filter((task) => task.start_date && task.due_date);
   const range = useMemo(() => {
@@ -28,10 +29,10 @@ export function TimelineView({ tasks, milestones, dependencies }: { tasks: Task[
       const left = position(task.start_date!);
       const width = Math.max(2, ((toTime(task.due_date!) - toTime(task.start_date!)) / day + 1) / range.span * 100);
       const taskDependencies = dependencies.filter((dependency) => dependency.source_task_id === task.id || dependency.target_task_id === task.id);
-      return <article className="timeline-row" key={task.id}><div className="timeline-label"><strong>{task.title}</strong><div><WorkBadge value={task.status} kind="status" />{taskDependencies.length > 0 && <span className="dependency-count"><GitBranch size={12} />{taskDependencies.length}</span>}</div></div><div className="timeline-track"><span className={`timeline-bar value-${task.status.toLowerCase().replaceAll("_", "-")}`} style={{ left: `${left}%`, width: `${width}%` }}><i style={{ width: `${task.completion_percentage}%` }} /><b>{task.completion_percentage}%</b></span></div></article>;
+      const assignees = task.assignee_ids.map((id) => members.find((member) => member.id === id)?.person.name).filter(Boolean);
+      return <article className="timeline-row" key={task.id}><div className="timeline-label"><strong>{task.title}</strong>{assignees.length > 0 && <small>{assignees.join(", ")}</small>}<div><WorkBadge value={task.status} kind="status" />{taskDependencies.length > 0 && <span className="dependency-count"><GitBranch size={12} />{taskDependencies.length}</span>}</div></div><div className="timeline-track"><span className={`timeline-bar value-${task.status.toLowerCase().replaceAll("_", "-")}`} style={{ left: `${left}%`, width: `${width}%` }}><i style={{ width: `${task.completion_percentage}%` }} /><b>{task.completion_percentage}%</b></span></div></article>;
     })}</div>
     {tasks.length > scheduled.length && <p className="timeline-note">{t("workPlanning.timeline.unscheduled", { count: tasks.length - scheduled.length })}</p>}
     <p className="timeline-note"><GitBranch size={13} />{t("workPlanning.timeline.dependencyNote")}</p>
   </div>;
 }
-

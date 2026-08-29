@@ -18,6 +18,7 @@ export interface Task {
   actual_effort: string;
   completion_percentage: number;
   notes: string | null;
+  assignee_ids: string[];
   archived_at: string | null;
   created_at: string;
   updated_at: string;
@@ -70,6 +71,7 @@ export interface TaskInput {
   actual_effort: string;
   completion_percentage: number;
   notes?: string | null;
+  assignee_ids: string[];
 }
 
 export interface MilestoneInput {
@@ -85,5 +87,5 @@ export interface WorkPlanningData {
   milestones: Milestone[];
   dependencies: TaskDependency[];
   summary: WorkPlanningSummary;
+  members: import("../../people/types").ProjectMember[];
 }
-
