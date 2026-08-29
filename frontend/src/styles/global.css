@@ -537,6 +537,40 @@ h1, h2, p { margin-top: 0; }
 .expense-table { min-width: 960px; }
 .expense-actions { display: flex; gap: 5px; }
 
+.control-workspace { width: min(1400px, 100%); }
+.control-surface { display: grid; gap: 18px; min-height: 520px; }
+.control-summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 9px; }
+.control-summary article { padding: 14px; display: grid; gap: 5px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel-soft); }
+.control-summary span { color: var(--subtle); font-size: 9px; text-transform: uppercase; letter-spacing: .05em; }
+.control-summary strong { font-size: 21px; }
+.control-filters { display: grid; grid-template-columns: minmax(240px, 1fr) repeat(2, minmax(160px, .35fr)); gap: 8px; }
+.control-filters input, .control-filters select { min-height: 40px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); background: var(--panel-soft); }
+.risk-matrix-card { padding: 16px; display: grid; gap: 14px; border: 1px solid var(--border); border-radius: 11px; background: var(--panel-soft); }
+.risk-matrix-card > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
+.risk-matrix-card h2, .risk-matrix-card p { margin: 0; }
+.risk-matrix-card p { margin-top: 4px; color: var(--muted); font-size: 11px; }
+.matrix-legend { display: flex; flex-wrap: wrap; gap: 5px; }
+.matrix-legend span, .control-badge { padding: 4px 7px; display: inline-flex; width: fit-content; border-radius: 999px; color: var(--muted); background: var(--panel); font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.risk-matrix-scroll { overflow-x: auto; }
+.risk-matrix { min-width: 590px; display: grid; grid-template-columns: 70px repeat(5, minmax(75px, 1fr)); gap: 5px; align-items: stretch; }
+.risk-matrix > strong, .risk-matrix > span { display: grid; place-items: center; font-size: 10px; color: var(--muted); }
+.matrix-row { display: contents; }
+.matrix-row > strong { display: grid; place-items: center; font-size: 10px; color: var(--muted); }
+.risk-cell { min-height: 54px; padding: 7px; display: flex; align-items: center; justify-content: space-between; gap: 6px; border: 1px solid var(--border); border-radius: 7px; background: var(--panel); }
+.risk-cell b { font-size: 10px; opacity: .72; }
+.risk-cell span { min-width: 21px; height: 21px; display: grid; place-items: center; border-radius: 50%; color: white; background: var(--accent); font-size: 9px; font-weight: 800; }
+.matrix-axis-x { grid-column: 2 / 7; }
+.severity-low { color: var(--positive) !important; background: color-mix(in srgb, var(--positive) 10%, var(--panel)) !important; border-color: color-mix(in srgb, var(--positive) 30%, var(--border)) !important; }
+.severity-medium { color: #a56600 !important; background: color-mix(in srgb, #d79528 10%, var(--panel)) !important; border-color: color-mix(in srgb, #d79528 30%, var(--border)) !important; }
+.severity-high { color: #c45d10 !important; background: color-mix(in srgb, #e27a25 11%, var(--panel)) !important; border-color: color-mix(in srgb, #e27a25 34%, var(--border)) !important; }
+.severity-critical { color: var(--danger) !important; background: color-mix(in srgb, var(--danger) 10%, var(--panel)) !important; border-color: color-mix(in srgb, var(--danger) 34%, var(--border)) !important; }
+.control-table { min-width: 980px; }
+.control-table td > strong, .control-table td > small { display: block; }
+.control-table td > small { max-width: 260px; margin-top: 3px; overflow: hidden; color: var(--subtle); text-overflow: ellipsis; white-space: nowrap; }
+.control-actions { display: flex; align-items: center; gap: 5px; }
+.text-button.compact { padding: 4px 6px; font-size: 9px; white-space: nowrap; }
+.danger-text { color: var(--danger) !important; }
+
 @media (max-width: 900px) {
   .stakeholder-list article { grid-template-columns: 1fr; }
   .matrix-grid { min-width: 620px; }
@@ -544,6 +578,8 @@ h1, h2, p { margin-top: 0; }
   .finance-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .finance-dashboard-grid { grid-template-columns: 1fr; }
   .finance-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .control-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .control-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 640px) {
@@ -551,6 +587,8 @@ h1, h2, p { margin-top: 0; }
   .panel-toolbar > div:last-child { flex-wrap: wrap; }
   .people-overview-grid { grid-template-columns: 1fr; }
   .finance-metrics, .allocation-summary, .finance-filters { grid-template-columns: 1fr; }
+  .control-summary, .control-filters { grid-template-columns: 1fr; }
+  .risk-matrix-card > header { flex-direction: column; }
   .category-analytics-list dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 

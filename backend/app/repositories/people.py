@@ -4,6 +4,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.control import Issue, Risk
 from app.models.people import Person, ProjectMember, Stakeholder, TaskAssignee
 from app.models.project import Project
 from app.models.task import Task
@@ -130,6 +131,23 @@ class PeopleRepository:
             )
         )
         return list(result.scalars())
+
+    async def member_owns_control_records(self, project_id: UUID, member_id: UUID) -> bool:
+        risk_count = (
+            await self.session.execute(
+                select(func.count(Risk.id)).where(
+                    Risk.project_id == project_id, Risk.owner_member_id == member_id
+                )
+            )
+        ).scalar_one()
+        issue_count = (
+            await self.session.execute(
+                select(func.count(Issue.id)).where(
+                    Issue.project_id == project_id, Issue.owner_member_id == member_id
+                )
+            )
+        ).scalar_one()
+        return bool(risk_count or issue_count)
 
     async def stakeholder_count(self, project_id: UUID) -> int:
         return int(

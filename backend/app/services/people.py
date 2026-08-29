@@ -151,6 +151,12 @@ class PeopleService:
         member = await self.repository.get_member(project_id, member_id)
         if member is None:
             raise AppError(code="member_not_found", message="Member not found.", status_code=404)
+        if await self.repository.member_owns_control_records(project_id, member_id):
+            raise AppError(
+                code="member_in_use",
+                message="This member owns project control records and cannot be removed.",
+                status_code=409,
+            )
         assignments = await self.repository.list_member_assignments(project_id, member_id)
         for assignment in assignments:
             task = assignment.task
@@ -172,7 +178,15 @@ class PeopleService:
             changes={"person_id": str(member.person_id)},
         )
         await self.session.delete(member)
-        await self.session.commit()
+        try:
+            await self.session.commit()
+        except IntegrityError as exc:
+            await self.session.rollback()
+            raise AppError(
+                code="member_in_use",
+                message="This member owns project control records and cannot be removed.",
+                status_code=409,
+            ) from exc
 
     @staticmethod
     def _stakeholder_read(stakeholder: Stakeholder) -> StakeholderRead:

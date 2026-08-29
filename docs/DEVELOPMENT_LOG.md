@@ -107,3 +107,23 @@ Reason: Financial records and their audit trail must remain explainable. Cancell
 Decision: Enforce optional expense category, task, and milestone links with composite same-project foreign keys.
 
 Reason: Service ownership checks provide safe API behavior, and database constraints independently prevent cross-project financial associations.
+
+Decision: Derive risk score as probability multiplied by impact and map fixed severity bands in one backend analytics function.
+
+Reason: Probability and impact are the authoritative stored facts. Deriving score and severity prevents stale duplicated values and keeps API lists, the matrix, summaries, and future consumers consistent.
+
+Decision: Normalize risk, issue, and change-request links to tasks, milestones, risks, and issues with composite same-project foreign keys.
+
+Reason: Service validation provides clear errors while the database independently prevents cross-project associations. Optional risk and issue owners use project-member composite keys for the same protection.
+
+Decision: Require forward-only issue transitions and explicit resolution text before resolved or closed states.
+
+Reason: An issue history must remain explainable. Reopening and arbitrary state jumps are deferred until a deliberately modeled workflow and corresponding audit semantics exist.
+
+Decision: Treat change requests as governed decisions, not automation instructions.
+
+Reason: Submission, approval, rejection, implementation, and cancellation are explicit audited transitions. Approval records rationale but never silently changes tasks, dates, budgets, or resource assignments.
+
+Decision: Keep the 5×5 risk matrix as a frontend projection of backend-derived severity and stored probability/impact.
+
+Reason: The visual provides useful control context without introducing a second scoring implementation or mutable matrix state.

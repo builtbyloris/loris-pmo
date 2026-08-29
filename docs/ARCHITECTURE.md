@@ -207,6 +207,23 @@ GET  /api/v1/projects/{project_id}/expenses/{expense_id}
 PATCH /api/v1/projects/{project_id}/expenses/{expense_id}
 POST /api/v1/projects/{project_id}/expenses/{expense_id}/cancel
 GET  /api/v1/projects/{project_id}/budget/analytics
+GET  /api/v1/projects/{project_id}/risks
+POST /api/v1/projects/{project_id}/risks
+GET  /api/v1/projects/{project_id}/risks/{risk_id}
+PATCH /api/v1/projects/{project_id}/risks/{risk_id}
+POST /api/v1/projects/{project_id}/risks/{risk_id}/close
+GET  /api/v1/projects/{project_id}/issues
+POST /api/v1/projects/{project_id}/issues
+GET  /api/v1/projects/{project_id}/issues/{issue_id}
+PATCH /api/v1/projects/{project_id}/issues/{issue_id}
+POST /api/v1/projects/{project_id}/issues/{issue_id}/resolve
+POST /api/v1/projects/{project_id}/issues/{issue_id}/close
+GET  /api/v1/projects/{project_id}/changes
+POST /api/v1/projects/{project_id}/changes
+GET  /api/v1/projects/{project_id}/changes/{change_id}
+PATCH /api/v1/projects/{project_id}/changes/{change_id}
+POST /api/v1/projects/{project_id}/changes/{change_id}/{submit|approve|reject|implement|cancel}
+GET  /api/v1/projects/{project_id}/control/summary
 ```
 
 Nested objective and success-criterion routes support list, create, update, and delete operations under their owning project.
@@ -254,6 +271,8 @@ The People workspace uses Team, Stakeholders, and Workload projections. Team sup
 
 The Finance workspace uses Dashboard, Expenses, and Categories projections. The dashboard consumes backend-calculated totals and thresholds; it does not recalculate financial status in the browser. Expense filters and sorting are server-backed, while forms reuse the project's real categories, tasks, and milestones. Archived projects expose finance data read-only.
 
+The Control workspace uses Risks, Issues, and Change Requests projections. The risk register includes a 5×5 matrix driven by backend scores. Issue resolution and change approval/rejection require explicit recorded text. Forms select only the current project's members, tasks, milestones, risks, and issues; the backend and composite foreign keys independently enforce the same boundary. Approved changes never mutate tasks, dates, budgets, or resources automatically.
+
 Localization keys live in language resource files. Components do not duplicate Italian/English literals. Theme variables cover both light and dark modes, honor the device preference initially, and persist an explicit user preference locally.
 
 ## 9. AI architecture
@@ -299,6 +318,12 @@ Budget analytics use decimal arithmetic and are calculated only by the backend. 
 
 Financial status is `NORMAL` below 75% utilization, `WARNING` from 75% through 90%, and `CRITICAL` above 90%. A zero budget produces `UNAVAILABLE` rather than an invented percentage. Category analytics use the same rules, uncategorized expenses remain visible as an explicit bucket, and the monthly trend groups expenses by their stored expense date and status.
 
+### Risk formula and control workflows
+
+Risk score is the integer product of stored probability and impact, each constrained from 1 through 5. Severity is `LOW` for 1–4, `MEDIUM` for 5–9, `HIGH` for 10–16, and `CRITICAL` for 17–25. The score and severity are derived by the backend and are not duplicated as mutable database fields.
+
+Issues follow a forward-only operational workflow from open analysis and action states to resolved and closed. Resolution text is mandatory before resolution or closure. Change requests start as draft, are explicitly submitted, and may then be approved or rejected with mandatory rationale; only approved requests can be marked implemented. Cancellation is explicit. These transitions record audit events but never execute the requested change.
+
 ## 11. Testing strategy
 
 Backend tests cover:
@@ -319,6 +344,7 @@ Frontend tests cover:
 - work-planning empty/list/filter states, Kanban rendering and status persistence, milestone progress, task creation, and shared-state refresh behavior.
 - team empty/create/add/edit flows, stakeholder list/matrix rendering, workload facts/incomplete-data display, and task assignment display/update behavior.
 - finance dashboard totals and empty states, expense creation/filter behavior, and budget-category create/edit flows.
+- exact risk severity boundaries, control ownership, cross-project and member protections, issue resolution, change decisions, audit events, risk-matrix rendering, normalized relationship forms, and decision validation.
 
 CI-ready commands run backend tests, frontend tests, TypeScript compilation, and the production frontend build. Each future feature must add tests near the business logic it introduces.
 
@@ -341,7 +367,7 @@ No migration or startup hook inserts business records.
 3. Work planning (complete): tasks, one-level subtasks, dependencies, milestones, deterministic progress, project overview metrics, and shared List/Kanban/Timeline data.
 4. People (complete): reusable people, membership, roles, stakeholders, task assignees, workload analytics, and project overview signals.
 5. Finance (complete): budgets, categories, expenses, deterministic analytics, thresholds, project overview signals, and audit events.
-6. Control and memory: risks, issues, changes, meetings, decisions, logs, alerts, and automation.
+6. Control (complete): risks, deterministic scoring and matrix, issues, governed change requests, project overview signals, and audit events. Memory, meetings, alerts, and automation remain deferred.
 7. Intelligence: centralized KPIs/health, context packages, AI proposals, recommendations, and scenario isolation.
 8. Documents and delivery: retrieval, reports, validated import/export, notifications, and release hardening.
 
