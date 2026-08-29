@@ -9,6 +9,7 @@ import i18n from "./i18n/config";
 const user = { id: "d432e9f0-f798-4e36-97ac-952590b7c9a6", email: "manager@example.com", created_at: "2026-08-28T10:00:00Z" };
 const emptySummary = { total_projects: 0, active_projects: 0, on_hold_projects: 0, completed_projects: 0 };
 const emptyProjects = { items: [], total: 0 };
+const emptyIntelligence = { healthy_projects: 0, watch_projects: 0, at_risk_projects: 0, critical_projects: 0, active_critical_alerts: 0, total_overdue_tasks: 0, total_high_critical_risks: 0, projects: [] };
 
 function jsonResponse(body: object, status = 200) {
   return Promise.resolve(new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } }));
@@ -47,7 +48,8 @@ describe("application foundation", () => {
     vi.spyOn(globalThis, "fetch")
       .mockImplementationOnce(() => jsonResponse(user))
       .mockImplementationOnce(() => jsonResponse(emptySummary))
-      .mockImplementationOnce(() => jsonResponse(emptyProjects));
+      .mockImplementationOnce(() => jsonResponse(emptyProjects))
+      .mockImplementationOnce(() => jsonResponse(emptyIntelligence));
     renderApp();
     expect(await screen.findByRole("heading", { name: "Portfolio overview" })).toBeInTheDocument();
     expect(screen.getByText("You don’t have any projects yet.")).toBeInTheDocument();

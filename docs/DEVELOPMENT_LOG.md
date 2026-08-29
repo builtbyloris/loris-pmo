@@ -143,3 +143,23 @@ Reason: Meeting notes frequently contain tentative commitments. A proposed/confi
 Decision: Preserve decisions through lifecycle states instead of exposing hard deletion.
 
 Reason: Proposed, decided, reversed, and superseded states retain the rationale and historical record required for project memory. A transition to decided creates the meaningful log entry; later reversal or supersession remains visible without rewriting history.
+
+Decision: Centralize Sprint 8 facts, KPIs, health, alert reconciliation, and portfolio intelligence in one owner-scoped application service.
+
+Reason: Dashboards and future AI context must consume the same deterministic truth. Existing workload, finance, and risk primitives are reused instead of duplicated in the frontend.
+
+Decision: Weight health as Schedule 25, Budget 20, Tasks 20, Risks 15, Resources 10, and Objectives 10, excluding unavailable dimensions and redistributing their weights.
+
+Reason: The documented fixed weights remain explainable while an empty source domain cannot silently behave like either zero health or perfect health. Objective progress is available only when applicable structured success criteria exist.
+
+Decision: Persist alerts with one stable project/condition key and reactivate the same record after recurrence.
+
+Reason: Stable reconciliation prevents alert duplication and fatigue, preserves first detection, supports acknowledgement, automatically resolves cleared conditions, and makes recurrence auditable. Reappearance resets acknowledgement so a renewed condition is visible.
+
+Decision: Keep the eight V1 automation rules in an inspectable code registry and use explicit synchronous project recalculation.
+
+Reason: The rules are product behavior, not production fixtures or a generic DSL. Explicit invocation handles date-driven conditions without Redis, Celery, or a scheduler and avoids hidden service cycles. The architecture can add a background trigger later without changing rules or alert persistence.
+
+Decision: Store health history only when the score, status, dimensions, or drivers materially change.
+
+Reason: Event-shaped history explains movement without writing a duplicate snapshot on every read. Only At Risk/Critical health transitions and critical alert lifecycle events enter the Project Log; lower-level changes remain in append-only audit history.

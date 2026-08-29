@@ -1,10 +1,10 @@
 # Loris PMO
 
-Loris PMO is a personal project management and project intelligence application. The repository includes the production-shaped foundation, Projects Core, Work Planning Core, People Core, Finance Core, Control Core, and Project Memory Core: secure authentication, owner-scoped projects and reusable people, objectives, success criteria, tasks, subtasks, milestones, dependencies, project membership, stakeholders, normalized task assignees, deterministic workload, budget, and risk analytics, shared List/Kanban/Timeline views, budget categories and expenses, risk and issue registers, governed change requests, project logs, meetings, action items, decisions, read-only activity, portfolio aggregation, versioned APIs, PostgreSQL migrations, bilingual UI, themes, testing, Docker Compose, and a provider-neutral AI boundary.
+Loris PMO is a personal project management and project intelligence application. The repository includes the production-shaped foundation through Project Intelligence Core: secure authentication; owner-scoped project, planning, people, finance, control, and memory records; centralized deterministic KPIs; a weighted six-dimension Project Health Score; material health history; automatic alert lifecycle management; eight predefined automation rules; portfolio intelligence; versioned APIs; PostgreSQL migrations; bilingual UI; themes; testing; Docker Compose; and a provider-neutral AI boundary.
 
 The remaining product areas described in `PROJECT_INTELLIGENCE_SPEC.md` are intentionally delivered incrementally rather than represented with fake functionality or sample production data.
 
-## Projects, Work Planning, People, Finance, Control, and Project Memory Core
+## Project management and deterministic intelligence
 
 An authenticated user can:
 
@@ -31,9 +31,14 @@ An authenticated user can:
 - confirm, complete, or dismiss meeting actions explicitly, with optional links to existing tasks;
 - record decisions, rationale, impact, lifecycle history, and same-project links without hard deletion;
 - inspect the existing append-only technical audit stream separately from meaningful Project Log memory;
+- review centralized KPIs with explicit unavailable states instead of invented values;
+- inspect Schedule, Budget, Tasks, Risks, Resources, and Objectives health dimensions with documented weighting and deterministic drivers;
+- track meaningful health history without creating a snapshot on every read;
+- review, filter, and acknowledge persistent automatic alerts that deduplicate, reactivate, and resolve from their underlying conditions;
+- see health, overdue work, severe risks, critical issues, budget state, and active alerts across the portfolio;
 - use the application in English or Italian and in light or dark mode.
 
-Archived projects remain available through the archive filter but are read-only. Project, objective, success-criterion, task, dependency, milestone, membership, assignment, stakeholder, budget, category, expense, risk, issue, change-request, log, meeting, action-item, and decision mutations create append-only audit events. Workload uses real task assignments and stored effort without inventing hours. Finance uses the project budget plus stored expense statuses: paid is actual, pending is committed, planned is forecast-only, and cancelled is excluded. Risk severity is derived from probability × impact. Earned value and generalized project health remain unavailable until their complete source domains are implemented.
+Archived projects remain available through the archive filter but are read-only. Domain mutations and intelligence state changes create append-only audit events; only material health changes and critical alert transitions enter the human-facing Project Log. Workload uses real task assignments and stored effort without inventing hours. Finance uses the project budget plus stored expense statuses: paid is actual, pending is committed, planned is forecast-only, and cancelled is excluded. Risk severity is derived from probability × impact. Earned value remains unavailable because the required time-phased baseline does not exist.
 
 ## Quick start with Docker
 

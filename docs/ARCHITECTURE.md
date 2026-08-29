@@ -1,12 +1,12 @@
 # Loris PMO architecture
 
-Status: foundation, Projects Core, Work Planning Core, People Core, and Finance Core architecture
+Status: foundation through Project Intelligence Core
 Date: 2026-08-29
 Product authority: `PROJECT_INTELLIGENCE_SPEC.md`
 
 ## 1. Scope
 
-This document defines the technical foundation for Loris PMO plus the Projects, Work Planning, People, and Finance Core increments. The application now supplies the shell, authentication, owned project records, objectives, success criteria, tasks, subtasks, task dependencies, milestones, reusable people, project membership, structured stakeholders, normalized task assignees, deterministic workload metrics, project budgets, budget categories, expenses, deterministic budget analytics, shared work-plan, people, and finance views, real portfolio counts, persistence and migration infrastructure, API conventions, testing, Docker-based local development, and replaceable AI boundaries. Remaining product areas are introduced incrementally.
+This document defines the technical foundation through Project Intelligence Core. In addition to the complete operational domains, the application now supplies centralized project KPIs, six deterministic health dimensions, weighted health aggregation with missing-data redistribution, material health snapshots, persistent automatic alerts, eight code-defined automation rules, portfolio intelligence, project attention signals, and bilingual intelligence views. Remaining product areas are introduced incrementally.
 
 The application starts empty. No production project, task, financial, risk, or other business fixture is created.
 
@@ -124,7 +124,7 @@ The foundation migration creates `users`, including:
 - password hash, active flag, and timestamps;
 - an index supporting login lookup.
 
-Projects Core adds `projects`, `objectives`, `success_criteria`, and `audit_events`. Work Planning adds `tasks`, `milestones`, and `task_dependencies`. People Core adds `people`, `project_members`, `stakeholders`, and `task_assignees`. Finance Core adds `budget_categories` and `expenses` while retaining `projects.planned_budget` as the single authoritative project budget. They use UUID primary keys, explicit foreign keys, UTC-aware timestamps, constraints, and indexes for owner, archive, status, dates, and relationship access patterns. Composite foreign keys ensure parent tasks, milestones, dependency endpoints, task assignees, expense categories, and optional expense task or milestone links remain in the same project. `projects.owner_user_id` and `people.owner_user_id` make ownership explicit even during the personal phase. Domain mutations and their audit events commit in one transaction.
+Projects Core adds `projects`, `objectives`, `success_criteria`, and `audit_events`. Later cores add planning, people, finance, control, and memory records. Project Intelligence adds `alerts` and `health_snapshots`. Alerts have a project-scoped stable condition key, severity, lifecycle timestamps, translation keys, evidence, and an optional polymorphic related-entity reference. Health snapshots persist only a first or materially changed score, status, dimension, or driver set. All records use UUID primary keys, explicit foreign keys, UTC-aware timestamps, constraints, and indexes. Composite foreign keys protect same-project operational relationships, while system-created alert relationships are validated from owned facts and cannot be client-created. Domain mutations and their audit events commit in one transaction.
 
 People are owner-scoped reusable records and are deliberately separate from authentication users. A project member relates a person to a project and stores the stable role, responsibilities, and availability percentage. Removing a membership never deletes the person. Tasks support multiple assignees through `task_assignees`; each assignee references a project member, and composite constraints prevent cross-project assignment even if application validation is bypassed. `audit_events.project_id` is nullable only for owner-level events such as person creation; project-domain events remain project-scoped.
 
@@ -224,6 +224,13 @@ GET  /api/v1/projects/{project_id}/changes/{change_id}
 PATCH /api/v1/projects/{project_id}/changes/{change_id}
 POST /api/v1/projects/{project_id}/changes/{change_id}/{submit|approve|reject|implement|cancel}
 GET  /api/v1/projects/{project_id}/control/summary
+GET  /api/v1/projects/{project_id}/kpis
+GET  /api/v1/projects/{project_id}/health
+GET  /api/v1/projects/{project_id}/alerts
+GET  /api/v1/projects/{project_id}/intelligence
+POST /api/v1/projects/{project_id}/intelligence/recalculate
+POST /api/v1/projects/{project_id}/alerts/{alert_id}/{acknowledge|read}
+GET  /api/v1/portfolio/intelligence
 ```
 
 Nested objective and success-criterion routes support list, create, update, and delete operations under their owning project.
@@ -273,6 +280,8 @@ The Finance workspace uses Dashboard, Expenses, and Categories projections. The 
 
 The Control workspace uses Risks, Issues, and Change Requests projections. The risk register includes a 5×5 matrix driven by backend scores. Issue resolution and change approval/rejection require explicit recorded text. Forms select only the current project's members, tasks, milestones, risks, and issues; the backend and composite foreign keys independently enforce the same boundary. Approved changes never mutate tasks, dates, budgets, or resources automatically.
 
+Project Overview performs an explicit intelligence recalculation, then renders the backend-owned health score, dimension availability, deterministic drivers, KPIs, Attention Required, alert filters, and acknowledgement action. The Portfolio renders current health and control facts for every owned active project. The browser never reimplements a KPI, health, workload, budget, or risk formula.
+
 Localization keys live in language resource files. Components do not duplicate Italian/English literals. Theme variables cover both light and dark modes, honor the device preference initially, and persist an explicit user preference locally.
 
 ## 9. AI architecture
@@ -305,6 +314,16 @@ Notification request -> preferences/policy -> channel adapter
 ```
 
 Only package boundaries are created now. Queueing, Redis, schedulers, and email providers are deferred until a feature requires them.
+
+### Project intelligence and automation
+
+The intelligence service gathers owner-scoped operational facts once per project invocation. It returns a consistent KPI structure with `available` and `reason` fields. Objective progress is calculated only from applicable structured success criteria; schedule, budget, task, resource, and objective dimensions remain unavailable when their prerequisite data is absent.
+
+Health weights are Schedule 25%, Budget 20%, Tasks 20%, Risks 15%, Resources 10%, and Objectives 10%. Scores use documented penalties over stored facts. Unavailable dimensions are excluded and their weights are redistributed proportionally. Thresholds are Healthy 85–100, Watch 70–84, At Risk 50–69, and Critical 0–49. Structured drivers preserve the evidence behind movement.
+
+Eight code-defined V1 rules cover overdue/blocked tasks, milestone deadlines, budget thresholds and forecast, severe risks, critical/aged issues, workload overload, project deadlines, and health thresholds. Code-defined rules avoid production seed data while exposing trigger, condition, action, and enabled metadata through the intelligence response. Explicit synchronous recalculation reconciles all conditions in one project: a stable `(project, condition key)` updates instead of duplicating, resolved conditions close automatically, and reappearance reactivates the same record while resetting acknowledgement. Clients cannot create or manually resolve system alerts.
+
+Recalculation records a snapshot only when the score, status, dimensions, or drivers materially change. Audit records are emitted for state-changing automation executions, acknowledgement, health status movement, alert generation/reactivation/escalation, and resolution. Only At Risk/Critical health transitions and critical alert generation/resolution enter Project Log.
 
 ### Workload formula
 
@@ -354,6 +373,7 @@ Frontend tests cover:
 - finance dashboard totals and empty states, expense creation/filter behavior, and budget-category create/edit flows.
 - exact risk severity boundaries, control ownership, cross-project and member protections, issue resolution, change decisions, audit events, risk-matrix rendering, normalized relationship forms, and decision validation.
 - project-log chronology and links, meeting/action review states, decision history, meaningful automatic memory events, activity projection, overview signals, cross-project protection, and EN/IT memory navigation.
+- KPI availability and formulas, every health dimension and threshold, weight redistribution, deterministic drivers, alert generation/deduplication/acknowledgement/resolution/reappearance, all predefined rule families, ownership isolation, portfolio aggregation, and bilingual intelligence rendering.
 
 CI-ready commands run backend tests, frontend tests, TypeScript compilation, and the production frontend build. Each future feature must add tests near the business logic it introduces.
 
@@ -378,8 +398,9 @@ No migration or startup hook inserts business records.
 5. Finance (complete): budgets, categories, expenses, deterministic analytics, thresholds, project overview signals, and audit events.
 6. Control (complete): risks, deterministic scoring and matrix, issues, governed change requests, project overview signals, and audit events.
 7. Project memory (complete): project log, meetings, reviewable action items, decisions, read-only activity, meaningful automatic entries, overview signals, and bilingual UI. Alerts and automation remain deferred.
-8. Intelligence: centralized KPIs/health, context packages, AI proposals, recommendations, and scenario isolation.
-9. Documents and delivery: retrieval, reports, validated import/export, notifications, and release hardening.
+8. Intelligence (complete): centralized KPIs, health and history, automatic alerts, predefined automation, overview/portfolio signals, audit/log integration, and bilingual UI.
+9. AI foundation: context packages, provider execution safeguards, proposals, recommendations, and scenario isolation.
+10. Documents and delivery: retrieval, reports, validated import/export, notifications, and release hardening.
 
 Each phase adds schema via migrations, implements use cases behind services, exposes typed APIs, and completes UI/empty/error states with tests.
 

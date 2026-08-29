@@ -19,6 +19,7 @@ from app.models.control import (
     RiskTaskLink,
 )
 from app.models.finance import BudgetCategory, Expense, ExpenseStatus
+from app.models.intelligence import Alert, AlertSeverity, AlertStatus, HealthSnapshot, HealthStatus
 from app.models.memory import (
     ActionItemStatus,
     Decision,
@@ -52,6 +53,9 @@ from app.models.user import User
 
 __all__ = [
     "AuditEvent",
+    "Alert",
+    "AlertSeverity",
+    "AlertStatus",
     "ActionItemStatus",
     "Base",
     "BudgetCategory",
@@ -69,6 +73,8 @@ __all__ = [
     "Expense",
     "ExpenseStatus",
     "ImpactLevel",
+    "HealthSnapshot",
+    "HealthStatus",
     "Issue",
     "IssueMilestoneLink",
     "IssueStatus",
