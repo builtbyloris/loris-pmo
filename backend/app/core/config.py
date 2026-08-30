@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     access_token_minutes: int = Field(default=30, ge=5, le=1440)
     frontend_url: str = "http://localhost:5173"
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-3.6-flash"
     ai_provider: Literal["gemini"] = "gemini"
     ai_timeout_seconds: float = Field(default=20.0, ge=1.0, le=120.0)
     ai_max_output_tokens: int = Field(default=1200, ge=128, le=8192)

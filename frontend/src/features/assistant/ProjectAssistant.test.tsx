@@ -25,7 +25,7 @@ const project = {
 const status = {
   available: true,
   provider: "gemini",
-  model: "gemini-2.5-flash",
+  model: "gemini-3.6-flash",
   reason: null,
 };
 
@@ -44,7 +44,7 @@ const answer = {
   missing_information: ["No milestone is linked."],
   suggested_followups: ["Why is it overdue?"],
   provider: "gemini",
-  model: "gemini-2.5-flash",
+  model: "gemini-3.6-flash",
   usage: { input_tokens: 100, output_tokens: 30, total_tokens: 130 },
   context_sections: ["project", "intelligence", "work"],
 };
@@ -126,7 +126,7 @@ describe("Project Assistant", () => {
         response({
           available: false,
           provider: "gemini",
-          model: "gemini-2.5-flash",
+          model: "gemini-3.6-flash",
           reason: "not_configured",
         }),
       );

@@ -49,7 +49,7 @@ Set the backend-only key in `.env` to enable real execution:
 
 ```bash
 GEMINI_API_KEY=your-local-key
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.6-flash
 ```
 
 Optional conservative generation settings are `AI_TIMEOUT_SECONDS`, `AI_MAX_OUTPUT_TOKENS`, and `AI_TEMPERATURE`. The key is never returned to or configured by the frontend. If no key is present, the application and readiness checks remain healthy and the assistant shows a clear unavailable state.

@@ -15,11 +15,13 @@ from app.ai.errors import (
     AIProviderAuthenticationError,
     AIProviderRateLimitError,
     AIProviderTimeoutError,
+    AIProviderUnavailableError,
 )
 from app.ai.gemini import GeminiProvider
 from app.ai.provider import AIRequest, AIResponse, AIUsage, UnavailableAIProvider
 from app.ai.service import AIService
 from app.auth.passwords import hash_password
+from app.core.config import Settings
 from app.models.audit import AuditEvent
 from app.models.control import Risk
 from app.models.memory import MemorySource, ProjectLogEntry, ProjectLogType
@@ -98,12 +100,26 @@ def provider() -> GeminiProvider:
     )
 
 
+def test_gemini_model_default_and_environment_override() -> None:
+    default = Settings(secret_key="x" * 32, _env_file=None)
+    overridden = Settings(
+        secret_key="x" * 32,
+        gemini_model="gemini-custom",
+        _env_file=None,
+    )
+    assert default.gemini_model == "gemini-3.6-flash"
+    assert overridden.gemini_model == "gemini-custom"
+
+
 def request() -> AIRequest:
     return AIRequest(
         system_instruction="System",
         user_message="Question",
         history=(("user", "Earlier question"), ("assistant", "Earlier answer")),
-        response_schema={"type": "object"},
+        response_schema={
+            "type": "object",
+            "properties": {"answer": {"type": "string", "minLength": 1, "maxLength": 12000}},
+        },
     )
 
 
@@ -125,11 +141,27 @@ async def test_gemini_provider_success_and_usage(monkeypatch) -> None:
             return httpx.Response(
                 200,
                 json={
-                    "candidates": [{"content": {"parts": [{"text": '{"answer":"ok"}'}]}}],
-                    "usageMetadata": {
-                        "promptTokenCount": 9,
-                        "candidatesTokenCount": 3,
-                        "totalTokenCount": 12,
+                    "id": "interaction-test",
+                    "model": "gemini-test-resolved",
+                    "status": "completed",
+                    "steps": [
+                        {
+                            "type": "thought",
+                            "summary": [
+                                {"type": "text", "text": "private reasoning must be ignored"}
+                            ],
+                        },
+                        {
+                            "type": "model_output",
+                            "status": "done",
+                            "content": [{"type": "text", "text": '{"answer":"ok"}'}],
+                        },
+                    ],
+                    "usage": {
+                        "total_input_tokens": 9,
+                        "total_output_tokens": 3,
+                        "total_thought_tokens": 7,
+                        "total_tokens": 19,
                     },
                 },
             )
@@ -137,15 +169,43 @@ async def test_gemini_provider_success_and_usage(monkeypatch) -> None:
     monkeypatch.setattr(httpx, "AsyncClient", Client)
     result = await provider().generate(request())
     assert result.text == '{"answer":"ok"}'
-    assert result.usage.total_tokens == 12
-    assert captured["headers"] == {"x-goog-api-key": "test-key"}
+    assert "private reasoning" not in result.text
+    assert result.model == "gemini-test-resolved"
+    assert result.usage == AIUsage(input_tokens=9, output_tokens=3, total_tokens=19)
+    assert captured["timeout"] == 2
+    assert captured["headers"] == {
+        "x-goog-api-key": "test-key",
+        "Api-Revision": "2026-05-20",
+    }
+    assert captured["url"].endswith("/v1beta/interactions")
     assert "test-key" not in captured["url"]
-    assert captured["body"]["generationConfig"]["responseMimeType"] == "application/json"
-    assert [item["role"] for item in captured["body"]["contents"]] == [
-        "user",
-        "model",
-        "user",
+    body = captured["body"]
+    assert body["model"] == "gemini-test"
+    assert body["system_instruction"] == "System"
+    assert body["generation_config"] == {"max_output_tokens": 500}
+    assert body["response_format"]["mime_type"] == "application/json"
+    assert "minLength" not in json.dumps(body["response_format"]["schema"])
+    assert "maxLength" not in json.dumps(body["response_format"]["schema"])
+    assert body["store"] is False
+    assert "stream" not in body
+    assert "background" not in body
+    assert "tools" not in body
+    assert "temperature" not in json.dumps(body)
+    assert [item["type"] for item in body["input"]] == [
+        "user_input",
+        "model_output",
+        "user_input",
     ]
+
+    no_history_request = request()
+    no_history_request = AIRequest(
+        system_instruction=no_history_request.system_instruction,
+        user_message=no_history_request.user_message,
+        history=(),
+        response_schema=no_history_request.response_schema,
+    )
+    await provider().generate(no_history_request)
+    assert captured["body"]["input"] == "Question"
 
 
 @pytest.mark.parametrize(
@@ -154,6 +214,7 @@ async def test_gemini_provider_success_and_usage(monkeypatch) -> None:
         (401, AIProviderAuthenticationError),
         (403, AIProviderAuthenticationError),
         (429, AIProviderRateLimitError),
+        (500, AIProviderUnavailableError),
     ],
 )
 async def test_gemini_provider_maps_http_failures(monkeypatch, status, expected) -> None:
@@ -195,9 +256,17 @@ async def test_gemini_provider_timeout_and_malformed_response(monkeypatch) -> No
 
     class MalformedClient(TimeoutClient):
         async def post(self, *args, **kwargs):
-            return httpx.Response(200, json={"candidates": []})
+            return httpx.Response(200, json={"status": "completed", "steps": []})
 
     monkeypatch.setattr(httpx, "AsyncClient", MalformedClient)
+    with pytest.raises(AIInvalidResponseError):
+        await provider().generate(request())
+
+    class IncompleteClient(TimeoutClient):
+        async def post(self, *args, **kwargs):
+            return httpx.Response(200, json={"status": "incomplete", "steps": []})
+
+    monkeypatch.setattr(httpx, "AsyncClient", IncompleteClient)
     with pytest.raises(AIInvalidResponseError):
         await provider().generate(request())
 
