@@ -1,3 +1,11 @@
+from app.models.ai import (
+    AIAnalysisState,
+    AIInsight,
+    AIInsightSeverity,
+    AIInsightStatus,
+    AIRecommendation,
+    AIRecommendationStatus,
+)
 from app.models.audit import AuditEvent
 from app.models.base import Base
 from app.models.control import (
@@ -52,6 +60,12 @@ from app.models.task_dependency import DependencyType, TaskDependency
 from app.models.user import User
 
 __all__ = [
+    "AIAnalysisState",
+    "AIInsight",
+    "AIInsightSeverity",
+    "AIInsightStatus",
+    "AIRecommendation",
+    "AIRecommendationStatus",
     "AuditEvent",
     "Alert",
     "AlertSeverity",

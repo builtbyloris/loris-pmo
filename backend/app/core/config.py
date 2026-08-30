@@ -15,8 +15,8 @@ class Settings(BaseSettings):
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-3.6-flash"
     ai_provider: Literal["gemini"] = "gemini"
-    ai_timeout_seconds: float = Field(default=20.0, ge=1.0, le=120.0)
-    ai_max_output_tokens: int = Field(default=1200, ge=128, le=8192)
+    ai_timeout_seconds: float = Field(default=30.0, ge=1.0, le=120.0)
+    ai_max_output_tokens: int = Field(default=4096, ge=128, le=8192)
     ai_temperature: float = Field(default=0.2, ge=0.0, le=1.0)
     log_level: str = "INFO"
 

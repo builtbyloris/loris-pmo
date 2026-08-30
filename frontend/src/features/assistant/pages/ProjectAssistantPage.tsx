@@ -7,6 +7,8 @@ import {
   Send,
   Sparkles,
   UserRound,
+  Lightbulb,
+  ListChecks,
 } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -16,6 +18,7 @@ import { ApiError } from "../../../services/api";
 import { projectsApi } from "../../projects/api/projectsApi";
 import type { Project } from "../../projects/types";
 import { assistantApi } from "../api/assistantApi";
+import { AIAnalysisWorkspace } from "../components/AIAnalysisWorkspace";
 import type { AIHistoryMessage, AIStatus, ConversationEntry } from "../types";
 
 const STARTER_KEYS = [
@@ -35,6 +38,7 @@ export function ProjectAssistantPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectId, setProjectId] = useState(routeProjectId ?? "");
   const [status, setStatus] = useState<AIStatus | null>(null);
+  const [view, setView] = useState<"assistant" | "insights" | "recommendations">("assistant");
   const [entries, setEntries] = useState<ConversationEntry[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
@@ -202,7 +206,14 @@ export function ProjectAssistantPage() {
             )}
           </section>
 
-          {status?.available === false ? (
+          <nav className="assistant-view-tabs" aria-label={t("aiAnalysis.views.label")}>
+            <button type="button" className={view === "assistant" ? "active" : ""} onClick={() => setView("assistant")}><Bot size={15} />{t("aiAnalysis.views.assistant")}</button>
+            <button type="button" className={view === "insights" ? "active" : ""} onClick={() => setView("insights")}><Lightbulb size={15} />{t("aiAnalysis.views.insights")}</button>
+            <button type="button" className={view === "recommendations" ? "active" : ""} onClick={() => setView("recommendations")}><ListChecks size={15} />{t("aiAnalysis.views.recommendations")}</button>
+          </nav>
+
+          {view === "assistant" ? (
+            status?.available === false ? (
             <section className="assistant-unavailable" role="status">
               <AlertCircle size={24} />
               <div>
@@ -283,6 +294,15 @@ export function ProjectAssistantPage() {
                 <small className="assistant-disclaimer">{t("assistant.disclaimer")}</small>
               </section>
             </div>
+            )
+          ) : (
+            <AIAnalysisWorkspace
+              key={`${projectId}-${view}`}
+              projectId={projectId}
+              view={view}
+              providerAvailable={status?.available === true}
+              readOnly={Boolean(selectedProject?.archived_at)}
+            />
           )}
         </>
       )}

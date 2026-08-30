@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analytics.control import risk_score, risk_severity
 from app.core.errors import AppError
+from app.models.ai import AIInsight, AIInsightStatus, AIRecommendation, AIRecommendationStatus
 from app.models.control import ChangeStatus, IssueStatus, RiskStatus
 from app.models.memory import ActionItemStatus, Meeting
 from app.models.task import TaskPriority, TaskStatus
@@ -102,12 +103,18 @@ TOPIC_KEYWORDS = {
         "changed",
         "recently",
         "meeting",
+        "meetings",
+        "action",
+        "actions",
         "decision",
         "history",
         "log",
         "cambiato",
         "recente",
         "riunione",
+        "riunioni",
+        "azione",
+        "azioni",
         "decisione",
         "storico",
     },
@@ -372,6 +379,9 @@ class ProjectContextBuilder:
                     for item in intelligence.health.drivers
                     if DRIVER_TOPICS[item.key] in topics
                 ],
+                "history": [
+                    item.model_dump(mode="json") for item in intelligence.health.history[:5]
+                ],
             },
             "kpis": kpis,
             "active_alerts": alerts,
@@ -620,6 +630,67 @@ class ProjectContextBuilder:
                 add_evidence,
             )
 
+        ai_insights = list(
+            (
+                await self.session.execute(
+                    select(AIInsight)
+                    .where(
+                        AIInsight.project_id == project_id,
+                        AIInsight.status == AIInsightStatus.ACTIVE,
+                    )
+                    .order_by(AIInsight.generated_at.desc())
+                    .limit(5)
+                )
+            ).scalars()
+        )
+        ai_recommendations = list(
+            (
+                await self.session.execute(
+                    select(AIRecommendation)
+                    .where(
+                        AIRecommendation.project_id == project_id,
+                        AIRecommendation.status == AIRecommendationStatus.PENDING,
+                    )
+                    .order_by(AIRecommendation.generated_at.desc())
+                    .limit(5)
+                )
+            ).scalars()
+        )
+        if ai_insights or ai_recommendations:
+            sections["ai_records"] = {
+                "insights": [
+                    {
+                        "evidence_ref": add_evidence(
+                            f"ai_insight:{item.id}",
+                            AIEvidenceType.AI_INSIGHT,
+                            item.title,
+                            f"{item.severity.value} · {item.status.value}",
+                            item.id,
+                        ),
+                        "title": item.title,
+                        "summary": _text(item.summary),
+                        "status": item.status.value,
+                    }
+                    for item in ai_insights
+                ],
+                "recommendations": [
+                    {
+                        "evidence_ref": add_evidence(
+                            f"ai_recommendation:{item.id}",
+                            AIEvidenceType.AI_RECOMMENDATION,
+                            item.title,
+                            f"{item.status.value} · confidence {item.confidence}",
+                            item.id,
+                        ),
+                        "title": item.title,
+                        "recommendation": _text(item.recommendation),
+                        "reasoning_summary": _text(item.reasoning_summary),
+                        "status": item.status.value,
+                    }
+                    for item in ai_recommendations
+                ],
+            }
+
         return ProjectContext(sections=sections, evidence=evidence, topics=topics)
 
     @staticmethod
@@ -685,6 +756,13 @@ class ProjectContextBuilder:
             "recent_meetings": meeting_items,
             "pending_action_items": [
                 {
+                    "evidence_ref": add_evidence(
+                        f"meeting_action:{item.id}",
+                        AIEvidenceType.MEETING_ACTION,
+                        _text(item.description, 160) or "Meeting action",
+                        f"{item.status.value} · due {item.due_date}",
+                        item.id,
+                    ),
                     "description": _text(item.description),
                     "status": item.status.value,
                     "due_date": item.due_date,

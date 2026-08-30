@@ -193,3 +193,38 @@ Reason: The provider receives no database session or tools, the API exposes only
 Decision: Treat project text as untrusted data through prompt separation and architectural capability limits.
 
 Reason: Central system instructions label project content as data, but security does not depend on the prompt alone. Owner-scoped retrieval, no tools, no database access, bounded context, validated evidence, input limits, and React text rendering remain effective even if a stored task or log contains prompt-injection text.
+
+
+## 2026-08-30 — Sprint 10
+
+Decision: Build proactive analysis as a new application use case over the existing `AIProvider` protocol and `ProjectContextBuilder`, not as a parallel AI stack.
+
+Reason: Deterministic intelligence remains factual truth, while the verified Gemini Interactions adapter is reused only for bounded interpretation. The model receives no session, tools, credentials, or operational mutation capability.
+
+Decision: Select candidates deterministically from active alert conditions and unresolved meeting actions before calling Gemini.
+
+Reason: Candidate selection is explainable, bounded, owner-scoped, and already covers schedule, milestones, budget, risks, issues, workload, health, and action-item pressure. Gemini never scans the full database blindly.
+
+Decision: Store backend-resolved evidence snapshots and reject an entire output item if any supplied reference is unknown or belongs outside its candidate.
+
+Reason: Persisted presentation remains stable and independently verifiable without storing raw provider payloads or trusting model-authored labels, identifiers, or facts.
+
+Decision: Use a 0.0–1.0 confidence value with Pydantic and database bounds.
+
+Reason: The value communicates the model's evidence-based judgment without presenting mathematical certainty. The UI explains that boundary.
+
+Decision: Suppress unchanged analysis with a deterministic candidate-set fingerprint and reuse stable per-signal insight/recommendation fingerprints.
+
+Reason: Explicit user invocation remains the only trigger, while unchanged state avoids unnecessary cost. Cleared signals resolve active insights and expire pending recommendations; dismissed and reviewed records preserve human history.
+
+Decision: Treat recommendation acceptance as agreement only.
+
+Reason: Accept/reject/ignore are explicit forward-only human decisions. Acceptance creates audit and concise Project Log history but no task, milestone, date, budget, assignment, alert, risk, issue, or change-request mutation.
+
+Decision: Set the bounded Gemini model output budget to 4096 tokens for Sprint 10 structured analysis.
+
+Reason: A live 1200-token interaction returned `incomplete` while already containing partial model output. The analysis contract permits up to five insights and five recommendations with evidence, confidence, impact, and alternatives. The current model-based Interactions request therefore uses the documented `generation_config.max_output_tokens` field; `max_total_tokens` applies to agent runs. The 4096-token default remains below the existing 8192-token safety ceiling, preserves environment override support, and does not permit partial responses, retries, tools, or operational mutations.
+
+Decision: Use a 30-second production Gemini provider timeout for bounded Sprint 10 analysis.
+
+Reason: With the 4096-token output cap, the final controlled interaction completed in 11.302 seconds and used 465 output tokens plus 875 thought tokens, while an earlier equivalent validation exceeded the previous 20-second cutoff. Thirty seconds provides a measured latency margin without retaining the temporary 60-second diagnostic timeout or adding retries.

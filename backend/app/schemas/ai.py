@@ -1,8 +1,11 @@
+from datetime import datetime
 from enum import StrEnum
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.models.ai import AIInsightSeverity, AIInsightStatus, AIRecommendationStatus
 
 
 class AIMessageRole(StrEnum):
@@ -25,6 +28,9 @@ class AIEvidenceType(StrEnum):
     MEETING = "meeting"
     DECISION = "decision"
     PROJECT_LOG = "project_log"
+    MEETING_ACTION = "meeting_action"
+    AI_INSIGHT = "ai_insight"
+    AI_RECOMMENDATION = "ai_recommendation"
 
 
 class AIHistoryMessage(BaseModel):
@@ -87,3 +93,103 @@ class AIStatusRead(BaseModel):
     provider: str
     model: str
     reason: str | None = None
+
+
+class AIInsightOutput(BaseModel):
+    signal_key: str = Field(min_length=1, max_length=220)
+    type: str = Field(min_length=1, max_length=80)
+    severity: AIInsightSeverity
+    title: str = Field(min_length=1, max_length=240)
+    summary: str = Field(min_length=1, max_length=1200)
+    explanation: str = Field(min_length=1, max_length=4000)
+    evidence_refs: list[str] = Field(min_length=1, max_length=10)
+    confidence: float = Field(ge=0, le=1)
+
+
+class AIRecommendationOutput(BaseModel):
+    signal_key: str = Field(min_length=1, max_length=220)
+    title: str = Field(min_length=1, max_length=240)
+    recommendation: str = Field(min_length=1, max_length=2400)
+    reasoning_summary: str = Field(min_length=1, max_length=2400)
+    expected_impact: str | None = Field(default=None, max_length=1600)
+    alternatives: list[str] = Field(default_factory=list, max_length=3)
+    evidence_refs: list[str] = Field(min_length=1, max_length=10)
+    confidence: float = Field(ge=0, le=1)
+
+
+class AIAnalysisModelOutput(BaseModel):
+    insights: list[AIInsightOutput] = Field(default_factory=list, max_length=5)
+    recommendations: list[AIRecommendationOutput] = Field(default_factory=list, max_length=5)
+
+
+class AIAnalyzeRequest(BaseModel):
+    force: bool = False
+    language: Literal["en", "it"] = "en"
+
+
+class AIInsightRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    project_id: UUID
+    type: str
+    severity: AIInsightSeverity
+    title: str
+    summary: str
+    explanation: str
+    evidence: list[AIEvidenceRead]
+    confidence: float
+    status: AIInsightStatus
+    generated_at: datetime
+    updated_at: datetime
+
+
+class AIRecommendationRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    project_id: UUID
+    insight_id: UUID | None
+    title: str
+    recommendation: str
+    reasoning_summary: str
+    expected_impact: str | None
+    alternatives: list[str]
+    evidence: list[AIEvidenceRead]
+    confidence: float
+    status: AIRecommendationStatus
+    generated_at: datetime
+    reviewed_at: datetime | None
+    decision_reason: str | None
+    updated_at: datetime
+
+
+class AIAnalysisSummary(BaseModel):
+    project_id: UUID
+    active_insights: int
+    critical_insights: int
+    pending_recommendations: int
+    last_analyzed_at: datetime | None
+    provider: str | None = None
+    model: str | None = None
+    usage: AIUsageRead | None = None
+
+
+class AIAnalyzeResponse(BaseModel):
+    insights: list[AIInsightRead]
+    recommendations: list[AIRecommendationRead]
+    summary: AIAnalysisSummary
+    generated: bool
+    unchanged: bool
+
+
+class AIRecommendationDecision(BaseModel):
+    reason: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("reason")
+    @classmethod
+    def strip_reason(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        return stripped or None

@@ -1,12 +1,12 @@
 # Loris PMO architecture
 
-Status: foundation through Project Assistant
+Status: foundation through AI Insights and Recommendations
 Date: 2026-08-30
 Product authority: `PROJECT_INTELLIGENCE_SPEC.md`
 
 ## 1. Scope
 
-This document defines the technical foundation through the Project Assistant. In addition to complete operational and deterministic intelligence domains, the application now supplies provider-neutral AI execution, a bounded deterministic project-context builder, structured evidence-grounded project Q&A, usage metadata, safe unavailable behavior, and bilingual assistant views. Proactive AI, recommendations, scenarios, meetings, documents, and knowledge retrieval remain deferred.
+This document defines the technical foundation through AI Insights and Recommendations. In addition to complete operational and deterministic intelligence domains and the Project Assistant, the application supplies explicit proactive analysis, persistent evidence-backed insights and recommendations, controlled freshness, human review history, and bilingual Copilot views. Briefings, scenarios, meeting AI, documents, reports, autonomous execution, and knowledge retrieval remain deferred.
 
 The application starts empty. No production project, task, financial, risk, or other business fixture is created.
 
@@ -124,7 +124,7 @@ The foundation migration creates `users`, including:
 - password hash, active flag, and timestamps;
 - an index supporting login lookup.
 
-Projects Core adds `projects`, `objectives`, `success_criteria`, and `audit_events`. Later cores add planning, people, finance, control, and memory records. Project Intelligence adds `alerts` and `health_snapshots`. Alerts have a project-scoped stable condition key, severity, lifecycle timestamps, translation keys, evidence, and an optional polymorphic related-entity reference. Health snapshots persist only a first or materially changed score, status, dimension, or driver set. All records use UUID primary keys, explicit foreign keys, UTC-aware timestamps, constraints, and indexes. Composite foreign keys protect same-project operational relationships, while system-created alert relationships are validated from owned facts and cannot be client-created. Domain mutations and their audit events commit in one transaction.
+Projects Core adds `projects`, `objectives`, `success_criteria`, and `audit_events`. Later cores add planning, people, finance, control, and memory records. Project Intelligence adds `alerts` and `health_snapshots`. Sprint 10 adds `ai_insights`, `ai_recommendations`, and one `ai_analysis_states` row per analyzed project. AI records store only backend-validated evidence snapshots and bounded structured fields, never raw provider payloads. Confidence uses 0.0–1.0 with database constraints. Alerts have a project-scoped stable condition key, severity, lifecycle timestamps, translation keys, evidence, and an optional polymorphic related-entity reference. Health snapshots persist only a first or materially changed score, status, dimension, or driver set. All records use UUID primary keys, explicit foreign keys, UTC-aware timestamps, constraints, and indexes. Composite foreign keys protect same-project operational relationships, while system-created alert relationships are validated from owned facts and cannot be client-created. Domain mutations and their audit events commit in one transaction.
 
 People are owner-scoped reusable records and are deliberately separate from authentication users. A project member relates a person to a project and stores the stable role, responsibilities, and availability percentage. Removing a membership never deletes the person. Tasks support multiple assignees through `task_assignees`; each assignee references a project member, and composite constraints prevent cross-project assignment even if application validation is bypassed. `audit_events.project_id` is nullable only for owner-level events such as person creation; project-domain events remain project-scoped.
 
@@ -233,6 +233,13 @@ POST /api/v1/projects/{project_id}/alerts/{alert_id}/{acknowledge|read}
 GET  /api/v1/portfolio/intelligence
 GET  /api/v1/projects/{project_id}/ai/status
 POST /api/v1/projects/{project_id}/ai/chat
+GET  /api/v1/projects/{project_id}/ai/analysis
+POST /api/v1/projects/{project_id}/ai/analyze
+GET  /api/v1/projects/{project_id}/ai/insights
+POST /api/v1/projects/{project_id}/ai/insights/{insight_id}/dismiss
+GET  /api/v1/projects/{project_id}/ai/recommendations
+GET  /api/v1/projects/{project_id}/ai/recommendations/{recommendation_id}
+POST /api/v1/projects/{project_id}/ai/recommendations/{recommendation_id}/{accept|reject|ignore}
 ```
 
 Nested objective and success-criterion routes support list, create, update, and delete operations under their owning project.
@@ -284,7 +291,7 @@ The Control workspace uses Risks, Issues, and Change Requests projections. The r
 
 Project Overview performs an explicit intelligence recalculation, then renders the backend-owned health score, dimension availability, deterministic drivers, KPIs, Attention Required, alert filters, and acknowledgement action. The Portfolio renders current health and control facts for every owned active project. The browser never reimplements a KPI, health, workload, budget, or risk formula.
 
-AI Copilot and the contextual project route render the same Project Assistant. The browser keeps only the current in-memory conversation and sends at most six recent messages. Responses render as text through React, never as untrusted HTML, and present backend-validated evidence, missing information, assumptions, and follow-up questions separately. A missing provider key produces an explicit unavailable state without affecting the project workspace.
+AI Copilot and the contextual project route render the same Project Assistant. The browser keeps only the current in-memory conversation and sends at most six recent messages. Responses render as text through React, never as untrusted HTML, and present backend-validated evidence, missing information, assumptions, and follow-up questions separately. A missing provider key produces an explicit unavailable state without affecting the project workspace. The Copilot adds Insights and Recommendations views that load persisted records without generating provider traffic. Only the explicit Analyze Project action can request generation. The Project Overview loads a count/freshness summary and never triggers AI.
 
 Localization keys live in language resource files. Components do not duplicate Italian/English literals. Theme variables cover both light and dark modes, honor the device preference initially, and persist an explicit user preference locally.
 
@@ -311,7 +318,19 @@ The centralized system instruction, context JSON, and current question are expli
 
 V1 conversation continuity is stateless: at most six recent user/assistant messages return from the browser and no prompt or answer is persisted. Audit records contain only provider, model, success/failure, latency, high-level deterministic request topics, selected context sections, safe error code, and token counts when the provider supplies them. AI questions do not enter Project Log.
 
-The Project Assistant is read-only. It has no endpoints for tasks, budgets, assignments, dates, alerts, risks, issues, or change decisions. Future AI output that could affect operational data must use a separate persisted proposal and explicit confirmation flow; that flow is not part of this sprint.
+The Project Assistant is read-only. Persisted active insights and pending recommendations are included as bounded evidence in later Assistant context, but chat cannot review or mutate them.
+
+Proactive analysis follows a separate use case over the same provider protocol:
+
+```text
+Deterministic alert/action candidates -> one bounded Gemini interaction
+                                      -> structured contract validation
+                                      -> backend evidence resolution
+                                      -> transactional persistence
+                                      -> explicit human review
+```
+
+Candidate identity and factual severity come from deterministic backend signals. A hash of the meaningful candidate set suppresses unchanged analysis unless the user explicitly forces regeneration. Stable per-signal fingerprints reuse records, resolve active insights when signals clear, and expire pending recommendations. Dismissed insights and accepted/rejected/ignored recommendations preserve their original content and decision history. Accept means agreement only: it creates an audit event and concise Project Log entry but never changes tasks, dates, budgets, assignments, alerts, or other operational records. Provider failures leave existing AI records intact and return safe errors.
 
 ## 10. Analytics, automation, and notifications
 
@@ -411,7 +430,8 @@ No migration or startup hook inserts business records.
 6. Control (complete): risks, deterministic scoring and matrix, issues, governed change requests, project overview signals, and audit events.
 7. Project memory (complete): project log, meetings, reviewable action items, decisions, read-only activity, meaningful automatic entries, overview signals, and bilingual UI. Alerts and automation remain deferred.
 8. Intelligence (complete): centralized KPIs, health and history, automatic alerts, predefined automation, overview/portfolio signals, audit/log integration, and bilingual UI.
-9. AI foundation (complete): Gemini execution, provider-neutral service, deterministic context packages, structured evidence-grounded Project Assistant, safe failures, usage/audit metadata, and bilingual UI. Proactive insights, recommendations, scenarios, meeting AI, documents, and knowledge retrieval remain deferred.
+9. AI foundation (complete): Gemini execution, provider-neutral service, deterministic context packages, structured evidence-grounded Project Assistant, safe failures, usage/audit metadata, and bilingual UI.
+10. Proactive AI (complete): deterministic candidate selection, explicit bounded analysis, persistent evidence-backed insights and recommendations, stable deduplication/freshness, human-only review lifecycle, Assistant/Overview integration, audit/Project Log history, and bilingual UI. Briefings, scenarios, meeting AI, documents, reports, autonomous execution, and knowledge retrieval remain deferred.
 10. Documents and delivery: retrieval, reports, validated import/export, notifications, and release hardening.
 
 Each phase adds schema via migrations, implements use cases behind services, exposes typed APIs, and completes UI/empty/error states with tests.

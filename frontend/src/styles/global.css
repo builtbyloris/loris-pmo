@@ -738,3 +738,52 @@ h1, h2, p { margin-top: 0; }
   .assistant-composer { align-items: stretch; flex-direction: column; }
   .assistant-composer button { justify-content: center; }
 }
+
+
+.assistant-view-tabs, .ai-status-tabs { display: flex; flex-wrap: wrap; gap: 7px; }
+.assistant-view-tabs button, .ai-status-tabs button { min-height: 38px; padding: 0 12px; display: flex; align-items: center; gap: 7px; border: 1px solid var(--border); border-radius: 9px; color: var(--muted); background: var(--panel); font-size: 10px; font-weight: 700; }
+.assistant-view-tabs button.active, .ai-status-tabs button.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.ai-status-tabs button span { min-width: 20px; height: 20px; display: grid; place-items: center; border-radius: 999px; background: var(--panel-soft); font-size: 8px; }
+.ai-analysis-workspace { padding: 19px; display: grid; gap: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--panel); box-shadow: var(--shadow-sm); }
+.ai-analysis-toolbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.ai-analysis-toolbar h2 { margin: 5px 0 6px; font-size: 20px; }
+.ai-analysis-toolbar p:last-child { max-width: 680px; margin: 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.ai-analysis-actions { display: flex; align-items: center; gap: 7px; }
+.ai-analysis-actions > span { display: flex; align-items: center; gap: 5px; color: var(--subtle); font-size: 9px; white-space: nowrap; }
+.assistant-unavailable.compact { min-height: auto; padding: 12px; display: flex; align-items: center; text-align: left; }
+.assistant-empty.compact { min-height: 240px; box-shadow: none; }
+.assistant-empty.compact h3 { margin: 0; }
+.ai-card-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+.ai-card { padding: 16px; display: grid; align-content: start; gap: 10px; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 11px; background: var(--panel-soft); }
+.ai-card.severity-warning { border-left-color: var(--warning); }
+.ai-card.severity-critical { border-left-color: var(--danger); }
+.ai-card > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ai-card > header > div { display: flex; gap: 5px; }
+.ai-card > header > span, .ai-card > header > div span, .ai-confidence { padding: 4px 7px; border-radius: 999px; color: var(--muted); background: var(--panel); font-size: 8px; font-weight: 800; text-transform: uppercase; }
+.ai-card h3 { margin: 0; font-size: 15px; }
+.ai-card > p { margin: 0; color: var(--text); font-size: 11px; line-height: 1.55; }
+.ai-card .ai-explanation { color: var(--muted); }
+.ai-evidence { padding-top: 8px; border-top: 1px solid var(--border); }
+.ai-evidence summary { color: var(--accent); cursor: pointer; font-size: 9px; font-weight: 700; }
+.ai-evidence ul, .ai-alternatives ul { margin: 8px 0 0; padding: 0; display: grid; gap: 5px; list-style: none; }
+.ai-evidence li { display: grid; gap: 2px; color: var(--muted); font-size: 9px; }
+.ai-card > footer { padding-top: 6px; display: flex; justify-content: flex-end; border-top: 1px solid var(--border); }
+.recommendation-list { grid-template-columns: 1fr; }
+.recommendation-list dl { margin: 0; display: grid; gap: 9px; }
+.recommendation-list dl div { display: grid; gap: 3px; }
+.recommendation-list dt, .ai-alternatives h4 { color: var(--subtle); font-size: 8px; font-weight: 800; text-transform: uppercase; }
+.recommendation-list dd { margin: 0; color: var(--text); font-size: 11px; line-height: 1.55; }
+.ai-alternatives h4 { margin: 0; }
+.ai-alternatives li { color: var(--muted); font-size: 10px; }
+.ai-alternatives li::before { content: "– "; }
+.ai-decision-reason { padding: 9px; display: grid; gap: 3px; border-radius: 8px; background: var(--panel); color: var(--muted) !important; }
+.recommendation-actions { align-items: end; justify-content: space-between !important; gap: 12px; }
+.recommendation-actions label { min-width: min(430px, 100%); display: grid; gap: 4px; color: var(--muted); font-size: 9px; }
+.recommendation-actions textarea { padding: 8px; resize: vertical; border: 1px solid var(--border); border-radius: 8px; color: var(--text); background: var(--panel); font: inherit; font-size: 10px; }
+.recommendation-actions > div { display: flex; flex-wrap: wrap; gap: 6px; }
+
+@media (max-width: 760px) {
+  .ai-analysis-toolbar, .recommendation-actions { align-items: stretch; flex-direction: column; }
+  .ai-analysis-actions { align-items: stretch; flex-wrap: wrap; }
+  .ai-card-list { grid-template-columns: 1fr; }
+}

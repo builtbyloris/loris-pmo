@@ -106,21 +106,10 @@ class GeminiProvider:
                 raise TypeError
             status = body.get("status")
             if status != "completed":
-                if status in {"failed", "cancelled"}:
+                if status in {"failed", "cancelled", "budget_exceeded"}:
                     raise AIProviderUnavailableError("Gemini did not complete the interaction.")
                 raise AIInvalidResponseError("Gemini returned an incomplete interaction.")
-            steps = body["steps"]
-            if not isinstance(steps, list):
-                raise TypeError
-            text = "".join(
-                content.get("text", "")
-                for step in steps
-                if isinstance(step, dict)
-                and step.get("type") == "model_output"
-                and step.get("status") in (None, "done")
-                for content in step.get("content", [])
-                if isinstance(content, dict) and content.get("type") == "text"
-            ).strip()
+            text = _model_output_text(body["steps"])
         except AIInvalidResponseError:
             raise
         except AIProviderUnavailableError:
@@ -161,6 +150,50 @@ def _interaction_schema(value: object) -> object:
     if isinstance(value, list):
         return [_interaction_schema(item) for item in value]
     return value
+
+
+def _model_output_text(steps: object) -> str:
+    """Return the last consecutive run of text from trailing model-output steps."""
+    if not isinstance(steps, list):
+        raise TypeError
+
+    parts: list[str] = []
+    collecting = False
+    for step in reversed(steps):
+        if not isinstance(step, dict):
+            if collecting:
+                break
+            continue
+        step_type = step.get("type")
+        if step_type == "user_input":
+            break
+        if step_type != "model_output":
+            if collecting:
+                break
+            continue
+        content = step.get("content")
+        if not isinstance(content, list):
+            if collecting:
+                break
+            continue
+
+        separated = False
+        for item in reversed(content):
+            if isinstance(item, dict) and item.get("type") == "text":
+                value = item.get("text")
+                if isinstance(value, str):
+                    collecting = True
+                    parts.append(value)
+                elif collecting:
+                    separated = True
+                    break
+            elif collecting:
+                separated = True
+                break
+        if separated:
+            break
+
+    return "".join(reversed(parts)).strip()
 
 
 def _optional_nonnegative_int(value: object) -> int | None:
