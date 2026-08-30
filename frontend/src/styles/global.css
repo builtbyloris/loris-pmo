@@ -787,3 +787,25 @@ h1, h2, p { margin-top: 0; }
   .ai-analysis-actions { align-items: stretch; flex-wrap: wrap; }
   .ai-card-list { grid-template-columns: 1fr; }
 }
+
+/* Sprint 11 operational AI */
+.operational-ai { display: grid; gap: 1rem; }
+.operational-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.operational-header > div { display: flex; gap: .75rem; align-items: flex-start; }
+.operational-header h2, .operational-header p { margin: 0; }
+.operational-header svg { color: var(--primary, #6157d9); }
+.operational-card, .meeting-ai-panel { border: 1px solid var(--border, #e2e4ea); border-radius: 14px; padding: 1rem; background: var(--surface, #fff); display: grid; gap: .75rem; }
+.operational-card > header, .meeting-ai-panel > header { display: flex; justify-content: space-between; gap: .75rem; align-items: center; }
+.operational-card time { color: var(--text-muted, #687083); font-size: .8rem; }
+.operational-card h3 { font-size: .9rem; margin-bottom: .3rem; }
+.attention-row { border-left: 3px solid #75839a; padding: .55rem .75rem; display: grid; gap: .2rem; }
+.attention-row.critical { border-color: #c83b4d; background: #fff5f6; }
+.attention-row.warning { border-color: #d29427; background: #fffaf0; }
+.scenario-builder { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .75rem; align-items: end; padding: 1rem; border-radius: 14px; background: var(--surface-subtle, #f6f7fa); }
+.scenario-builder label { display: grid; gap: .35rem; }
+.meeting-ai-panel { margin-top: .9rem; background: var(--surface-subtle, #f8f8fc); }
+.meeting-ai-panel header > div { display: flex; align-items: center; gap: .4rem; }
+.meeting-proposals { display: grid; gap: .65rem; }
+.meeting-proposals article { padding: .75rem; border: 1px solid var(--border, #e2e4ea); border-radius: 10px; background: #fff; display: grid; gap: .4rem; }
+.meeting-proposals article > div { display: flex; gap: .5rem; }
+@media (max-width: 720px) { .operational-header { flex-direction: column; } }

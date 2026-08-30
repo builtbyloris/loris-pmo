@@ -31,6 +31,8 @@ class AIEvidenceType(StrEnum):
     MEETING_ACTION = "meeting_action"
     AI_INSIGHT = "ai_insight"
     AI_RECOMMENDATION = "ai_recommendation"
+    PERIOD_FACT = "period_fact"
+    SIMULATION = "simulation"
 
 
 class AIHistoryMessage(BaseModel):

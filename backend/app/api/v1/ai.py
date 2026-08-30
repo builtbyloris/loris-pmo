@@ -20,7 +20,17 @@ from app.schemas.ai import (
     AIRecommendationRead,
     AIStatusRead,
 )
+from app.schemas.ai_operations import (
+    AIBriefingRead,
+    AIGenerateRequest,
+    AIScenarioRead,
+    AIScenarioRequest,
+    MeetingAIAnalysisRead,
+    MeetingAIConfirmRead,
+    MeetingAIProposalRead,
+)
 from app.services.ai_analysis import AIAnalysisService
+from app.services.ai_operations import AIOperationsService
 from app.services.project_assistant import ProjectAssistantService
 
 router = APIRouter(prefix="/projects/{project_id}/ai", tags=["project-assistant"])
@@ -212,4 +222,128 @@ async def ignore_recommendation(
         session,
         provider,
         AIRecommendationStatus.IGNORED,
+    )
+
+
+@router.get("/daily-briefing", response_model=AIBriefingRead | None)
+async def daily_briefing(project_id: UUID, user: CurrentUser, session: Session, provider: Provider):
+    return await AIOperationsService(session, user.id, provider).latest_daily(project_id)
+
+
+@router.post(
+    "/daily-briefing/generate", response_model=AIBriefingRead, dependencies=[Depends(require_csrf)]
+)
+async def generate_daily_briefing(
+    project_id: UUID,
+    data: AIGenerateRequest,
+    user: CurrentUser,
+    session: Session,
+    provider: Provider,
+):
+    return await AIOperationsService(session, user.id, provider).generate_daily(project_id, data)
+
+
+@router.get("/weekly-reviews", response_model=list[AIBriefingRead])
+async def weekly_reviews(project_id: UUID, user: CurrentUser, session: Session, provider: Provider):
+    return await AIOperationsService(session, user.id, provider).weekly_reviews(project_id)
+
+
+@router.post(
+    "/weekly-reviews/generate", response_model=AIBriefingRead, dependencies=[Depends(require_csrf)]
+)
+async def generate_weekly_review(
+    project_id: UUID,
+    data: AIGenerateRequest,
+    user: CurrentUser,
+    session: Session,
+    provider: Provider,
+):
+    return await AIOperationsService(session, user.id, provider).generate_weekly(project_id, data)
+
+
+@router.get("/scenarios", response_model=list[AIScenarioRead])
+async def scenarios(project_id: UUID, user: CurrentUser, session: Session, provider: Provider):
+    return await AIOperationsService(session, user.id, provider).list_scenarios(project_id)
+
+
+@router.get("/scenarios/{scenario_id}", response_model=AIScenarioRead)
+async def scenario(
+    project_id: UUID, scenario_id: UUID, user: CurrentUser, session: Session, provider: Provider
+):
+    return await AIOperationsService(session, user.id, provider).get_scenario(
+        project_id, scenario_id
+    )
+
+
+@router.post("/scenarios", response_model=AIScenarioRead, dependencies=[Depends(require_csrf)])
+async def run_scenario(
+    project_id: UUID,
+    data: AIScenarioRequest,
+    user: CurrentUser,
+    session: Session,
+    provider: Provider,
+):
+    return await AIOperationsService(session, user.id, provider).run_scenario(project_id, data)
+
+
+@router.get("/meetings/{meeting_id}", response_model=MeetingAIAnalysisRead | None)
+async def meeting_ai(
+    project_id: UUID, meeting_id: UUID, user: CurrentUser, session: Session, provider: Provider
+):
+    return await AIOperationsService(session, user.id, provider).latest_meeting(
+        project_id, meeting_id
+    )
+
+
+@router.post(
+    "/meetings/{meeting_id}/analyze",
+    response_model=MeetingAIAnalysisRead,
+    dependencies=[Depends(require_csrf)],
+)
+async def analyze_meeting(
+    project_id: UUID,
+    meeting_id: UUID,
+    data: AIGenerateRequest,
+    user: CurrentUser,
+    session: Session,
+    provider: Provider,
+):
+    return await AIOperationsService(session, user.id, provider).analyze_meeting(
+        project_id, meeting_id, data
+    )
+
+
+@router.post(
+    "/meetings/{meeting_id}/proposals/{proposal_id}/confirm",
+    response_model=MeetingAIConfirmRead,
+    dependencies=[Depends(require_csrf)],
+)
+async def confirm_meeting_proposal(
+    project_id: UUID,
+    meeting_id: UUID,
+    proposal_id: UUID,
+    user: CurrentUser,
+    session: Session,
+    provider: Provider,
+):
+    return await AIOperationsService(session, user.id, provider).confirm_proposal(
+        project_id, meeting_id, proposal_id
+    )
+
+
+@router.post(
+    "/meetings/{meeting_id}/proposals/{proposal_id}/reject",
+    response_model=MeetingAIProposalRead,
+    dependencies=[Depends(require_csrf)],
+)
+async def reject_meeting_proposal(
+    project_id: UUID,
+    meeting_id: UUID,
+    proposal_id: UUID,
+    user: CurrentUser,
+    session: Session,
+    provider: Provider,
+):
+    return await AIOperationsService(session, user.id, provider).reject_proposal(
+        project_id, meeting_id, proposal_id
     )

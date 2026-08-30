@@ -438,7 +438,7 @@ export const it = {
   aiAnalysis: {
     eyebrow: "IA PROATTIVA",
     description: "Osservazioni e proposte basate su evidenze, generate solo quando richiedi l’analisi.",
-    views: { label: "Viste Copilot IA", assistant: "Assistente", insights: "Insight", recommendations: "Raccomandazioni" },
+    views: { label: "Viste Copilot IA", assistant: "Assistente", insights: "Insight", recommendations: "Raccomandazioni", briefing: "Briefing giornaliero", weekly: "Revisione settimanale", scenarios: "Scenari" },
     analyze: "Analizza progetto",
     analyzing: "Analisi in corso…",
     force: "Rigenera analisi",
@@ -477,6 +477,14 @@ export const it = {
       ai_provider_unavailable: "L’analisi IA è temporaneamente non disponibile.",
     },
   },
+  operationalAI: {
+    generate: "Genera", refresh: "Aggiorna",
+    daily: { title: "Briefing giornaliero", body: "Sintesi concisa dei segnali deterministici che richiedono attenzione.", empty: "Nessun briefing giornaliero ancora generato." },
+    weekly: { title: "Revisione settimanale", body: "Fatti verificati degli ultimi sette giorni, interpretati senza inventare cambiamenti.", empty: "Nessuna revisione settimanale ancora generata.", sections: { progress: "Progressi", setbacks: "Imprevisti", decisions: "Decisioni", risks_and_issues: "Rischi e problemi", next_week_focus: "Focus prossima settimana", financial_summary: "Sintesi finanziaria" } },
+    scenario: { title: "Analisi di scenario", body: "Simula un cambiamento isolato senza modificare il progetto reale.", type: "Scenario", subject: "Oggetto", days: "Giorni di ritardo", cost: "Aumento costo", run: "Esegui simulazione", disclaimer: "Solo simulazione. I risultati non modificano mai i dati operativi.", impacts: "Impatti", options: "Opzioni", types: { TASK_DELAY: "Attività in ritardo", MILESTONE_DELAY: "Milestone in ritardo", RESOURCE_UNAVAILABLE: "Persona non disponibile", COST_INCREASE: "Aumento spesa", RISK_OCCURS: "Rischio realizzato" } },
+    errors: { load: "Impossibile caricare i record IA operativi.", generate: "Generazione IA non riuscita. I dati del progetto non sono stati modificati." },
+  },
+  meetingAI: { title: "Assistente IA riunione", analyze: "Analizza riunione", refresh: "Aggiorna analisi", boundary: "Le proposte restano inattive finché non confermi ogni elemento.", confirm: "Conferma e crea", reject: "Rifiuta", error: "Analisi riunione non disponibile. Nessun dato è stato modificato.", kind: { ACTION_ITEM: "Azione", DECISION: "Decisione", RISK: "Rischio", ISSUE: "Problema" }, status: { PENDING: "In attesa di conferma", CONFIRMED: "Confermata", REJECTED: "Rifiutata" } },
   assistant: {
     eyebrow: "AI COPILOT",
     title: "Assistente di progetto",

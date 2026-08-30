@@ -9,6 +9,8 @@ import {
   UserRound,
   Lightbulb,
   ListChecks,
+  CalendarRange,
+  Gauge,
 } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -19,6 +21,7 @@ import { projectsApi } from "../../projects/api/projectsApi";
 import type { Project } from "../../projects/types";
 import { assistantApi } from "../api/assistantApi";
 import { AIAnalysisWorkspace } from "../components/AIAnalysisWorkspace";
+import { OperationalAIWorkspace } from "../components/OperationalAIWorkspace";
 import type { AIHistoryMessage, AIStatus, ConversationEntry } from "../types";
 
 const STARTER_KEYS = [
@@ -38,7 +41,7 @@ export function ProjectAssistantPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectId, setProjectId] = useState(routeProjectId ?? "");
   const [status, setStatus] = useState<AIStatus | null>(null);
-  const [view, setView] = useState<"assistant" | "insights" | "recommendations">("assistant");
+  const [view, setView] = useState<"assistant" | "insights" | "recommendations" | "briefing" | "weekly" | "scenarios">("assistant");
   const [entries, setEntries] = useState<ConversationEntry[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
@@ -210,6 +213,9 @@ export function ProjectAssistantPage() {
             <button type="button" className={view === "assistant" ? "active" : ""} onClick={() => setView("assistant")}><Bot size={15} />{t("aiAnalysis.views.assistant")}</button>
             <button type="button" className={view === "insights" ? "active" : ""} onClick={() => setView("insights")}><Lightbulb size={15} />{t("aiAnalysis.views.insights")}</button>
             <button type="button" className={view === "recommendations" ? "active" : ""} onClick={() => setView("recommendations")}><ListChecks size={15} />{t("aiAnalysis.views.recommendations")}</button>
+            <button type="button" className={view === "briefing" ? "active" : ""} onClick={() => setView("briefing")}><Sparkles size={15} />{t("aiAnalysis.views.briefing")}</button>
+            <button type="button" className={view === "weekly" ? "active" : ""} onClick={() => setView("weekly")}><CalendarRange size={15} />{t("aiAnalysis.views.weekly")}</button>
+            <button type="button" className={view === "scenarios" ? "active" : ""} onClick={() => setView("scenarios")}><Gauge size={15} />{t("aiAnalysis.views.scenarios")}</button>
           </nav>
 
           {view === "assistant" ? (
@@ -295,9 +301,17 @@ export function ProjectAssistantPage() {
               </section>
             </div>
             )
-          ) : (
+          ) : view === "insights" || view === "recommendations" ? (
             <AIAnalysisWorkspace
-              key={`${projectId}-${view}`}
+              key={`-`}
+              projectId={projectId}
+              view={view}
+              providerAvailable={status?.available === true}
+              readOnly={Boolean(selectedProject?.archived_at)}
+            />
+          ) : (
+            <OperationalAIWorkspace
+              key={`-`}
               projectId={projectId}
               view={view}
               providerAvailable={status?.available === true}

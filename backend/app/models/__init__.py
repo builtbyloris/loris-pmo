@@ -6,6 +6,16 @@ from app.models.ai import (
     AIRecommendation,
     AIRecommendationStatus,
 )
+from app.models.ai_operations import (
+    AIBriefing,
+    AIBriefingKind,
+    AIScenario,
+    AIScenarioType,
+    MeetingAIAnalysis,
+    MeetingAIProposal,
+    MeetingAIProposalKind,
+    MeetingAIProposalStatus,
+)
 from app.models.audit import AuditEvent
 from app.models.base import Base
 from app.models.control import (
@@ -66,6 +76,14 @@ __all__ = [
     "AIInsightStatus",
     "AIRecommendation",
     "AIRecommendationStatus",
+    "AIBriefing",
+    "AIBriefingKind",
+    "AIScenario",
+    "AIScenarioType",
+    "MeetingAIAnalysis",
+    "MeetingAIProposal",
+    "MeetingAIProposalKind",
+    "MeetingAIProposalStatus",
     "AuditEvent",
     "Alert",
     "AlertSeverity",

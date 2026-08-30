@@ -28,7 +28,12 @@ export interface AIEvidence {
     | "team_member"
     | "meeting"
     | "decision"
-    | "project_log";
+    | "project_log"
+    | "meeting_action"
+    | "ai_insight"
+    | "ai_recommendation"
+    | "period_fact"
+    | "simulation";
   id: string | null;
   label: string;
   detail: string;
@@ -116,4 +121,58 @@ export interface AIAnalyzeResponse {
   summary: AIAnalysisSummary;
   generated: boolean;
   unchanged: boolean;
+}
+
+export interface AIBriefing {
+  id: string;
+  project_id: string;
+  kind: "DAILY" | "WEEKLY";
+  period_start: string | null;
+  period_end: string | null;
+  content: Record<string, unknown>;
+  evidence: AIEvidence[];
+  provider: string | null;
+  model: string | null;
+  usage: AIChatResponse["usage"];
+  generated_at: string;
+  reused: boolean;
+}
+
+export type AIScenarioType = "TASK_DELAY" | "MILESTONE_DELAY" | "COST_INCREASE" | "RESOURCE_UNAVAILABLE" | "RISK_OCCURS";
+export interface AIScenario {
+  id: string;
+  project_id: string;
+  type: AIScenarioType;
+  parameters: Record<string, unknown>;
+  deterministic_impact: Record<string, unknown>;
+  interpretation: { interpretation: string; impacts: string[]; options: string[]; assumptions: string[]; evidence_refs: string[] };
+  evidence: AIEvidence[];
+  provider: string;
+  model: string;
+  usage: AIChatResponse["usage"];
+  created_at: string;
+}
+
+export type MeetingAIProposalStatus = "PENDING" | "CONFIRMED" | "REJECTED";
+export interface MeetingAIProposal {
+  id: string;
+  kind: "ACTION_ITEM" | "DECISION" | "RISK" | "ISSUE";
+  payload: { title: string; description: string; due_date?: string | null; expected_impact?: string | null };
+  evidence: AIEvidence[];
+  status: MeetingAIProposalStatus;
+  confirmed_entity_type: string | null;
+  confirmed_entity_id: string | null;
+}
+export interface MeetingAIAnalysis {
+  id: string;
+  project_id: string;
+  meeting_id: string;
+  summary: string;
+  evidence: AIEvidence[];
+  provider: string;
+  model: string;
+  usage: AIChatResponse["usage"];
+  generated_at: string;
+  proposals: MeetingAIProposal[];
+  reused: boolean;
 }

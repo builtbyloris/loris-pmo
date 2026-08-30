@@ -443,7 +443,7 @@ export const en = {
   aiAnalysis: {
     eyebrow: "PROACTIVE AI",
     description: "Evidence-grounded observations and proposals generated only when you request analysis.",
-    views: { label: "AI Copilot views", assistant: "Assistant", insights: "Insights", recommendations: "Recommendations" },
+    views: { label: "AI Copilot views", assistant: "Assistant", insights: "Insights", recommendations: "Recommendations", briefing: "Daily briefing", weekly: "Weekly review", scenarios: "Scenarios" },
     analyze: "Analyze project",
     analyzing: "Analyzing…",
     force: "Regenerate analysis",
@@ -482,6 +482,14 @@ export const en = {
       ai_provider_unavailable: "AI analysis is temporarily unavailable.",
     },
   },
+  operationalAI: {
+    generate: "Generate", refresh: "Refresh",
+    daily: { title: "Daily briefing", body: "A concise synthesis of current deterministic attention signals.", empty: "No daily briefing has been generated yet." },
+    weekly: { title: "Weekly review", body: "Audited facts from the rolling seven days, interpreted without invented changes.", empty: "No weekly review has been generated yet.", sections: { progress: "Progress", setbacks: "Setbacks", decisions: "Decisions", risks_and_issues: "Risks and issues", next_week_focus: "Next-week focus", financial_summary: "Financial summary" } },
+    scenario: { title: "Scenario analysis", body: "Simulate an isolated change without modifying the real project.", type: "Scenario", subject: "Subject", days: "Delay days", cost: "Cost increase", run: "Run simulation", disclaimer: "Simulation only. Results never change operational project data.", impacts: "Impacts", options: "Options", types: { TASK_DELAY: "Task delayed", MILESTONE_DELAY: "Milestone delayed", RESOURCE_UNAVAILABLE: "Person unavailable", COST_INCREASE: "Expense increase", RISK_OCCURS: "Risk occurs" } },
+    errors: { load: "Operational AI records could not be loaded.", generate: "AI generation failed. Project data was not changed." },
+  },
+  meetingAI: { title: "AI meeting assistant", analyze: "Analyze meeting", refresh: "Refresh analysis", boundary: "Proposals are inert until you confirm each item.", confirm: "Confirm and create", reject: "Reject", error: "Meeting analysis is unavailable. Nothing was changed.", kind: { ACTION_ITEM: "Action item", DECISION: "Decision", RISK: "Risk", ISSUE: "Issue" }, status: { PENDING: "Pending confirmation", CONFIRMED: "Confirmed", REJECTED: "Rejected" } },
   assistant: {
     eyebrow: "AI COPILOT",
     title: "Project Assistant",

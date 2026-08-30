@@ -444,3 +444,13 @@ Each phase adds schema via migrations, implements use cases behind services, exp
 - No charting, Pandas, job queue, mail provider, object storage, or RAG dependency is added before a concrete use case exists.
 - Kubernetes and microservices are outside V1.
 - Hosted deployment is deferred; the required target is local Docker Compose.
+
+## Sprint 11 operational AI
+
+Operational AI extends the existing provider-neutral service; it does not create a second AI stack. The backend first builds bounded deterministic inputs, Gemini interprets those inputs through the existing Interactions provider, and all evidence references are resolved against a backend-owned catalog before persistence.
+
+- Daily briefings use current alert, health, work, finance, control, workload, memory, insight, and recommendation signals. A material-state fingerprint reuses the latest valid output unless the user explicitly refreshes it.
+- Weekly reviews use a rolling seven-day period ending at generation time. Audited events and health snapshots form period facts; insufficient prior history is explicitly represented.
+- Scenario analysis stores a snapshot of deterministic simulation results and AI interpretation only. It never writes to tasks, milestones, resources, budgets, or risks.
+- Meeting analysis stores summaries and inert proposals. Each action, decision, risk, or issue requires an explicit, individual user confirmation; confirmation validates project ownership and records both operational and AI audit events.
+- All outputs are bounded structured JSON, use `store=false`, enable no tools, and retain provider/model/token metadata without raw provider payloads.

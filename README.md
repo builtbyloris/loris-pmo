@@ -128,3 +128,7 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for system boundaries, securi
 - The Gemini key is backend-only and optional.
 - Authentication uses an HttpOnly token cookie and CSRF protection.
 - Public registration is deliberately unavailable in the personal foundation release.
+
+### Operational AI workspace
+
+Sprint 11 adds user-triggered Daily Briefings, rolling seven-day Weekly Reviews, read-only Scenario Analysis, and an AI Meeting Assistant. AI outputs remain evidence-backed proposals: scenario runs never mutate the project, and meeting proposals create an operational record only after explicit per-item confirmation.

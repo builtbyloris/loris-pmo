@@ -228,3 +228,12 @@ Reason: A live 1200-token interaction returned `incomplete` while already contai
 Decision: Use a 30-second production Gemini provider timeout for bounded Sprint 10 analysis.
 
 Reason: With the 4096-token output cap, the final controlled interaction completed in 11.302 seconds and used 465 output tokens plus 875 thought tokens, while an earlier equivalent validation exceeded the previous 20-second cutoff. Thirty seconds provides a measured latency margin without retaining the temporary 60-second diagnostic timeout or adding retries.
+
+## 2026-08-31 — Sprint 11: operational AI
+
+- Added persistent daily briefing, weekly review, scenario result, meeting analysis, and meeting proposal models with Alembic revision `20260831_0011`.
+- Reused deterministic Sprint 8/10 intelligence and backend-owned evidence for bounded briefing candidates, rolling seven-day facts, and scenario simulations.
+- Added explicit meeting proposal confirmation/rejection. No operational entity is created during analysis; confirmation creates exactly one validated entity and records audit/Project Log history.
+- Added AI workspace views for Daily Briefing, Weekly Review, and Scenario Analysis, plus the meeting assistant in completed meeting cards.
+- Added EN/IT localization and focused backend/frontend tests.
+- Gemini remains `gemini-3.6-flash` through the existing Interactions API with the centralized 30-second timeout and 4096-token output budget. No retries, fallback models, tools, or autonomous execution were added.
