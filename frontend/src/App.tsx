@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
+import { ProjectAssistantPage } from "./features/assistant/pages/ProjectAssistantPage";
 import { ProtectedRoute } from "./features/auth/ProtectedRoute";
 import { ControlWorkspacePage } from "./features/control/pages/ControlWorkspacePage";
 import { FinanceWorkspacePage } from "./features/finance/pages/FinanceWorkspacePage";
@@ -29,7 +30,8 @@ export function App() {
           <Route path="projects/:projectId/finance" element={<FinanceWorkspacePage />} />
           <Route path="projects/:projectId/control" element={<ControlWorkspacePage />} />
           <Route path="projects/:projectId/memory" element={<ProjectMemoryPage />} />
-          <Route path="copilot" element={<PlaceholderPage area="copilot" />} />
+          <Route path="projects/:projectId/assistant" element={<ProjectAssistantPage />} />
+          <Route path="copilot" element={<ProjectAssistantPage />} />
           <Route path="settings" element={<PlaceholderPage area="settings" />} />
         </Route>
       </Route>

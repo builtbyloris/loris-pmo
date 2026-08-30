@@ -1,6 +1,6 @@
 # Loris PMO
 
-Loris PMO is a personal project management and project intelligence application. The repository includes the production-shaped foundation through Project Intelligence Core: secure authentication; owner-scoped project, planning, people, finance, control, and memory records; centralized deterministic KPIs; a weighted six-dimension Project Health Score; material health history; automatic alert lifecycle management; eight predefined automation rules; portfolio intelligence; versioned APIs; PostgreSQL migrations; bilingual UI; themes; testing; Docker Compose; and a provider-neutral AI boundary.
+Loris PMO is a personal project management and project intelligence application. The repository includes the production-shaped foundation through the Project Assistant: secure authentication; owner-scoped project, planning, people, finance, control, and memory records; deterministic KPIs and health; automatic alerts and automation rules; portfolio intelligence; question-relevant AI context packages; provider-neutral Gemini execution; evidence-grounded project Q&A; bilingual UI; testing; and Docker Compose.
 
 The remaining product areas described in `PROJECT_INTELLIGENCE_SPEC.md` are intentionally delivered incrementally rather than represented with fake functionality or sample production data.
 
@@ -36,9 +36,25 @@ An authenticated user can:
 - track meaningful health history without creating a snapshot on every read;
 - review, filter, and acknowledge persistent automatic alerts that deduplicate, reactivate, and resolve from their underlying conditions;
 - see health, overdue work, severe risks, critical issues, budget state, and active alerts across the portfolio;
+- ask read-only project questions through a Gemini-backed assistant whose evidence references are validated against owner-scoped context;
 - use the application in English or Italian and in light or dark mode.
 
 Archived projects remain available through the archive filter but are read-only. Domain mutations and intelligence state changes create append-only audit events; only material health changes and critical alert transitions enter the human-facing Project Log. Workload uses real task assignments and stored effort without inventing hours. Finance uses the project budget plus stored expense statuses: paid is actual, pending is committed, planned is forecast-only, and cancelled is excluded. Risk severity is derived from probability × impact. Earned value remains unavailable because the required time-phased baseline does not exist.
+
+## Project Assistant and Gemini
+
+The Project Assistant is available from AI Copilot and from each project overview. It uses deterministic backend facts and a bounded context package selected from the current question. Gemini receives only relevant records from that owned project; authentication data, credentials, unrelated projects, and raw audit internals are excluded. Model output is structured, and evidence references are resolved by the backend rather than trusted directly from the model.
+
+Set the backend-only key in `.env` to enable real execution:
+
+```bash
+GEMINI_API_KEY=your-local-key
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+Optional conservative generation settings are `AI_TIMEOUT_SECONDS`, `AI_MAX_OUTPUT_TOKENS`, and `AI_TEMPERATURE`. The key is never returned to or configured by the frontend. If no key is present, the application and readiness checks remain healthy and the assistant shows a clear unavailable state.
+
+Conversation history is not persisted in V1. The browser sends at most six recent messages for a follow-up, while audit events store only provider/model, success, latency, request category, selected sections, and provider usage counts when available. The assistant cannot mutate tasks, dates, budgets, assignments, alerts, risks, issues, or changes.
 
 ## Quick start with Docker
 

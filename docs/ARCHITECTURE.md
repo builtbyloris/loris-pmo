@@ -1,12 +1,12 @@
 # Loris PMO architecture
 
-Status: foundation through Project Intelligence Core
-Date: 2026-08-29
+Status: foundation through Project Assistant
+Date: 2026-08-30
 Product authority: `PROJECT_INTELLIGENCE_SPEC.md`
 
 ## 1. Scope
 
-This document defines the technical foundation through Project Intelligence Core. In addition to the complete operational domains, the application now supplies centralized project KPIs, six deterministic health dimensions, weighted health aggregation with missing-data redistribution, material health snapshots, persistent automatic alerts, eight code-defined automation rules, portfolio intelligence, project attention signals, and bilingual intelligence views. Remaining product areas are introduced incrementally.
+This document defines the technical foundation through the Project Assistant. In addition to complete operational and deterministic intelligence domains, the application now supplies provider-neutral AI execution, a bounded deterministic project-context builder, structured evidence-grounded project Q&A, usage metadata, safe unavailable behavior, and bilingual assistant views. Proactive AI, recommendations, scenarios, meetings, documents, and knowledge retrieval remain deferred.
 
 The application starts empty. No production project, task, financial, risk, or other business fixture is created.
 
@@ -26,7 +26,7 @@ React + TypeScript
 FastAPI application
   |-- API and authentication
   |-- application services
-  |-- deterministic analytics (future modules)
+  |-- deterministic analytics
   |-- AI service -> provider interface -> Gemini provider
   |-- repositories
   v
@@ -231,6 +231,8 @@ GET  /api/v1/projects/{project_id}/intelligence
 POST /api/v1/projects/{project_id}/intelligence/recalculate
 POST /api/v1/projects/{project_id}/alerts/{alert_id}/{acknowledge|read}
 GET  /api/v1/portfolio/intelligence
+GET  /api/v1/projects/{project_id}/ai/status
+POST /api/v1/projects/{project_id}/ai/chat
 ```
 
 Nested objective and success-criterion routes support list, create, update, and delete operations under their owning project.
@@ -282,6 +284,8 @@ The Control workspace uses Risks, Issues, and Change Requests projections. The r
 
 Project Overview performs an explicit intelligence recalculation, then renders the backend-owned health score, dimension availability, deterministic drivers, KPIs, Attention Required, alert filters, and acknowledgement action. The Portfolio renders current health and control facts for every owned active project. The browser never reimplements a KPI, health, workload, budget, or risk formula.
 
+AI Copilot and the contextual project route render the same Project Assistant. The browser keeps only the current in-memory conversation and sends at most six recent messages. Responses render as text through React, never as untrusted HTML, and present backend-validated evidence, missing information, assumptions, and follow-up questions separately. A missing provider key produces an explicit unavailable state without affecting the project workspace.
+
 Localization keys live in language resource files. Components do not duplicate Italian/English literals. Theme variables cover both light and dark modes, honor the device preference initially, and persist an explicit user preference locally.
 
 ## 9. AI architecture
@@ -299,9 +303,15 @@ AIProvider protocol
       `--> future provider
 ```
 
-The foundation defines the provider contract, a safe unavailable provider, configuration, and Gemini adapter boundary. No AI endpoint or Copilot behavior is exposed yet, and an API key is not required for core operation.
+`ProjectAssistantService` first resolves the owner-scoped project, then asks `ProjectContextBuilder` for a question-relevant package. The builder reuses finance, workload, work-planning, and project-intelligence services for facts and formulas. English/Italian keyword selection deterministically chooses work, finance, control, people, objectives, or memory sections. It caps critical tasks at 12, milestones and control records at 8, recent memory at 6 per type, pending actions at 8, and active alerts at 10. Ordering is deterministic by urgency, severity, due date, recency, and stable identifier.
 
-Future AI output that could affect operational data must create a persisted proposal. Only a separate confirmation endpoint may validate and apply it in a transaction, followed by an audit event. Providers will never receive a database session or unrestricted execution tool. This makes human review enforceable outside prompts.
+Gemini is called only through the provider protocol. The REST adapter sends the API key in the server-side `x-goog-api-key` header, applies centralized timeout/token/temperature settings, performs no automatic retry loop, and requests schema-constrained JSON. Provider transport, authentication, rate-limit, timeout, empty, malformed, and contract failures map to safe public errors. The application and readiness endpoint do not require a key.
+
+The centralized system instruction, context JSON, and current question are explicitly separated. Project fields are labelled untrusted data and cannot grant tools or database access. The provider receives no session, credentials, unrelated users/projects, password hashes, tokens, secret keys, or mutation capability. Evidence returned by the model consists only of reference strings; the backend drops unknown references and resolves accepted references from its own context catalog.
+
+V1 conversation continuity is stateless: at most six recent user/assistant messages return from the browser and no prompt or answer is persisted. Audit records contain only provider, model, success/failure, latency, high-level deterministic request topics, selected context sections, safe error code, and token counts when the provider supplies them. AI questions do not enter Project Log.
+
+The Project Assistant is read-only. It has no endpoints for tasks, budgets, assignments, dates, alerts, risks, issues, or change decisions. Future AI output that could affect operational data must use a separate persisted proposal and explicit confirmation flow; that flow is not part of this sprint.
 
 ## 10. Analytics, automation, and notifications
 
@@ -381,6 +391,8 @@ CI-ready commands run backend tests, frontend tests, TypeScript compilation, and
 
 `docker compose up --build` builds and starts the three required services. Compose waits for PostgreSQL health, runs migrations, and then starts FastAPI. The frontend development server proxies API calls to the backend, avoiding frontend knowledge of database or secret configuration.
 
+AI tests mock provider execution and cover Gemini payload/usage parsing, timeout/authentication/rate-limit/malformed behavior, no-key startup, context selection and limits, prompt-injection separation, evidence validation, request bounds, audit metadata, authorization, cross-owner `404`, UI loading/error/unavailable/evidence states, follow-up history, and EN/IT labels. Normal tests never call Gemini; an optional single live smoke test is performed only when `GEMINI_API_KEY` is configured.
+
 Account creation is an explicit operator action after startup:
 
 ```bash
@@ -399,7 +411,7 @@ No migration or startup hook inserts business records.
 6. Control (complete): risks, deterministic scoring and matrix, issues, governed change requests, project overview signals, and audit events.
 7. Project memory (complete): project log, meetings, reviewable action items, decisions, read-only activity, meaningful automatic entries, overview signals, and bilingual UI. Alerts and automation remain deferred.
 8. Intelligence (complete): centralized KPIs, health and history, automatic alerts, predefined automation, overview/portfolio signals, audit/log integration, and bilingual UI.
-9. AI foundation: context packages, provider execution safeguards, proposals, recommendations, and scenario isolation.
+9. AI foundation (complete): Gemini execution, provider-neutral service, deterministic context packages, structured evidence-grounded Project Assistant, safe failures, usage/audit metadata, and bilingual UI. Proactive insights, recommendations, scenarios, meeting AI, documents, and knowledge retrieval remain deferred.
 10. Documents and delivery: retrieval, reports, validated import/export, notifications, and release hardening.
 
 Each phase adds schema via migrations, implements use cases behind services, exposes typed APIs, and completes UI/empty/error states with tests.
@@ -408,7 +420,7 @@ Each phase adds schema via migrations, implements use cases behind services, exp
 
 - There is no fake production data.
 - There is no public registration in the personal first release.
-- The foundation does not call Gemini; it only supplies a replaceable adapter boundary.
+- Gemini is optional and backend-only; without a key, core application startup and readiness remain healthy.
 - No charting, Pandas, job queue, mail provider, object storage, or RAG dependency is added before a concrete use case exists.
 - Kubernetes and microservices are outside V1.
 - Hosted deployment is deferred; the required target is local Docker Compose.

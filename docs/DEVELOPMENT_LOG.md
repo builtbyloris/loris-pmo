@@ -163,3 +163,33 @@ Reason: The rules are product behavior, not production fixtures or a generic DSL
 Decision: Store health history only when the score, status, dimensions, or drivers materially change.
 
 Reason: Event-shaped history explains movement without writing a duplicate snapshot on every read. Only At Risk/Critical health transitions and critical alert lifecycle events enter the Project Log; lower-level changes remain in append-only audit history.
+
+## 2026-08-30
+
+Decision: Extend the existing `AIService` and `AIProvider` boundary with an isolated Gemini REST adapter instead of adding a provider SDK or a parallel AI architecture.
+
+Reason: The existing provider-neutral seam already enforces the intended dependency direction. A small HTTP adapter supports structured output, timeouts, safe error mapping, and usage metadata with one maintainable runtime dependency while keeping Gemini details outside routes and application services.
+
+Decision: Build question context deterministically from owner-scoped project data with fixed topic selection, ordering, and per-section limits.
+
+Reason: Sending every project record would increase privacy exposure, latency, and prompt noise. Keyword selection is explainable and does not require another model call; existing intelligence, finance, workload, and planning services remain the source of calculated facts.
+
+Decision: Accept only model evidence reference strings and resolve them through a backend-owned context catalog.
+
+Reason: Schema-constrained JSON ensures a stable transport contract, but a model can still invent identifiers. Dropping references absent from the exact context package prevents fabricated evidence details from being presented as verified project sources.
+
+Decision: Keep Project Assistant conversations stateless and limited to six recent messages in V1.
+
+Reason: Short in-memory continuity supports useful follow-ups without adding generic chat persistence, a migration, retention policy, or storage of sensitive prompts. It leaves room for deliberately project-scoped conversation persistence later.
+
+Decision: Store only high-level AI usage metadata in the existing append-only audit stream and do not create Project Log entries for chat.
+
+Reason: Provider, model, success, latency, request topics, context sections, safe failure code, and available token counts support observability without persisting prompt/response content. Ordinary questions are technical usage, not meaningful project history.
+
+Decision: Keep Sprint 9 strictly read-only.
+
+Reason: The provider receives no database session or tools, the API exposes only status and chat, and no model output can invoke operational mutations. Recommendations, proposals, confirmation workflows, proactive insights, scenarios, meeting assistance, documents, and knowledge retrieval remain explicit future work.
+
+Decision: Treat project text as untrusted data through prompt separation and architectural capability limits.
+
+Reason: Central system instructions label project content as data, but security does not depend on the prompt alone. Owner-scoped retrieval, no tools, no database access, bounded context, validated evidence, input limits, and React text rendering remain effective even if a stored task or log contains prompt-injection text.

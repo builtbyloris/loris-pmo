@@ -24,6 +24,10 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      AI_TIMEOUT_SECONDS: ${AI_TIMEOUT_SECONDS:-20}
+      AI_MAX_OUTPUT_TOKENS: ${AI_MAX_OUTPUT_TOKENS:-1200}
+      AI_TEMPERATURE: ${AI_TEMPERATURE:-0.2}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     volumes:
       - ./backend/app:/app/app
