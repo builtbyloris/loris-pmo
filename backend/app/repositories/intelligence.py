@@ -11,6 +11,7 @@ from app.models.objective import Objective
 from app.models.project import Project
 from app.models.success_criterion import SuccessCriterion
 from app.models.task import Task
+from app.services.authorization import accessible_project_ids
 
 
 class IntelligenceRepository:
@@ -22,7 +23,8 @@ class IntelligenceRepository:
         return (
             await self.session.execute(
                 select(Project).where(
-                    Project.id == project_id, Project.owner_user_id == self.owner_user_id
+                    Project.id == project_id,
+                    Project.id.in_(accessible_project_ids(self.owner_user_id)),
                 )
             )
         ).scalar_one_or_none()
@@ -30,7 +32,10 @@ class IntelligenceRepository:
     async def portfolio_projects(self) -> list[Project]:
         result = await self.session.execute(
             select(Project)
-            .where(Project.owner_user_id == self.owner_user_id, Project.archived_at.is_(None))
+            .where(
+                Project.id.in_(accessible_project_ids(self.owner_user_id)),
+                Project.archived_at.is_(None),
+            )
             .order_by(Project.name)
         )
         return list(result.scalars())

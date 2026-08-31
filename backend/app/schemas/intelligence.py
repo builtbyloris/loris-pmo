@@ -99,7 +99,7 @@ class PortfolioProjectIntelligence(BaseModel):
     overdue_tasks: int
     high_critical_risks: int
     critical_issues: int
-    budget_status: str
+    budget_status: str | None
     active_alerts: int
 
 

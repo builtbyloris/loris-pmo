@@ -21,6 +21,7 @@ from app.schemas.projects import (
     SuccessCriterionRead,
     SuccessCriterionUpdate,
 )
+from app.services.authorization import AuthorizationService, Capability
 from app.services.projects import ProjectService
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -62,7 +63,10 @@ async def create_project(data: ProjectCreate, user: CurrentUser, session: Sessio
 @router.get("/{project_id}", response_model=ProjectDetail)
 async def get_project(project_id: UUID, user: CurrentUser, session: Session) -> ProjectDetail:
     project = await ProjectService(session, user.id).get(project_id)
-    return ProjectDetail.model_validate(project)
+    result = ProjectDetail.model_validate(project)
+    if not await AuthorizationService(session, user.id).can(project_id, Capability.FINANCE_READ):
+        result.planned_budget = None
+    return result
 
 
 @router.patch("/{project_id}", response_model=ProjectDetail, dependencies=[Depends(require_csrf)])

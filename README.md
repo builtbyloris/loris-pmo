@@ -1,8 +1,8 @@
 # Loris PMO
 
-Loris PMO is a private, professional-grade project management and project intelligence application. It combines operational project control, deterministic analytics, and evidence-backed AI assistance in one owner-scoped workspace.
+Loris PMO is a private, professional-grade project management and project intelligence application. It combines operational project control, deterministic analytics, and evidence-backed AI assistance in one membership-scoped workspace while preserving explicit project ownership.
 
-**Release:** v1.0.0 · **Status:** V1 · **Release date:** 2026-08-31
+**Release:** v1.0.0 · **Development branch:** V2.1 (`v2-development`) · **V1 release date:** 2026-08-31
 
 ## Overview
 
@@ -24,6 +24,7 @@ The repository is a modular monolith designed for reliable local operation with 
 - Project documents, bounded extraction, lexical knowledge retrieval, and document evidence
 - Six deterministic reports, PDF output, CSV/XLSX export, and validated task/expense import
 - English/Italian localization and light/dark presentation
+- V2.1 authenticated project memberships, centralized RBAC, comments, and in-app notifications
 
 The evidence-backed scope and V1 boundaries for all 33 official product areas are recorded in [the V1 feature audit](docs/V1_FEATURE_AUDIT.md).
 
@@ -67,7 +68,7 @@ Deterministic domain logic / provider-neutral AI
 PostgreSQL + private document storage
 ```
 
-See [Architecture](docs/ARCHITECTURE.md) for domain boundaries, security controls, AI flows, storage, and decisions. See [Development Log](docs/DEVELOPMENT_LOG.md) for the rationale behind significant implementation choices.
+See the [V2 roadmap](docs/V2_ROADMAP.md) and [Architecture](docs/ARCHITECTURE.md) for domain boundaries, security controls, AI flows, storage, and decisions. See [Development Log](docs/DEVELOPMENT_LOG.md) for the rationale behind significant implementation choices.
 
 ## Portfolio positioning
 
@@ -213,13 +214,13 @@ Demo records never run at startup. The recommended demo uses a separate Compose 
 
 ## Project status
 
-**v1.0.0 — Complete with documented non-blocking limitations.**
+**v1.0.0 remains the stable release. V2.1 collaboration is in development on `v2-development`.**
 
-The authoritative release value is `backend/app/version.py`; FastAPI and `/health` expose it safely. The repository is not tagged or published automatically.
+The authoritative runtime release value remains `backend/app/version.py` at `1.0.0`; V2 development intentionally does not create or move release tags.
 
-## Known V1 limitations
+## V1 release limitations
 
-- Single authenticated owner; no multi-user collaboration or RBAC
+- The V1 tag is single-owner; V2.1 on the development branch adds multi-user collaboration and RBAC
 - Local named-volume document storage; no cloud object storage
 - Deterministic lexical document retrieval; no vector search
 - Image storage without OCR
@@ -231,7 +232,7 @@ Additional accepted boundaries are documented in the [V1 feature audit](docs/V1_
 
 ## Roadmap
 
-Possible post-V1 work includes cloud deployment, invitations and RBAC, object storage, semantic retrieval, integrations, advanced report design, deeper scheduling, and optional OCR. These are roadmap possibilities, not implemented V1 capabilities.
+V2.1 implements the collaboration foundation. Invitation delivery, ownership transfer, structured mentions, notification preferences, cloud deployment, object storage, semantic retrieval, integrations, advanced report design, and OCR remain future work. See [V2_ROADMAP.md](docs/V2_ROADMAP.md).
 
 ## License
 

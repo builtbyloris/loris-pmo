@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.authorization import authorize_project_module
 from app.auth.dependencies import CurrentUser, require_csrf
 from app.core.database import get_db
 from app.models.finance import ExpenseStatus
@@ -21,9 +22,16 @@ from app.schemas.finance import (
     ExpenseUpdate,
     SortOrder,
 )
+from app.services.authorization import Capability
 from app.services.finance import FinanceService
 
-router = APIRouter(prefix="/projects/{project_id}", tags=["finance"])
+router = APIRouter(
+    prefix="/projects/{project_id}",
+    tags=["finance"],
+    dependencies=[
+        Depends(authorize_project_module(Capability.FINANCE_READ, Capability.FINANCE_MANAGE))
+    ],
+)
 Session = Annotated[AsyncSession, Depends(get_db)]
 
 

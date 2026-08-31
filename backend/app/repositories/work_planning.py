@@ -13,6 +13,7 @@ from app.models.task import Task, TaskPriority, TaskStatus
 from app.models.task_dependency import DependencyType, TaskDependency
 from app.schemas.projects import SortOrder
 from app.schemas.work_planning import TaskSort
+from app.services.authorization import accessible_project_ids
 
 
 class WorkPlanningRepository:
@@ -21,7 +22,7 @@ class WorkPlanningRepository:
         self.owner_user_id = owner_user_id
 
     def _owned_projects(self) -> Select[tuple[Project]]:
-        return select(Project).where(Project.owner_user_id == self.owner_user_id)
+        return select(Project).where(Project.id.in_(accessible_project_ids(self.owner_user_id)))
 
     async def get_project(self, project_id: UUID) -> Project | None:
         result = await self.session.execute(self._owned_projects().where(Project.id == project_id))
@@ -37,7 +38,7 @@ class WorkPlanningRepository:
             .where(
                 Task.id == task_id,
                 Task.project_id == project_id,
-                Project.owner_user_id == self.owner_user_id,
+                Project.id.in_(accessible_project_ids(self.owner_user_id)),
             )
         )
         if not include_archived:
@@ -58,7 +59,7 @@ class WorkPlanningRepository:
     ) -> tuple[list[Task], int]:
         filters = [
             Task.project_id == project_id,
-            Project.owner_user_id == self.owner_user_id,
+            Project.id.in_(accessible_project_ids(self.owner_user_id)),
         ]
         if not include_archived:
             filters.append(Task.archived_at.is_(None))
@@ -123,7 +124,7 @@ class WorkPlanningRepository:
             .where(
                 Milestone.id == milestone_id,
                 Milestone.project_id == project_id,
-                Project.owner_user_id == self.owner_user_id,
+                Project.id.in_(accessible_project_ids(self.owner_user_id)),
             )
         )
         return result.scalar_one_or_none()
@@ -134,7 +135,7 @@ class WorkPlanningRepository:
             .join(Project, Project.id == Milestone.project_id)
             .where(
                 Milestone.project_id == project_id,
-                Project.owner_user_id == self.owner_user_id,
+                Project.id.in_(accessible_project_ids(self.owner_user_id)),
             )
             .order_by(Milestone.due_date.asc().nulls_last(), Milestone.created_at)
         )
@@ -147,7 +148,7 @@ class WorkPlanningRepository:
             .where(
                 TaskDependency.id == dependency_id,
                 TaskDependency.project_id == project_id,
-                Project.owner_user_id == self.owner_user_id,
+                Project.id.in_(accessible_project_ids(self.owner_user_id)),
             )
         )
         return result.scalar_one_or_none()
@@ -172,7 +173,7 @@ class WorkPlanningRepository:
             )
             .where(
                 TaskDependency.project_id == project_id,
-                Project.owner_user_id == self.owner_user_id,
+                Project.id.in_(accessible_project_ids(self.owner_user_id)),
             )
         )
         if active_only:

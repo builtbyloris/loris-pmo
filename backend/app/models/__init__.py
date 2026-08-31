@@ -18,6 +18,15 @@ from app.models.ai_operations import (
 )
 from app.models.audit import AuditEvent
 from app.models.base import Base
+from app.models.collaboration import (
+    CollaborationComment,
+    CommentEntityType,
+    MembershipStatus,
+    Notification,
+    NotificationType,
+    ProjectAccessRole,
+    ProjectMembership,
+)
 from app.models.control import (
     ChangeRequest,
     ChangeRequestIssueLink,
@@ -99,6 +108,13 @@ __all__ = [
     "AlertStatus",
     "ActionItemStatus",
     "Base",
+    "ProjectMembership",
+    "ProjectAccessRole",
+    "NotificationType",
+    "Notification",
+    "MembershipStatus",
+    "CommentEntityType",
+    "CollaborationComment",
     "BudgetCategory",
     "ChangeRequest",
     "ChangeRequestIssueLink",

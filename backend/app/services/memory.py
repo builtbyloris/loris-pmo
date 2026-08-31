@@ -567,7 +567,7 @@ class MemoryService:
         rows, total = await self.repository.list_activity(project_id, **filters)
         links = []
         mapped = {}
-        for event, _ in rows:
+        for event, _, _ in rows:
             try:
                 kind = MemoryEntityType(event.entity_type.upper())
             except ValueError:
@@ -581,6 +581,11 @@ class MemoryService:
                 id=event.id,
                 actor_user_id=event.actor_user_id,
                 actor_email=email,
+                actor_display_name=display_name,
+                summary=(
+                    f"{display_name or email or 'Project member'} "
+                    f"{event.action.replace('.', ' ')}"
+                ),
                 action=event.action,
                 entity_type=event.entity_type,
                 entity_id=event.entity_id,
@@ -590,7 +595,7 @@ class MemoryService:
                 changes=event.changes,
                 created_at=event.created_at,
             )
-            for event, email in rows
+            for event, email, display_name in rows
         ]
         return ActivityList(items=items, total=total)
 

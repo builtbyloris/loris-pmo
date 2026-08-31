@@ -276,3 +276,34 @@ Decision: Retain private-project licensing status and defer tagging/publishing.
 Reason: No open-source license should be inferred. The `v1.0.0` tag and GitHub release remain explicit owner actions after the final visual/manual acceptance pass.
 
 Final V1 status: functionally complete with documented non-blocking limitations; Sprint 13 introduces no new product feature, migration, AI capability, or provider call.
+
+
+## 2026-09-01 — V2.1 multi-user, RBAC, and collaboration foundation
+
+Decision: Introduce `ProjectMembership` as a new authenticated-access relationship and preserve `Person` plus operational `ProjectMember` unchanged.
+
+Reason: Authentication identity, reusable people/resource data, delivery participation, and authorization are different concerns. Optional same-project mapping supports a real human occupying both roles without forcing every user to be a resource or every resource to log in.
+
+Decision: Preserve `projects.owner_user_id`, backfill one immutable OWNER membership per existing project, and defer ownership transfer.
+
+Reason: This gives V1 data a lossless forward migration, retains owner-scoped code uniqueness, prevents orphaned projects, and avoids inventing an unsafe transfer workflow.
+
+Decision: Centralize stable role capabilities in one backend authorization policy and return effective capabilities to the frontend.
+
+Reason: Server enforcement remains authoritative across API, reports, exports/imports, AI context, and direct service use. The UI can remain role-aware without duplicating the security model. Non-members receive 404 to avoid project enumeration; members without a capability receive 403.
+
+Decision: Restrict finance to OWNER, PROJECT_ADMIN, and PROJECT_MANAGER and enforce section-aware reporting and AI context.
+
+Reason: Hiding a navigation link is insufficient. Project budget fields are masked, finance endpoints reject unauthorized callers, finance-specific portability is blocked, mixed reports omit financial sections, and backend AI evidence never includes unauthorized financial facts.
+
+Decision: Implement bounded entity comments and recipient-owned in-app notifications without mentions, outbound email, or background infrastructure.
+
+Reason: V2.1 needs useful collaboration with a small, auditable persistence surface. Same-project target validation, 4,000-character comments, 100-recipient fan-out/list bounds, soft deletion, and append-only audit events preserve isolation and history. Membership, role, comment, and mapped task-assignment events generate safe in-app notifications.
+
+Decision: Treat deterministic report generation and audit activity as separate manager-level capabilities, and treat finance-category documents as finance-sensitive.
+
+Reason: A read-only project role must not gain audit history or trigger report generation implicitly, and document/knowledge endpoints must not become a finance side channel. Mixed reports, document lists/downloads/search, exports, and AI context all enforce the underlying domain capability.
+
+Decision: Keep V1 runtime version `1.0.0` and the V1 release documentation/tag unchanged during V2 branch development.
+
+Reason: V2.1 is an unreleased development increment. Release identity changes only through a later explicit release process.

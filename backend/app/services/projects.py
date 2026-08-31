@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
+from app.models.collaboration import MembershipStatus, ProjectAccessRole, ProjectMembership
 from app.models.objective import Objective
 from app.models.project import Project, ProjectStatus
 from app.models.success_criterion import SuccessCriterion
@@ -17,11 +18,13 @@ from app.schemas.projects import (
     PortfolioSummary,
     ProjectCreate,
     ProjectList,
+    ProjectRead,
     ProjectUpdate,
     SuccessCriterionCreate,
     SuccessCriterionUpdate,
 )
 from app.services.audit import AuditService
+from app.services.authorization import AuthorizationService, Capability
 
 
 class ProjectService:
@@ -30,6 +33,7 @@ class ProjectService:
         self.owner_user_id = owner_user_id
         self.projects = ProjectRepository(session, owner_user_id)
         self.audit = AuditService(session, owner_user_id)
+        self.authorization = AuthorizationService(session, owner_user_id)
 
     async def _project_or_404(self, project_id: UUID, *, with_children: bool = False) -> Project:
         project = await self.projects.get(project_id, with_children=with_children)
@@ -69,6 +73,18 @@ class ProjectService:
         project_data = data.model_dump(exclude={"objectives", "success_criteria"})
         project = Project(owner_user_id=self.owner_user_id, **project_data)
         self.session.add(project)
+        await self.session.flush()
+        now = datetime.now(UTC)
+        self.session.add(
+            ProjectMembership(
+                project_id=project.id,
+                user_id=self.owner_user_id,
+                role=ProjectAccessRole.OWNER,
+                status=MembershipStatus.ACTIVE,
+                joined_at=now,
+                created_by_user_id=self.owner_user_id,
+            )
+        )
         await self.session.flush()
         for objective_data in data.objectives:
             objective = Objective(project_id=project.id, **objective_data.model_dump())
@@ -111,7 +127,13 @@ class ProjectService:
 
     async def list(self, **filters) -> ProjectList:
         projects, total = await self.projects.list(**filters)
-        return ProjectList(items=projects, total=total)
+        items = []
+        for project in projects:
+            item = ProjectRead.model_validate(project)
+            if not await self.authorization.can(project.id, Capability.FINANCE_READ):
+                item.planned_budget = None
+            items.append(item)
+        return ProjectList(items=items, total=total)
 
     async def portfolio(self) -> PortfolioSummary:
         total, active, on_hold, completed = await self.projects.portfolio_counts()
@@ -123,6 +145,7 @@ class ProjectService:
         )
 
     async def update(self, project_id: UUID, data: ProjectUpdate) -> Project:
+        await self.authorization.require(project_id, Capability.PROJECT_UPDATE)
         project = await self._project_or_404(project_id)
         self._ensure_mutable(project)
         changes = data.model_dump(exclude_unset=True)
@@ -135,7 +158,9 @@ class ProjectService:
                 status_code=409,
             )
         code = changes.get("code")
-        if code and await self.projects.code_exists(code, exclude_project_id=project_id):
+        if code and await self.projects.code_exists(
+            code, exclude_project_id=project_id, owner_user_id=project.owner_user_id
+        ):
             raise AppError(
                 code="project_code_exists",
                 message="A project with this code already exists.",
@@ -163,9 +188,7 @@ class ProjectService:
             entity_id=project.id,
             changes={"before": before, "fields": list(changes)},
         )
-        if "planned_budget" in changes and before["planned_budget"] != str(
-            project.planned_budget
-        ):
+        if "planned_budget" in changes and before["planned_budget"] != str(project.planned_budget):
             self.audit.record(
                 project_id=project.id,
                 action="budget.changed",
@@ -180,6 +203,7 @@ class ProjectService:
         return await self._project_or_404(project.id, with_children=True)
 
     async def archive(self, project_id: UUID) -> Project:
+        await self.authorization.require(project_id, Capability.PROJECT_ARCHIVE)
         project = await self._project_or_404(project_id)
         if project.archived_at is None:
             project.archived_at = datetime.now(UTC)
@@ -195,6 +219,7 @@ class ProjectService:
         return await self._project_or_404(project.id, with_children=True)
 
     async def create_objective(self, project_id: UUID, data: ObjectiveCreate) -> Objective:
+        await self.authorization.require(project_id, Capability.PROJECT_UPDATE)
         project = await self._project_or_404(project_id)
         self._ensure_mutable(project)
         objective = Objective(project_id=project_id, **data.model_dump())
@@ -217,6 +242,7 @@ class ProjectService:
     async def update_objective(
         self, project_id: UUID, objective_id: UUID, data: ObjectiveUpdate
     ) -> Objective:
+        await self.authorization.require(project_id, Capability.PROJECT_UPDATE)
         project = await self._project_or_404(project_id)
         self._ensure_mutable(project)
         objective = await self.projects.get_objective(project_id, objective_id)
@@ -242,6 +268,7 @@ class ProjectService:
         return objective
 
     async def delete_objective(self, project_id: UUID, objective_id: UUID) -> None:
+        await self.authorization.require(project_id, Capability.PROJECT_UPDATE)
         project = await self._project_or_404(project_id)
         self._ensure_mutable(project)
         objective = await self.projects.get_objective(project_id, objective_id)
@@ -262,6 +289,7 @@ class ProjectService:
     async def create_criterion(
         self, project_id: UUID, data: SuccessCriterionCreate
     ) -> SuccessCriterion:
+        await self.authorization.require(project_id, Capability.PROJECT_UPDATE)
         project = await self._project_or_404(project_id)
         self._ensure_mutable(project)
         if (
@@ -291,6 +319,7 @@ class ProjectService:
     async def update_criterion(
         self, project_id: UUID, criterion_id: UUID, data: SuccessCriterionUpdate
     ) -> SuccessCriterion:
+        await self.authorization.require(project_id, Capability.PROJECT_UPDATE)
         project = await self._project_or_404(project_id)
         self._ensure_mutable(project)
         criterion = await self.projects.get_criterion(project_id, criterion_id)
@@ -321,6 +350,7 @@ class ProjectService:
         return criterion
 
     async def delete_criterion(self, project_id: UUID, criterion_id: UUID) -> None:
+        await self.authorization.require(project_id, Capability.PROJECT_UPDATE)
         project = await self._project_or_404(project_id)
         self._ensure_mutable(project)
         criterion = await self.projects.get_criterion(project_id, criterion_id)

@@ -1,6 +1,6 @@
 # Loris PMO architecture
 
-Status: V1.0.0 release architecture
+Status: V1.0.0 release baseline plus V2.1 development architecture
 Date: 2026-08-31
 Product authority: `PROJECT_INTELLIGENCE_SPEC.md`
 
@@ -496,3 +496,24 @@ The authoritative application release metadata lives in `backend/app/version.py`
 Local operator scripts wrap Compose without hiding its behavior: start builds and waits for health; status inspects PostgreSQL/backend; stop uses `docker compose down` without `-v`. Backup creates a PostgreSQL custom-format dump and a separate document-volume archive. Restore requires explicit paths and confirmation, validates formats and archive containment, creates pre-restore backups, stops application access, restores both stores, and restarts services. Backup artifacts and local environment variants are gitignored.
 
 Release preparation does not create a Git tag, publish a release, seed demonstration records, make provider calls, or add product behavior. Screenshots must be captured from the real UI using a separate disposable Compose project.
+
+
+## 16. V2.1 multi-user authorization and collaboration
+
+V2.1 preserves the modular monolith and adds one centralized project-authorization service. Active `project_memberships` are the access boundary used by project repositories and portfolio queries. The stable role-to-capability registry is enforced by API dependencies and services; frontend capability checks only improve presentation.
+
+```text
+User (authentication)
+  └─ ProjectMembership (authorization role/status) ── Project
+       └─ optional mapping to existing ProjectMember(Person)
+
+Request → active membership → capability policy → project service/repository
+```
+
+The existing `ProjectMember` remains an operational Person-to-project relationship for roles, availability, workload, and task assignment. `ProjectMembership` never replaces it. Existing projects are backfilled with an OWNER membership whose user is `projects.owner_user_id`. Ownership transfer is unsupported, and the OWNER relationship is immutable.
+
+Comments use an enumerated target type plus UUID and are accepted only after service validation proves that the target belongs to the same accessible project. Deletes are soft so activity history remains explainable. Notification reads and writes always constrain `user_id` to the authenticated recipient. Membership changes, comments, and mapped task assignments create bounded in-app notifications; collaboration mutations record append-only audit events with the authenticated actor. Audit activity and deterministic report generation require their own manager-level capabilities.
+
+Finance is a distinct capability boundary. Project payloads mask `planned_budget` for unauthorized roles; finance APIs reject access; permission-aware intelligence removes finance KPIs, budget alerts/history, and recalculates health without the budget dimension; reports omit finance sections or reject finance-specific reports; finance-category documents are filtered from library, download, and knowledge retrieval; expense portability requires finance capabilities; and the AI context builder excludes finance topics and evidence. Proactive AI generation and proposal confirmation require manager-level capabilities, while CONTRIBUTOR may use the read-only Project Assistant.
+
+No Gemini transport, response contract, evidence validator, operational AI workflow, database tool, or autonomous action capability changes in V2.1.

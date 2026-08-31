@@ -8,6 +8,7 @@ from app.auth.tokens import create_access_token
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
 from app.schemas.auth import AuthResponse, LoginRequest, UserRead
+from app.schemas.collaboration import ProfileUpdate
 from app.services.auth import AuthService
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -52,4 +53,16 @@ async def logout(response: Response, _user: CurrentUser) -> None:
 
 @router.get("/me", response_model=UserRead)
 async def me(user: CurrentUser) -> UserRead:
+    return UserRead.model_validate(user)
+
+
+@router.patch("/profile", response_model=UserRead, dependencies=[Depends(require_csrf)])
+async def update_profile(
+    data: ProfileUpdate,
+    user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> UserRead:
+    user.display_name = data.display_name
+    await session.commit()
+    await session.refresh(user)
     return UserRead.model_validate(user)

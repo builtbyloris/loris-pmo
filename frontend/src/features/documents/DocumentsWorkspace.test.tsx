@@ -35,7 +35,9 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe("Sprint 12 data workspaces", () => {
   it("renders extracted document metadata and knowledge controls", async () => {
-    vi.spyOn(globalThis, "fetch").mockImplementation(() => response([documentRecord]));
+    vi.spyOn(globalThis, "fetch").mockImplementation((input) => String(input).endsWith("/access")
+      ? response({ project_id: documentRecord.project_id, role: "PROJECT_MANAGER", status: "ACTIVE", capabilities: ["documents.read", "documents.manage", "finance.read", "finance.manage", "reports.generate"] })
+      : response([documentRecord]));
     render(<MemoryRouter initialEntries={[`/projects/${documentRecord.project_id}/documents`]}><Routes><Route path="/projects/:projectId/documents" element={<DocumentsPage />} /></Routes></MemoryRouter>);
     expect(await screen.findByRole("heading", { name: "Documents", level: 1 })).toBeInTheDocument();
     expect(await screen.findByText("requirements.txt")).toBeInTheDocument();
@@ -43,11 +45,12 @@ describe("Sprint 12 data workspaces", () => {
     expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
   });
 
-  it("renders deterministic report, export and validated import controls", () => {
+  it("renders deterministic report, export and validated import controls", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(() => response({ project_id: documentRecord.project_id, role: "PROJECT_MANAGER", status: "ACTIVE", capabilities: ["documents.read", "documents.manage", "finance.read", "finance.manage", "reports.generate"] }));
     render(<MemoryRouter initialEntries={[`/projects/${documentRecord.project_id}/reports`]}><Routes><Route path="/projects/:projectId/reports" element={<ReportsPage />} /></Routes></MemoryRouter>);
     expect(screen.getByRole("heading", { name: "Reports & data", level: 1 })).toBeInTheDocument();
     expect(screen.getByText("Report preview")).toBeInTheDocument();
     expect(screen.getByText("Data export")).toBeInTheDocument();
-    expect(screen.getByText("Validated import")).toBeInTheDocument();
+    expect(await screen.findByText("Validated import")).toBeInTheDocument();
   });
 });

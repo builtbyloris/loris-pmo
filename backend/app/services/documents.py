@@ -19,6 +19,7 @@ from app.models.documents import DocumentCategory, DocumentChunk, DocumentStatus
 from app.models.project import Project
 from app.schemas.documents import DocumentUpdate, KnowledgeMatch
 from app.services.audit import AuditService
+from app.services.authorization import AuthorizationService, Capability, accessible_project_ids
 from app.services.projects import ProjectService
 
 ALLOWED = {"pdf", "docx", "xlsx", "csv", "txt", "png", "jpg", "jpeg", "webp"}
@@ -123,7 +124,7 @@ class DocumentService:
             .where(
                 ProjectDocument.id == document_id,
                 ProjectDocument.project_id == project_id,
-                Project.owner_user_id == self.owner_user_id,
+                Project.id.in_(accessible_project_ids(self.owner_user_id)),
             )
         )
         document = result.scalar_one_or_none()
@@ -131,15 +132,20 @@ class DocumentService:
             raise AppError(
                 code="document_not_found", message="Document not found.", status_code=404
             )
+        if document.category == DocumentCategory.FINANCE:
+            await AuthorizationService(self.session, self.owner_user_id).require(
+                project_id, Capability.FINANCE_READ
+            )
         return document
 
     async def list(self, project_id: UUID) -> list[ProjectDocument]:
         await self._project(project_id)
-        result = await self.session.execute(
-            select(ProjectDocument)
-            .where(ProjectDocument.project_id == project_id)
-            .order_by(ProjectDocument.created_at.desc())
-        )
+        query = select(ProjectDocument).where(ProjectDocument.project_id == project_id)
+        if not await AuthorizationService(self.session, self.owner_user_id).can(
+            project_id, Capability.FINANCE_READ
+        ):
+            query = query.where(ProjectDocument.category != DocumentCategory.FINANCE)
+        result = await self.session.execute(query.order_by(ProjectDocument.created_at.desc()))
         return list(result.scalars())
 
     async def upload(
@@ -150,6 +156,10 @@ class DocumentService:
         description: str | None,
     ) -> ProjectDocument:
         await self._project(project_id, mutable=True)
+        if category == DocumentCategory.FINANCE:
+            await AuthorizationService(self.session, self.owner_user_id).require(
+                project_id, Capability.FINANCE_MANAGE
+            )
         original = Path(upload.filename or "document").name[:255]
         extension = Path(original).suffix.lower().lstrip(".")
         if extension not in ALLOWED:
@@ -252,6 +262,13 @@ class DocumentService:
         await self._project(project_id, mutable=True)
         document = await self._document(project_id, document_id)
         changes = data.model_dump(exclude_unset=True)
+        if (
+            document.category == DocumentCategory.FINANCE
+            or changes.get("category") == DocumentCategory.FINANCE
+        ):
+            await AuthorizationService(self.session, self.owner_user_id).require(
+                project_id, Capability.FINANCE_MANAGE
+            )
         for key, value in changes.items():
             setattr(document, key, value)
         self.audit.record(
@@ -285,16 +302,21 @@ class DocumentService:
         terms = _tokens(query)
         if not terms:
             return []
-        result = await self.session.execute(
+        statement = (
             select(DocumentChunk, ProjectDocument)
             .join(ProjectDocument, ProjectDocument.id == DocumentChunk.document_id)
             .join(Project)
             .where(
                 DocumentChunk.project_id == project_id,
-                Project.owner_user_id == self.owner_user_id,
+                Project.id.in_(accessible_project_ids(self.owner_user_id)),
                 ProjectDocument.status == DocumentStatus.READY,
             )
         )
+        if not await AuthorizationService(self.session, self.owner_user_id).can(
+            project_id, Capability.FINANCE_READ
+        ):
+            statement = statement.where(ProjectDocument.category != DocumentCategory.FINANCE)
+        result = await self.session.execute(statement)
         matches = []
         lowered = query.lower().strip()
         for chunk, document in result.all():

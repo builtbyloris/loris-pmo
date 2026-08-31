@@ -16,6 +16,7 @@ from app.models.task import TaskPriority, TaskStatus
 from app.models.task_dependency import TaskDependency
 from app.repositories.intelligence import IntelligenceRepository
 from app.schemas.ai import AIEvidenceRead, AIEvidenceType
+from app.services.authorization import AuthorizationService, Capability
 from app.services.finance import FinanceService
 from app.services.intelligence import ProjectIntelligenceService
 from app.services.people import PeopleService
@@ -254,6 +255,10 @@ class ProjectContextBuilder:
         if project is None:
             raise AppError(code="project_not_found", message="Project not found.", status_code=404)
         topics = select_topics(question)
+        if not await AuthorizationService(self.session, self.owner_user_id).can(
+            project_id, Capability.FINANCE_READ
+        ):
+            topics = tuple(topic for topic in topics if topic != "finance")
         rows = await self.repository.project_facts(project_id)
         intelligence = await ProjectIntelligenceService(
             self.session, self.owner_user_id

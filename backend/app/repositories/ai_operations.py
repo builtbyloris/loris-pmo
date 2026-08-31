@@ -15,6 +15,7 @@ from app.models.ai_operations import (
 from app.models.audit import AuditEvent
 from app.models.memory import Meeting
 from app.models.project import Project
+from app.services.authorization import accessible_project_ids
 
 
 class AIOperationsRepository:
@@ -27,7 +28,7 @@ class AIOperationsRepository:
             await self.session.execute(
                 select(Project).where(
                     Project.id == project_id,
-                    Project.owner_user_id == self.owner_user_id,
+                    Project.id.in_(accessible_project_ids(self.owner_user_id)),
                 )
             )
         ).scalar_one_or_none()
@@ -104,7 +105,7 @@ class AIOperationsRepository:
                 .where(
                     Meeting.id == meeting_id,
                     Meeting.project_id == project_id,
-                    Project.owner_user_id == self.owner_user_id,
+                    Project.id.in_(accessible_project_ids(self.owner_user_id)),
                 )
             )
         ).scalar_one_or_none()

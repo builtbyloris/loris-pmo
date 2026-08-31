@@ -825,3 +825,23 @@ h1, h2, p { margin-top: 0; }
 .s12-report h3 { margin: 0 0 10px; }
 .s12-report pre, .s12-preview pre { max-height: 330px; overflow: auto; padding: 12px; border-radius: 8px; color: var(--text); background: var(--panel-soft); font-size: 12px; white-space: pre-wrap; }
 @media (max-width: 640px) { .s12-list article { grid-template-columns: auto minmax(0, 1fr); } }
+
+
+/* V2.1 collaboration */
+.role-badge { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; padding: .3rem .65rem; font-size: .75rem; font-weight: 700; background: var(--surface-soft); }
+.collaborator-form { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(180px, .5fr) auto; gap: 1rem; align-items: end; padding: 1rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.collaborator-form label { display: grid; gap: .4rem; }
+.data-table td small { display: block; color: var(--text-muted); }
+.notifications-menu { position: relative; }
+.notification-count { position: absolute; top: -4px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: var(--danger); color: #fff; font-size: 10px; line-height: 17px; }
+.notification-popover { position: absolute; z-index: 30; right: 0; top: calc(100% + .7rem); width: min(380px, 90vw); max-height: 480px; overflow: auto; padding: .8rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: 0 16px 45px rgb(0 0 0 / .18); }
+.notification-popover header { display: flex; justify-content: space-between; align-items: center; }
+.notification-popover ul, .comments-panel ul { list-style: none; margin: .7rem 0 0; padding: 0; }
+.notification-popover li button { display: grid; width: 100%; gap: .25rem; padding: .7rem; text-align: left; border: 0; border-bottom: 1px solid var(--border); background: transparent; color: inherit; }
+.notification-popover li.unread button { background: var(--surface-soft); }
+.notification-popover time, .comments-panel time { color: var(--text-muted); font-size: .72rem; }
+.comments-panel { margin-top: 1rem; padding: 1rem; border: 1px solid var(--border); border-radius: 14px; }
+.comments-panel li { padding: .7rem 0; border-bottom: 1px solid var(--border); }
+.comments-panel li time { margin-left: .5rem; }
+.comments-panel form { display: grid; gap: .6rem; margin-top: 1rem; }
+@media (max-width: 760px) { .collaborator-form { grid-template-columns: 1fr; } }

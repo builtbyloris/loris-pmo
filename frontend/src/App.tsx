@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { ProjectAssistantPage } from "./features/assistant/pages/ProjectAssistantPage";
+import { CollaboratorsPage } from "./features/collaboration/pages/CollaboratorsPage";
 import { ProtectedRoute } from "./features/auth/ProtectedRoute";
 import { ControlWorkspacePage } from "./features/control/pages/ControlWorkspacePage";
 import { DocumentsPage } from "./features/documents/pages/DocumentsPage";
@@ -28,6 +29,7 @@ export function App() {
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="projects/:projectId" element={<ProjectOverviewPage />} />
           <Route path="projects/:projectId/work" element={<WorkPlanningPage />} />
+          <Route path="projects/:projectId/collaborators" element={<CollaboratorsPage />} />
           <Route path="projects/:projectId/people" element={<PeopleWorkspacePage />} />
           <Route path="projects/:projectId/finance" element={<FinanceWorkspacePage />} />
           <Route path="projects/:projectId/control" element={<ControlWorkspacePage />} />

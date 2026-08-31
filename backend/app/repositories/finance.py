@@ -9,6 +9,7 @@ from app.models.milestone import Milestone
 from app.models.project import Project
 from app.models.task import Task
 from app.schemas.finance import ExpenseSort, SortOrder
+from app.services.authorization import accessible_project_ids
 
 
 class FinanceRepository:
@@ -20,14 +21,13 @@ class FinanceRepository:
         return (
             await self.session.execute(
                 select(Project).where(
-                    Project.id == project_id, Project.owner_user_id == self.owner_user_id
+                    Project.id == project_id,
+                    Project.id.in_(accessible_project_ids(self.owner_user_id)),
                 )
             )
         ).scalar_one_or_none()
 
-    async def get_category(
-        self, project_id: UUID, category_id: UUID
-    ) -> BudgetCategory | None:
+    async def get_category(self, project_id: UUID, category_id: UUID) -> BudgetCategory | None:
         return (
             await self.session.execute(
                 select(BudgetCategory)
@@ -35,7 +35,7 @@ class FinanceRepository:
                 .where(
                     BudgetCategory.id == category_id,
                     BudgetCategory.project_id == project_id,
-                    Project.owner_user_id == self.owner_user_id,
+                    Project.id.in_(accessible_project_ids(self.owner_user_id)),
                 )
             )
         ).scalar_one_or_none()
@@ -80,7 +80,7 @@ class FinanceRepository:
                 .where(
                     Expense.id == expense_id,
                     Expense.project_id == project_id,
-                    Project.owner_user_id == self.owner_user_id,
+                    Project.id.in_(accessible_project_ids(self.owner_user_id)),
                 )
             )
         ).scalar_one_or_none()

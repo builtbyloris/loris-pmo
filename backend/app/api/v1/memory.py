@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.authorization import authorize_project_module
 from app.auth.dependencies import CurrentUser, require_csrf
 from app.core.database import get_db
 from app.models.memory import DecisionStatus, MeetingStatus, MemorySource, ProjectLogType
@@ -27,9 +28,22 @@ from app.schemas.memory import (
     ProjectLogUpdate,
     SortOrder,
 )
+from app.services.authorization import Capability
 from app.services.memory import MemoryService
 
-router = APIRouter(prefix="/projects/{project_id}", tags=["project-memory"])
+router = APIRouter(
+    prefix="/projects/{project_id}",
+    tags=["project-memory"],
+    dependencies=[
+        Depends(
+            authorize_project_module(
+                Capability.MEETINGS_READ,
+                Capability.MEETINGS_MANAGE,
+                path_overrides={"/activity": Capability.AUDIT_READ},
+            )
+        )
+    ],
+)
 Session = Annotated[AsyncSession, Depends(get_db)]
 
 

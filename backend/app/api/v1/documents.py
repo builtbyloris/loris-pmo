@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.authorization import authorize_project_module
 from app.auth.dependencies import CurrentUser, require_csrf
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
@@ -21,11 +22,24 @@ from app.schemas.documents import (
     ReportType,
 )
 from app.services.audit import AuditService
+from app.services.authorization import Capability
 from app.services.data_portability import ExportService, ImportService, ReportingService
 from app.services.documents import DocumentService
 from app.services.projects import ProjectService
 
-router = APIRouter(prefix="/projects/{project_id}", tags=["documents-and-reports"])
+router = APIRouter(
+    prefix="/projects/{project_id}",
+    tags=["documents-and-reports"],
+    dependencies=[
+        Depends(
+            authorize_project_module(
+                Capability.DOCUMENTS_READ,
+                Capability.DOCUMENTS_MANAGE,
+                path_overrides={"/knowledge/query": Capability.DOCUMENTS_READ},
+            )
+        )
+    ],
+)
 Session = Annotated[AsyncSession, Depends(get_db)]
 Config = Annotated[Settings, Depends(get_settings)]
 
