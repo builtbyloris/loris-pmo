@@ -1,0 +1,6 @@
+export type DocumentCategory = "REQUIREMENTS" | "SPECIFICATIONS" | "MEETING_NOTES" | "CONTRACTS" | "REPORTS" | "FINANCE" | "OTHER";
+export interface ProjectDocument { id: string; project_id: string; original_filename: string; file_type: string; mime_type: string; size_bytes: number; category: DocumentCategory; description: string | null; status: "UPLOADED" | "PROCESSING" | "READY" | "FAILED" | "UNSUPPORTED"; processing_error: string | null; created_at: string; updated_at: string; }
+export interface KnowledgeMatch { evidence_id: string; document_id: string; filename: string; excerpt: string; location: Record<string, unknown> | null; score: number; }
+export type ReportType = "project-summary" | "executive-summary" | "weekly" | "budget" | "control" | "team";
+export interface ProjectReport { project_id: string; type: ReportType; title: string; generated_at: string; period_start: string | null; period_end: string | null; sections: { key: string; title: string; data: unknown }[]; }
+export interface ImportPreview { id: string; target: "TASKS" | "EXPENSES"; row_count: number; valid_count: number; errors: { row: number; message: string }[]; preview: Record<string, unknown>[]; can_confirm: boolean; status: string; }

@@ -132,3 +132,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for system boundaries, securi
 ### Operational AI workspace
 
 Sprint 11 adds user-triggered Daily Briefings, rolling seven-day Weekly Reviews, read-only Scenario Analysis, and an AI Meeting Assistant. AI outputs remain evidence-backed proposals: scenario runs never mutate the project, and meeting proposals create an operational record only after explicit per-item confirmation.
+
+## V1 documents and data workspace
+
+Each project now includes **Documents** and **Reports & data** workspaces. Documents are stored under the server-only `DOCUMENT_STORAGE_PATH` (10 MB default limit), extracted into bounded searchable chunks where supported, and can ground the existing read-only Project Assistant through validated evidence references. Reports are deterministic backend snapshots with PDF download; project datasets export to CSV/XLSX. Task and expense imports require a validation preview and explicit atomic confirmation.
+
+Set `DOCUMENT_STORAGE_PATH=/app/data/documents` in Docker deployments; Compose provisions the persistent `document_data` volume. Image OCR, vector search, generic field-mapping imports, and custom report-template design are intentionally outside V1. See `docs/V1_FEATURE_AUDIT.md` for the complete release audit.

@@ -12,3 +12,5 @@ frontend/.vite/
 frontend/*.tsbuildinfo
 *.log
 
+
+backend/.data/

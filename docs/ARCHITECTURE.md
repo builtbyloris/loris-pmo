@@ -454,3 +454,11 @@ Operational AI extends the existing provider-neutral service; it does not create
 - Scenario analysis stores a snapshot of deterministic simulation results and AI interpretation only. It never writes to tasks, milestones, resources, budgets, or risks.
 - Meeting analysis stores summaries and inert proposals. Each action, decision, risk, or issue requires an explicit, individual user confirmation; confirmation validates project ownership and records both operational and AI audit events.
 - All outputs are bounded structured JSON, use `store=false`, enable no tools, and retain provider/model/token metadata without raw provider payloads.
+
+## Sprint 12 — documents, knowledge, and data portability
+
+Project documents use an owner-scoped metadata model plus a configurable local storage root (`DOCUMENT_STORAGE_PATH`). API responses never expose storage keys. Generated internal filenames and containment checks prevent path traversal; upload size and extension allowlists bound work. PDF, DOCX, XLSX, CSV, and TXT extraction is synchronous and bounded for V1. Images are stored with an explicit unsupported-knowledge status rather than fabricated OCR output.
+
+Extracted text is split deterministically into bounded overlapping chunks with real page/sheet/section metadata when available. Retrieval is deterministic lexical scoring within one owned project. The Project Assistant adds only relevant top-five excerpts, labels them untrusted data, and registers each `document_chunk:<uuid>` reference in the backend evidence catalog. Provider output cannot introduce an unregistered document reference.
+
+Reports are deterministic snapshots assembled from database facts. Weekly reports use a rolling seven-day period ending at generation time and explicitly describe the available history. PDF rendering and CSV/XLSX exports occur server-side and are audited. Imports support only task and expense templates in CSV/XLSX/JSON: preview persists normalized rows and errors, while confirmation rechecks ownership/archive state and commits the entire valid batch atomically.

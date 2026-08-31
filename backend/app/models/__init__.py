@@ -36,6 +36,15 @@ from app.models.control import (
     RiskStatus,
     RiskTaskLink,
 )
+from app.models.documents import (
+    DocumentCategory,
+    DocumentChunk,
+    DocumentStatus,
+    ImportBatch,
+    ImportStatus,
+    ImportTarget,
+    ProjectDocument,
+)
 from app.models.finance import BudgetCategory, Expense, ExpenseStatus
 from app.models.intelligence import Alert, AlertSeverity, AlertStatus, HealthSnapshot, HealthStatus
 from app.models.memory import (
@@ -102,6 +111,12 @@ __all__ = [
     "Decision",
     "DecisionLink",
     "DecisionStatus",
+    "DocumentCategory",
+    "DocumentChunk",
+    "DocumentStatus",
+    "ImportBatch",
+    "ImportStatus",
+    "ImportTarget",
     "Expense",
     "ExpenseStatus",
     "ImpactLevel",
@@ -123,6 +138,7 @@ __all__ = [
     "ObjectiveStatus",
     "Person",
     "Project",
+    "ProjectDocument",
     "ProjectLogEntry",
     "ProjectLogLink",
     "ProjectLogType",

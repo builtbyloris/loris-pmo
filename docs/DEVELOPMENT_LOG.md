@@ -237,3 +237,14 @@ Reason: With the 4096-token output cap, the final controlled interaction complet
 - Added AI workspace views for Daily Briefing, Weekly Review, and Scenario Analysis, plus the meeting assistant in completed meeting cards.
 - Added EN/IT localization and focused backend/frontend tests.
 - Gemini remains `gemini-3.6-flash` through the existing Interactions API with the centralized 30-second timeout and 4096-token output budget. No retries, fallback models, tools, or autonomous execution were added.
+
+## 2026-08-31 — Sprint 12: V1 documents, knowledge, reporting and portability
+
+- Added project document metadata, bounded extracted chunks, and validated import batches in Alembic revision `20260831_0012`.
+- Added configurable local document storage with a Docker named volume, generated storage keys, containment checks, upload limits, and no storage-path exposure.
+- Added bounded PDF/DOCX/XLSX/CSV/TXT extraction; images remain downloadable but explicitly unavailable for text retrieval without OCR.
+- Added deterministic lexical project-document retrieval and backend-owned document evidence integration in the existing Project Assistant.
+- Added six deterministic report types, server-rendered PDF, CSV/XLSX project exports, and audited generation.
+- Added preview/validate/confirm import for task and expense CSV/XLSX/JSON templates with all-or-nothing persistence.
+- Added EN/IT Documents and Reports & Data workspaces and project-overview navigation.
+- Added `docs/V1_FEATURE_AUDIT.md` covering all 33 official product features and honest V1 boundaries.

@@ -32,6 +32,12 @@ export const en = {
     copilot: "AI Copilot",
     settings: "Settings",
   },
+  documents: {
+    eyebrow: "PROJECT KNOWLEDGE", title: "Documents", subtitle: "Secure project files and evidence-backed knowledge.", back: "Back to project", openReports: "Reports & data", upload: "Upload document", uploadHelp: "PDF, DOCX, XLSX, CSV, TXT and images up to the configured limit.", file: "Document file", description: "Optional description", library: "Document library", libraryHelp: "Files remain scoped to this project and its owner.", empty: "No documents uploaded yet.", download: "Download document", deleteConfirm: "Delete this document and its extracted knowledge?", knowledge: "Knowledge search", knowledgeHelp: "Deterministic lexical retrieval over extracted project text.", askAi: "Ask Project Assistant", search: "Search", searchPlaceholder: "Search project documents…", error: "Documents could not be loaded.", categories: { REQUIREMENTS: "Requirements", SPECIFICATIONS: "Specifications", MEETING_NOTES: "Meeting notes", CONTRACTS: "Contracts", REPORTS: "Reports", FINANCE: "Finance", OTHER: "Other" }
+  },
+  reports: {
+    eyebrow: "V1 DATA WORKSPACE", title: "Reports & data", subtitle: "Deterministic reporting, portable exports and validated imports.", back: "Back to project", openDocuments: "Documents", preview: "Report preview", previewHelp: "Generated from current backend facts; missing facts are never invented.", generate: "Generate preview", pdf: "Download PDF", export: "Data export", exportHelp: "Export current project datasets as CSV or XLSX.", import: "Validated import", importHelp: "Preview task or expense rows before an atomic confirmation.", validate: "Validate preview", confirm: "Confirm import", tasks: "Tasks", expenses: "Expenses", previewCount: "{{valid}} valid of {{total}} rows", row: "Row {{row}}", imported: "Imported {{count}} records.", error: "The report or data operation failed.", types: { "project-summary": "Project summary", "executive-summary": "Executive summary", weekly: "Weekly review", budget: "Budget report", control: "Risk and control", team: "Team and workload" }, datasets: { tasks: "Tasks", milestones: "Milestones", expenses: "Expenses", risks: "Risks", issues: "Issues", changes: "Change requests", team: "Team", activity: "Project activity" }
+  },
   login: {
     eyebrow: "PRIVATE WORKSPACE",
     title: "Welcome back",

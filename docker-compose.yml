@@ -29,9 +29,12 @@ services:
       AI_MAX_OUTPUT_TOKENS: ${AI_MAX_OUTPUT_TOKENS:-4096}
       AI_TEMPERATURE: ${AI_TEMPERATURE:-0.2}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DOCUMENT_STORAGE_PATH: ${DOCUMENT_STORAGE_PATH:-/app/data/documents}
+      DOCUMENT_MAX_UPLOAD_MB: ${DOCUMENT_MAX_UPLOAD_MB:-10}
     volumes:
       - ./backend/app:/app/app
       - ./backend/alembic:/app/alembic
+      - document_data:/app/data/documents
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     depends_on:
       db:
@@ -59,4 +62,5 @@ services:
 
 volumes:
   postgres_data:
+  document_data:
 

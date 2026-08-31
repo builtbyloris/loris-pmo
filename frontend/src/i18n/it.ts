@@ -32,6 +32,12 @@ export const it = {
     copilot: "AI Copilot",
     settings: "Impostazioni",
   },
+  documents: {
+    eyebrow: "CONOSCENZA PROGETTO", title: "Documenti", subtitle: "File di progetto sicuri e conoscenza supportata da evidenze.", back: "Torna al progetto", openReports: "Report e dati", upload: "Carica documento", uploadHelp: "PDF, DOCX, XLSX, CSV, TXT e immagini entro il limite configurato.", file: "File documento", description: "Descrizione facoltativa", library: "Raccolta documenti", libraryHelp: "I file restano limitati al progetto e al proprietario.", empty: "Nessun documento caricato.", download: "Scarica documento", deleteConfirm: "Eliminare il documento e la conoscenza estratta?", knowledge: "Ricerca nella conoscenza", knowledgeHelp: "Ricerca lessicale deterministica nel testo estratto.", askAi: "Chiedi all’Assistente", search: "Cerca", searchPlaceholder: "Cerca nei documenti…", error: "Impossibile caricare i documenti.", categories: { REQUIREMENTS: "Requisiti", SPECIFICATIONS: "Specifiche", MEETING_NOTES: "Note riunione", CONTRACTS: "Contratti", REPORTS: "Report", FINANCE: "Finanza", OTHER: "Altro" }
+  },
+  reports: {
+    eyebrow: "AREA DATI V1", title: "Report e dati", subtitle: "Report deterministici, esportazioni portabili e importazioni validate.", back: "Torna al progetto", openDocuments: "Documenti", preview: "Anteprima report", previewHelp: "Generata dai fatti backend attuali, senza inventare dati mancanti.", generate: "Genera anteprima", pdf: "Scarica PDF", export: "Esporta dati", exportHelp: "Esporta i dataset del progetto in CSV o XLSX.", import: "Importazione validata", importHelp: "Controlla attività o spese prima della conferma atomica.", validate: "Valida anteprima", confirm: "Conferma importazione", tasks: "Attività", expenses: "Spese", previewCount: "{{valid}} righe valide su {{total}}", row: "Riga {{row}}", imported: "Importati {{count}} record.", error: "Operazione report o dati non riuscita.", types: { "project-summary": "Riepilogo progetto", "executive-summary": "Riepilogo direzionale", weekly: "Revisione settimanale", budget: "Report budget", control: "Rischi e controllo", team: "Team e carico" }, datasets: { tasks: "Attività", milestones: "Milestone", expenses: "Spese", risks: "Rischi", issues: "Problemi", changes: "Richieste di modifica", team: "Team", activity: "Attività progetto" }
+  },
   login: {
     eyebrow: "AREA DI LAVORO PRIVATA",
     title: "Bentornato",

@@ -3,6 +3,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { ProjectAssistantPage } from "./features/assistant/pages/ProjectAssistantPage";
 import { ProtectedRoute } from "./features/auth/ProtectedRoute";
 import { ControlWorkspacePage } from "./features/control/pages/ControlWorkspacePage";
+import { DocumentsPage } from "./features/documents/pages/DocumentsPage";
+import { ReportsPage } from "./features/documents/pages/ReportsPage";
 import { FinanceWorkspacePage } from "./features/finance/pages/FinanceWorkspacePage";
 import { PeopleWorkspacePage } from "./features/people/pages/PeopleWorkspacePage";
 import { ProjectMemoryPage } from "./features/memory/pages/ProjectMemoryPage";
@@ -30,6 +32,8 @@ export function App() {
           <Route path="projects/:projectId/finance" element={<FinanceWorkspacePage />} />
           <Route path="projects/:projectId/control" element={<ControlWorkspacePage />} />
           <Route path="projects/:projectId/memory" element={<ProjectMemoryPage />} />
+          <Route path="projects/:projectId/documents" element={<DocumentsPage />} />
+          <Route path="projects/:projectId/reports" element={<ReportsPage />} />
           <Route path="projects/:projectId/assistant" element={<ProjectAssistantPage />} />
           <Route path="copilot" element={<ProjectAssistantPage />} />
           <Route path="settings" element={<PlaceholderPage area="settings" />} />

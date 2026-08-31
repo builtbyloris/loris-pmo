@@ -33,6 +33,15 @@ class AIService:
             )
         )
         output = self._parse(provider_response)
+        unknown_document_refs = [
+            ref
+            for ref in output.evidence_refs
+            if ref.startswith("document_chunk:") and ref not in context.evidence
+        ]
+        if unknown_document_refs:
+            raise AIInvalidResponseError(
+                "AI response cited document evidence outside the backend catalog."
+            )
         evidence = []
         seen = set()
         for ref in output.evidence_refs:

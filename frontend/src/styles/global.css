@@ -809,3 +809,19 @@ h1, h2, p { margin-top: 0; }
 .meeting-proposals article { padding: .75rem; border: 1px solid var(--border, #e2e4ea); border-radius: 10px; background: #fff; display: grid; gap: .4rem; }
 .meeting-proposals article > div { display: flex; gap: .5rem; }
 @media (max-width: 720px) { .operational-header { flex-direction: column; } }
+
+/* Sprint 12: documents, reports, export and import */
+.s12-form, .s12-controls, .s12-search { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.s12-form input, .s12-form select, .s12-controls input, .s12-controls select, .s12-search input { min-height: 42px; padding: 0 12px; border: 1px solid var(--border); border-radius: 9px; color: var(--text); background: var(--panel); }
+.s12-search input { flex: 1 1 260px; }
+.s12-list { display: grid; gap: 10px; }
+.s12-list article { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 11px; background: var(--panel-soft); }
+.s12-list small, .s12-match small, .s12-report small { display: block; margin-top: 4px; color: var(--muted); }
+.s12-list p { margin: 6px 0 0; color: var(--muted); }
+.s12-match { margin-top: 12px; padding: 14px; border-left: 3px solid var(--accent); background: var(--panel-soft); }
+.s12-match p { margin: 9px 0 0; white-space: pre-wrap; }
+.s12-report, .s12-preview { margin-top: 18px; display: grid; gap: 12px; }
+.s12-report article { padding: 16px; border: 1px solid var(--border); border-radius: 11px; }
+.s12-report h3 { margin: 0 0 10px; }
+.s12-report pre, .s12-preview pre { max-height: 330px; overflow: auto; padding: 12px; border-radius: 8px; color: var(--text); background: var(--panel-soft); font-size: 12px; white-space: pre-wrap; }
+@media (max-width: 640px) { .s12-list article { grid-template-columns: auto minmax(0, 1fr); } }

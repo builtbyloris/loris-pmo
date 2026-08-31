@@ -32,6 +32,7 @@ class AIEvidenceType(StrEnum):
     AI_INSIGHT = "ai_insight"
     AI_RECOMMENDATION = "ai_recommendation"
     PERIOD_FACT = "period_fact"
+    DOCUMENT = "document"
     SIMULATION = "simulation"
 
 
