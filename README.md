@@ -1,8 +1,8 @@
 # Loris PMO
 
-Loris PMO is a private, professional-grade project management and project intelligence application. It combines operational project control, deterministic analytics, and evidence-backed AI assistance in one membership-scoped workspace while preserving explicit project ownership.
+Loris PMO is a professional-grade project management and project intelligence platform. It combines operational project control, deterministic analytics, multi-user collaboration, advanced scheduling, and evidence-backed AI assistance in a secure role-based workspace.
 
-**Release:** v1.0.0 · **Development branch:** V2.1 (`v2-development`) · **V1 release date:** 2026-08-31
+This public GitHub repository contains the stable **v1.0.0** release on `main` and unreleased V2 development on `v2-development`. The current development milestone is **V2.2 Advanced Scheduling**. No `v2.0.0` release or tag exists.
 
 ## Overview
 
@@ -24,16 +24,39 @@ The repository is a modular monolith designed for reliable local operation with 
 - Project documents, bounded extraction, lexical knowledge retrieval, and document evidence
 - Six deterministic reports, PDF output, CSV/XLSX export, and validated task/expense import
 - English/Italian localization and light/dark presentation
-- V2.1 authenticated project memberships, centralized RBAC, comments, and in-app notifications
 
 The evidence-backed scope and V1 boundaries for all 33 official product areas are recorded in [the V1 feature audit](docs/V1_FEATURE_AUDIT.md).
+
+### V2 development
+
+V2 development is available on `v2-development` and has not been released as `v2.0.0`.
+
+**V2.1 — Multi-user, RBAC & Collaboration**
+
+- Multi-user project membership with centralized server-side RBAC
+- `OWNER`, `PROJECT_ADMIN`, `PROJECT_MANAGER`, `CONTRIBUTOR`, and `VIEWER` roles
+- Project comments, in-app notifications, and actor-aware activity
+- Permission-aware finance, documents, reports, exports, and AI context
+
+**V2.2 — Advanced Scheduling**
+
+- Recursive finish-to-start dependency propagation
+- Deterministic Critical Path Method with total and free float
+- Explicit schedule baselines and signed schedule variance
+- Milestone and project-deadline impact calculations
+- Non-mutating preview followed by explicit transactional apply
+- Schedule-fingerprint protection against stale previews
+- Scenario Analysis reuse of the same deterministic scheduling engine
+
+V2.3 through V2.5 are roadmap milestones and are not implemented yet.
 
 ## AI philosophy
 
 AI is a copilot, not the project manager.
 
 - Backend data and deterministic calculations are authoritative.
-- Gemini receives bounded, owner-scoped context through a provider-neutral interface.
+- Gemini receives bounded, permission-aware context through a provider-neutral interface.
+- AI context follows server-side project membership and RBAC rules and cannot bypass domain permissions.
 - AI interprets, summarizes, simulates, extracts proposals, and recommends; it does not receive database tools or autonomous actions.
 - Model evidence identifiers are accepted only when they resolve through a backend-owned catalog.
 - Recommendations record agreement or rejection but do not execute project changes.
@@ -72,7 +95,7 @@ See the [V2 roadmap](docs/V2_ROADMAP.md) and [Architecture](docs/ARCHITECTURE.md
 
 ## Portfolio positioning
 
-This project demonstrates end-to-end product engineering rather than a thin AI chat interface: typed API design, relational modeling and migrations, owner/project security boundaries, deterministic financial and schedule logic, responsive frontend application development, human-in-the-loop AI, prompt/evidence safety, transactional imports, generated reports, automated tests, and reproducible local infrastructure.
+This project demonstrates end-to-end product engineering rather than a thin AI chat interface: typed API design, relational modeling and migrations, project membership, centralized RBAC, permission-aware AI and data access, deterministic financial analytics, advanced deterministic scheduling, responsive frontend application development, human-in-the-loop AI, prompt/evidence safety, transactional imports, generated reports, automated tests, and reproducible local infrastructure.
 
 For a concise walkthrough, use the [5–10 minute demo flow](docs/DEMO_FLOW.md).
 
@@ -214,13 +237,24 @@ Demo records never run at startup. The recommended demo uses a separate Compose 
 
 ## Project status
 
-**v1.0.0 remains the stable release. V2.1 collaboration is complete on `v2-development`; V2.2 advanced scheduling is in validation.**
+**Stable:** `v1.0.0` — released and stable on `main`.
 
-The authoritative runtime release value remains `backend/app/version.py` at `1.0.0`; V2 development intentionally does not create or move release tags.
+**Development:** V2 is in progress on `v2-development`.
 
-## V1 release limitations
+**Milestones:**
 
-- The V1 tag is single-owner; V2.1 on the development branch adds multi-user collaboration and RBAC
+- ✅ V2.1 Multi-user / RBAC / Collaboration
+- ✅ V2.2 Advanced Scheduling
+- ⏳ V2.3 AI & Knowledge 2.0
+- ⏳ V2.4 Integrations
+- ⏳ V2.5 Cloud & Production Readiness
+
+V2 has not been released as `v2.0.0`. The authoritative runtime release value remains `backend/app/version.py` at `1.0.0`; V2 development intentionally does not create or move release tags.
+
+## Stable V1 limitations
+
+- V1 uses a single-owner workspace without multi-user RBAC; V2.1 addresses this on the unreleased development branch
+- V1 provides the original task dependency and Timeline behavior; V2.2 adds advanced deterministic scheduling on the unreleased development branch
 - Local named-volume document storage; no cloud object storage
 - Deterministic lexical document retrieval; no vector search
 - Image storage without OCR
@@ -230,10 +264,31 @@ The authoritative runtime release value remains `backend/app/version.py` at `1.0
 
 Additional accepted boundaries are documented in the [V1 feature audit](docs/V1_FEATURE_AUDIT.md).
 
+## Current V2 development limitations
+
+- No ownership transfer
+- No outbound email invitations
+- No realtime or WebSocket collaboration
+- Finish-to-start scheduling dependencies only
+- Calendar-day scheduling; no holiday or business calendar
+- No resource leveling or automatic resource assignment
+- No drag-and-drop scheduling
+- No semantic or vector retrieval yet
+- No external integrations yet
+- No cloud deployment yet
+
 ## Roadmap
 
-V2.1 implements the collaboration foundation. V2.2 adds deterministic dependency scheduling, critical path and float, explicit baselines, schedule variance, recursive preview/apply, and schedule-aware scenarios. Invitation delivery, ownership transfer, structured mentions, notification preferences, cloud deployment, object storage, semantic retrieval, integrations, advanced report design, and OCR remain future work. See [V2_ROADMAP.md](docs/V2_ROADMAP.md).
+- ✅ V2.1 — Multi-user, RBAC & Collaboration
+- ✅ V2.2 — Advanced Scheduling
+- ⏳ V2.3 — AI & Knowledge 2.0
+- ⏳ V2.4 — Integrations
+- ⏳ V2.5 — Cloud & Production Readiness
+
+See [V2_ROADMAP.md](docs/V2_ROADMAP.md) for the detailed development plan. Roadmap items are not implemented until explicitly marked complete.
 
 ## License
 
-This is currently a private personal project. No open-source license has been granted; all rights are reserved unless the owner explicitly chooses a license later.
+This repository is publicly viewable for portfolio and demonstration purposes.
+
+No open-source license has been granted. Unless explicitly stated otherwise, all rights are reserved.
