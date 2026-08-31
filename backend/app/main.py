@@ -6,13 +6,14 @@ from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.handlers import register_exception_handlers
 from app.core.middleware import RequestIDMiddleware
+from app.version import __version__
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
         title=settings.app_name,
-        version="0.1.0",
+        version=__version__,
         docs_url="/api/docs" if settings.app_env != "production" else None,
         redoc_url=None,
     )

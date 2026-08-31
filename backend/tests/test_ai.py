@@ -101,9 +101,10 @@ def provider() -> GeminiProvider:
 
 
 def test_gemini_model_default_and_environment_override() -> None:
-    default = Settings(secret_key="x" * 32, _env_file=None)
+    default = Settings(secret_key="x" * 32, database_url="sqlite+aiosqlite://", _env_file=None)
     overridden = Settings(
         secret_key="x" * 32,
+        database_url="sqlite+aiosqlite://",
         gemini_model="gemini-custom",
         ai_timeout_seconds=45,
         ai_max_output_tokens=2048,

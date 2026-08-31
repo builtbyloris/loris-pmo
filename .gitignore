@@ -14,3 +14,8 @@ frontend/*.tsbuildinfo
 
 
 backend/.data/
+
+# Local release/operator artifacts
+.env.*
+!.env.example
+backups/

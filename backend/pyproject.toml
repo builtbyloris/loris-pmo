@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "loris-pmo-backend"
-version = "0.1.0"
+dynamic = ["version"]
 description = "FastAPI foundation for Loris PMO"
 requires-python = ">=3.12"
 dependencies = [
@@ -37,6 +37,9 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
+
+[tool.hatch.version]
+path = "app/version.py"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

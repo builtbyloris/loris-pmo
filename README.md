@@ -1,140 +1,238 @@
 # Loris PMO
 
-Loris PMO is a personal project management and project intelligence application. The repository includes the production-shaped foundation through AI Insights and Recommendations: secure authentication; owner-scoped project, planning, people, finance, control, and memory records; deterministic KPIs and health; automatic alerts and automation rules; portfolio intelligence; question-relevant AI context packages; provider-neutral Gemini execution; evidence-grounded project Q&A; explicit proactive analysis; persistent, deduplicated AI insights and recommendations; human review history; bilingual UI; testing; and Docker Compose.
+Loris PMO is a private, professional-grade project management and project intelligence application. It combines operational project control, deterministic analytics, and evidence-backed AI assistance in one owner-scoped workspace.
 
-The remaining product areas described in `PROJECT_INTELLIGENCE_SPEC.md` are intentionally delivered incrementally rather than represented with fake functionality or sample production data.
+**Release:** v1.0.0 · **Status:** V1 · **Release date:** 2026-08-31
 
-## Project management and deterministic intelligence
+## Overview
 
-An authenticated user can:
+The application helps a project manager understand what is happening, what changed, what is late or at risk, how finances and workload are evolving, and what deserves attention next. PostgreSQL remains the factual source of truth. Backend services calculate authoritative metrics; Gemini interprets bounded evidence and proposes options; the user remains the decision maker.
 
-- create a project through a three-step wizard, including initial objectives and success criteria;
-- view, search, filter, sort, edit, and archive only their own projects;
-- maintain project objectives and success criteria;
-- create tasks and one-level subtasks with validated dates, effort, priority, status, milestone, and completion data;
-- connect project tasks with blocking, dependency, and related relationships while preventing scheduling cycles;
-- create milestones whose progress is derived from their linked non-cancelled tasks;
-- use the same persisted task data in searchable List, draggable Kanban, and date-based Timeline views;
-- see real total, completed, overdue, upcoming-milestone, and deterministic task-progress metrics on a project;
-- see real total, active, on-hold, and completed counts in the portfolio;
-- create reusable people and add them to projects with roles, responsibilities, and availability;
-- assign one or more valid project members to tasks and see them across planning views;
-- manage linked or standalone stakeholders and inspect their influence/interest matrix;
-- review backend-calculated workload counts, effort totals, incomplete-data indicators, and documented heuristic states;
-- set a project budget, organize planned allocation into categories, and record planned, pending, paid, or cancelled expenses;
-- review deterministic budget totals, utilization status, category breakdown, uncategorized spend, monthly trends, and recent expenses;
-- assess risks with probability and impact, deterministic severity bands, owner and work links, mitigations, contingencies, and a 5×5 matrix;
-- track issues through explicit analysis, action, resolution, and closure with schedule, budget, scope, and quality impacts;
-- submit, approve, reject, implement, or cancel change requests with recorded rationale and no automatic mutation of project plans;
-- preserve durable project context in a searchable chronological Project Log with normalized record links;
-- plan and complete meetings with project-member participants and reviewable action items;
-- confirm, complete, or dismiss meeting actions explicitly, with optional links to existing tasks;
-- record decisions, rationale, impact, lifecycle history, and same-project links without hard deletion;
-- inspect the existing append-only technical audit stream separately from meaningful Project Log memory;
-- review centralized KPIs with explicit unavailable states instead of invented values;
-- inspect Schedule, Budget, Tasks, Risks, Resources, and Objectives health dimensions with documented weighting and deterministic drivers;
-- track meaningful health history without creating a snapshot on every read;
-- review, filter, and acknowledge persistent automatic alerts that deduplicate, reactivate, and resolve from their underlying conditions;
-- see health, overdue work, severe risks, critical issues, budget state, and active alerts across the portfolio;
-- ask read-only project questions through a Gemini-backed assistant whose evidence references are validated against owner-scoped context;
-- explicitly analyze deterministic alert/action candidates once per meaningful state, producing at most five evidence-validated insights and five recommendations;
-- review persistent insights and recommendations with confidence, evidence, alternatives, freshness, and EN/IT presentation;
-- accept, reject, ignore, or dismiss AI proposals without executing any operational project mutation;
-- use the application in English or Italian and in light or dark mode.
+The repository is a modular monolith designed for reliable local operation with Docker Compose. It starts empty: no account, project, task, expense, or other business fixture is created automatically.
 
-Archived projects remain available through the archive filter but are read-only. Domain mutations and intelligence state changes create append-only audit events; only material health changes and critical alert transitions enter the human-facing Project Log. Workload uses real task assignments and stored effort without inventing hours. Finance uses the project budget plus stored expense statuses: paid is actual, pending is committed, planned is forecast-only, and cancelled is excluded. Risk severity is derived from probability × impact. Earned value remains unavailable because the required time-phased baseline does not exist.
+## Key features
 
-## Project Assistant, Insights, and Gemini
+- Multi-project portfolio, project lifecycle, objectives, and success criteria
+- Tasks, subtasks, dependencies, milestones, List, Kanban, and Timeline views
+- Reusable people, project roles, stakeholders, task assignees, and workload signals
+- Budget categories, expenses, deterministic analytics, and forecasts
+- Risks with a 5×5 matrix, issues, and governed change requests
+- Project Log, meetings, action items, decisions, and append-only activity history
+- KPIs, weighted health dimensions, health history, alerts, and deterministic automation
+- Evidence-grounded Project Assistant, persistent insights, and recommendations
+- Daily Briefing, rolling seven-day Weekly Review, read-only scenarios, and Meeting Assistant
+- Project documents, bounded extraction, lexical knowledge retrieval, and document evidence
+- Six deterministic reports, PDF output, CSV/XLSX export, and validated task/expense import
+- English/Italian localization and light/dark presentation
 
-The Project Assistant is available from AI Copilot and from each project overview. It uses deterministic backend facts and a bounded context package selected from the current question. Gemini receives only relevant records from that owned project; authentication data, credentials, unrelated projects, and raw audit internals are excluded. Model output is structured, and evidence references are resolved by the backend rather than trusted directly from the model.
+The evidence-backed scope and V1 boundaries for all 33 official product areas are recorded in [the V1 feature audit](docs/V1_FEATURE_AUDIT.md).
 
-Set the backend-only key in `.env` to enable real execution:
+## AI philosophy
 
-```bash
-GEMINI_API_KEY=your-local-key
-GEMINI_MODEL=gemini-3.6-flash
+AI is a copilot, not the project manager.
+
+- Backend data and deterministic calculations are authoritative.
+- Gemini receives bounded, owner-scoped context through a provider-neutral interface.
+- AI interprets, summarizes, simulates, extracts proposals, and recommends; it does not receive database tools or autonomous actions.
+- Model evidence identifiers are accepted only when they resolve through a backend-owned catalog.
+- Recommendations record agreement or rejection but do not execute project changes.
+- Meeting proposals become operational records only after explicit item-level confirmation and backend validation.
+- Prompt and response content is not written to technical audit logs; only safe provider/model/usage metadata is retained.
+
+## Tech stack
+
+| Area | Technology |
+|---|---|
+| Backend | Python 3.12+, FastAPI, Pydantic, SQLAlchemy 2, Alembic, asyncpg |
+| Database | PostgreSQL 17 in Docker Compose |
+| Frontend | React 19, TypeScript, Vite, React Router, i18next |
+| AI | Provider-neutral service, Gemini Interactions REST API, structured JSON |
+| Documents/data | pypdf, python-docx, openpyxl, ReportLab |
+| Testing | Pytest, HTTPX, Vitest, React Testing Library, Ruff |
+| Infrastructure | Docker Compose |
+
+## Architecture
+
+Loris PMO is a modular monolith:
+
+```text
+React + TypeScript
+        ↓
+FastAPI API
+        ↓
+Application services
+        ↓
+Deterministic domain logic / provider-neutral AI
+        ↓
+PostgreSQL + private document storage
 ```
 
-Optional conservative generation settings are `AI_TIMEOUT_SECONDS` (default `30`), `AI_MAX_OUTPUT_TOKENS` (default `4096` for the bounded Sprint 10 structured response), and `AI_TEMPERATURE`. The key is never returned to or configured by the frontend. If no key is present, the application and readiness checks remain healthy and the assistant shows a clear unavailable state.
+See [Architecture](docs/ARCHITECTURE.md) for domain boundaries, security controls, AI flows, storage, and decisions. See [Development Log](docs/DEVELOPMENT_LOG.md) for the rationale behind significant implementation choices.
 
-Conversation history is not persisted in V1. The browser sends at most six recent messages for a follow-up, while audit events store only provider/model, success, latency, request category, selected sections, and provider usage counts when available. The assistant cannot mutate tasks, dates, budgets, assignments, alerts, risks, issues, or changes. Proactive analysis is never called on page load: an explicit Analyze Project action sends only deterministic candidate signals, reuses unchanged analysis by fingerprint, and persists backend-validated evidence rather than raw provider responses. Recommendation acceptance records agreement and project memory only; it executes no project change.
+## Portfolio positioning
 
-## Quick start with Docker
+This project demonstrates end-to-end product engineering rather than a thin AI chat interface: typed API design, relational modeling and migrations, owner/project security boundaries, deterministic financial and schedule logic, responsive frontend application development, human-in-the-loop AI, prompt/evidence safety, transactional imports, generated reports, automated tests, and reproducible local infrastructure.
 
-Requirements: Docker and Docker Compose.
+For a concise walkthrough, use the [5–10 minute demo flow](docs/DEMO_FLOW.md).
+
+## Screenshots
+
+No fabricated screenshots are committed. The repository contains a [screenshot capture plan](docs/SCREENSHOT_PLAN.md) and a tracked [screenshots directory](docs/screenshots/README.md) for real V1 captures:
+
+1. Portfolio Dashboard
+2. Project Overview and health
+3. Task Kanban and Timeline
+4. Finance Dashboard
+5. Risk and control workspace
+6. AI Copilot
+7. Daily Briefing
+8. Scenario Analysis
+9. Documents and knowledge retrieval
+10. Reports and data portability
+
+## Local setup
+
+Requirements: Docker Desktop (or Docker Engine with Compose v2), Git, and available ports `5173`, `8000`, and `5432`.
 
 ```bash
+git clone <your-repository-url>
+cd <repository-directory>
 cp .env.example .env
 ```
 
-Replace `SECRET_KEY`, `POSTGRES_PASSWORD`, and the password inside `DATABASE_URL` with local values, then start the stack:
+Replace the placeholder `SECRET_KEY`, `POSTGRES_PASSWORD`, and database password in `DATABASE_URL`. `SECRET_KEY` must contain at least 32 characters. Optionally set `GEMINI_API_KEY`; the core application and deterministic reports work without Gemini.
+
+Start the stack:
 
 ```bash
-docker compose up --build
+./scripts/start.sh
 ```
 
-Create the first account in a second terminal. No account or business data is seeded automatically.
+Equivalent direct command:
+
+```bash
+docker compose up -d --build
+```
+
+The backend waits for PostgreSQL health, applies Alembic migrations, and then serves the API. Open:
+
+- Frontend: [http://localhost:5173](http://localhost:5173)
+- Backend health: [http://localhost:8000/health](http://localhost:8000/health)
+- Development API docs: [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
+
+Use `./scripts/status.sh` to inspect health and `./scripts/stop.sh` to stop services without deleting data.
+
+## Account creation
+
+No default account or password exists. After startup, create an account interactively:
 
 ```bash
 docker compose exec backend python -m app.cli create-user
 ```
 
-Open [http://localhost:5173](http://localhost:5173). API documentation is available in development at [http://localhost:8000/api/docs](http://localhost:8000/api/docs).
+You may supply only the email argument; the password is still entered securely without terminal echo:
 
-## Local development
+```bash
+docker compose exec backend python -m app.cli create-user --email you@example.test
+```
 
-Backend (Python 3.12+):
+Never put real credentials in source files, command history, screenshots, or documentation.
+
+## Environment variables
+
+Copy `.env.example` to the ignored `.env` file and replace every credential placeholder. Important settings include:
+
+- `SECRET_KEY`: JWT signing secret, minimum 32 characters
+- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `DATABASE_URL`: local PostgreSQL configuration
+- `FRONTEND_URL`: allowed browser origin
+- `GEMINI_API_KEY`: optional, backend-only Gemini credential
+- `GEMINI_MODEL`: defaults to `gemini-3.6-flash`
+- `AI_TIMEOUT_SECONDS`, `AI_MAX_OUTPUT_TOKENS`, `AI_TEMPERATURE`: centralized bounded generation controls
+- `DOCUMENT_STORAGE_PATH`, `DOCUMENT_MAX_UPLOAD_MB`: private storage location and upload limit
+
+Do not commit `.env`. `.env.example` contains placeholders only.
+
+## Running tests
+
+Backend:
 
 ```bash
 cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
-alembic upgrade head
-uvicorn app.main:app --reload
-```
-
-Frontend (Node.js 22+):
-
-```bash
-cd frontend
-npm ci
-npm run dev
-```
-
-## Tests and checks
-
-```bash
-cd backend
 pytest
 ruff check .
 ```
 
+Optional live PostgreSQL connectivity test:
+
+```bash
+TEST_DATABASE_URL='postgresql+asyncpg://<user>:<password>@localhost:5432/<database>'   pytest -q tests/test_postgres_connection.py
+```
+
+Frontend:
+
 ```bash
 cd frontend
+npm ci
 npm test
+npx tsc --noEmit
 npm run build
 ```
 
-The optional PostgreSQL integration check runs when `TEST_DATABASE_URL` is set. The normal Docker startup also verifies PostgreSQL readiness and applies all Alembic migrations before serving the API.
+Release checks are listed in [RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).
 
-## Architecture
+## Backup and restore
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for system boundaries, security, data, AI, testing, Docker, and development-phase decisions. Significant choices are recorded in [`docs/DEVELOPMENT_LOG.md`](docs/DEVELOPMENT_LOG.md).
+Create a timestamped PostgreSQL dump and document-storage archive:
 
-## Security notes
+```bash
+./scripts/backup.sh
+```
 
-- Never commit `.env` or real credentials.
-- The Gemini key is backend-only and optional.
-- Authentication uses an HttpOnly token cookie and CSRF protection.
-- Public registration is deliberately unavailable in the personal foundation release.
+Restore requires an explicit dump path, confirmation, and optionally its matching document archive:
 
-### Operational AI workspace
+```bash
+./scripts/restore.sh backups/loris-pmo-<timestamp>.dump   backups/loris-pmo-documents-<timestamp>.tar.gz
+```
 
-Sprint 11 adds user-triggered Daily Briefings, rolling seven-day Weekly Reviews, read-only Scenario Analysis, and an AI Meeting Assistant. AI outputs remain evidence-backed proposals: scenario runs never mutate the project, and meeting proposals create an operational record only after explicit per-item confirmation.
+The restore operation is destructive to current local data and creates pre-restore safety backups. Read [Backup and Restore](docs/BACKUP_RESTORE.md) before using it.
 
-## V1 documents and data workspace
+`docker compose down` is safe for persisted data. **`docker compose down -v` deletes the local PostgreSQL and document volumes and is destructive.**
 
-Each project now includes **Documents** and **Reports & data** workspaces. Documents are stored under the server-only `DOCUMENT_STORAGE_PATH` (10 MB default limit), extracted into bounded searchable chunks where supported, and can ground the existing read-only Project Assistant through validated evidence references. Reports are deterministic backend snapshots with PDF download; project datasets export to CSV/XLSX. Task and expense imports require a validation preview and explicit atomic confirmation.
+## Demo and portfolio material
 
-Set `DOCUMENT_STORAGE_PATH=/app/data/documents` in Docker deployments; Compose provisions the persistent `document_data` volume. Image OCR, vector search, generic field-mapping imports, and custom report-template design are intentionally outside V1. See `docs/V1_FEATURE_AUDIT.md` for the complete release audit.
+- [Demo flow](docs/DEMO_FLOW.md)
+- [Optional isolated demo-data guide](docs/DEMO_DATA_GUIDE.md)
+- [Screenshot plan](docs/SCREENSHOT_PLAN.md)
+- [Manual acceptance checklist](docs/MANUAL_ACCEPTANCE_CHECKLIST.md)
+- [V1 release notes](docs/RELEASE_NOTES_V1.md)
+
+Demo records never run at startup. The recommended demo uses a separate Compose project and disposable volumes so normal local data remains untouched.
+
+## Project status
+
+**v1.0.0 — Complete with documented non-blocking limitations.**
+
+The authoritative release value is `backend/app/version.py`; FastAPI and `/health` expose it safely. The repository is not tagged or published automatically.
+
+## Known V1 limitations
+
+- Single authenticated owner; no multi-user collaboration or RBAC
+- Local named-volume document storage; no cloud object storage
+- Deterministic lexical document retrieval; no vector search
+- Image storage without OCR
+- Six fixed report types without a report designer
+- Task and expense import templates only
+- Local Docker Compose operation; no cloud deployment
+
+Additional accepted boundaries are documented in the [V1 feature audit](docs/V1_FEATURE_AUDIT.md).
+
+## Roadmap
+
+Possible post-V1 work includes cloud deployment, invitations and RBAC, object storage, semantic retrieval, integrations, advanced report design, deeper scheduling, and optional OCR. These are roadmap possibilities, not implemented V1 capabilities.
+
+## License
+
+This is currently a private personal project. No open-source license has been granted; all rights are reserved unless the owner explicitly chooses a license later.

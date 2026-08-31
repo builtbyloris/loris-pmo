@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "Loris PMO"
     app_env: Literal["development", "test", "production"] = "development"
-    database_url: str = "postgresql+asyncpg://loris:loris@db:5432/loris_pmo"
+    database_url: str
     secret_key: str = Field(min_length=32)
     access_token_minutes: int = Field(default=30, ge=5, le=1440)
     frontend_url: str = "http://localhost:5173"

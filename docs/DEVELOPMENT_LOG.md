@@ -248,3 +248,31 @@ Reason: With the 4096-token output cap, the final controlled interaction complet
 - Added preview/validate/confirm import for task and expense CSV/XLSX/JSON templates with all-or-nothing persistence.
 - Added EN/IT Documents and Reports & Data workspaces and project-overview navigation.
 - Added `docs/V1_FEATURE_AUDIT.md` covering all 33 official product features and honest V1 boundaries.
+
+## 2026-08-31 — Sprint 13: V1 release and portfolio readiness
+
+Decision: Establish `backend/app/version.py` as the authoritative v1.0.0 release source and expose it through FastAPI/OpenAPI and the safe liveness response.
+
+Reason: Reviewers and operators need one inspectable release identity without introducing a new settings surface or duplicating runtime version logic. Hatch reads the same source for backend packaging; the private frontend manifest mirrors the release for build metadata.
+
+Decision: Replace sprint-history-oriented onboarding with a portfolio README, real screenshot checklist, concise demo flow, GitHub-ready release notes, and an auditable release/manual-acceptance checklist.
+
+Reason: V1 is functionally complete. Release material must explain the architecture, human-in-the-loop AI boundaries, actual capabilities, and accepted limitations without implying unimplemented cloud, collaboration, OCR, vector, or reporting features.
+
+Decision: Keep demo data manual and isolated in a separately named Compose project.
+
+Reason: No production/startup seed path is introduced. A reviewer can build one coherent project for screenshots, then remove only the explicitly named disposable volumes without contaminating the ordinary workspace.
+
+Decision: Add transparent start, status, stop, PostgreSQL/document backup, and confirmed restore helpers.
+
+Reason: Local operational reliability benefits from repeatable commands, but scripts must preserve volumes by default, use container-owned database configuration without printing credentials, validate artifacts, create pre-restore safety backups, and never silently replace current data.
+
+Decision: Require an explicit database URL instead of retaining the early local password fallback.
+
+Reason: Docker and tests already provide a database URL. Failing closed when configuration is absent removes a credential-shaped default without changing any configured database behavior.
+
+Decision: Retain private-project licensing status and defer tagging/publishing.
+
+Reason: No open-source license should be inferred. The `v1.0.0` tag and GitHub release remain explicit owner actions after the final visual/manual acceptance pass.
+
+Final V1 status: functionally complete with documented non-blocking limitations; Sprint 13 introduces no new product feature, migration, AI capability, or provider call.

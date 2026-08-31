@@ -1,14 +1,14 @@
 # Loris PMO architecture
 
-Status: foundation through AI Insights and Recommendations
-Date: 2026-08-30
+Status: V1.0.0 release architecture
+Date: 2026-08-31
 Product authority: `PROJECT_INTELLIGENCE_SPEC.md`
 
 ## 1. Scope
 
-This document defines the technical foundation through AI Insights and Recommendations. In addition to complete operational and deterministic intelligence domains and the Project Assistant, the application supplies explicit proactive analysis, persistent evidence-backed insights and recommendations, controlled freshness, human review history, and bilingual Copilot views. Briefings, scenarios, meeting AI, documents, reports, autonomous execution, and knowledge retrieval remain deferred.
+This document defines the complete Loris PMO V1.0.0 modular-monolith architecture: operational project management, deterministic intelligence, human-in-the-loop AI, project memory, private documents and knowledge retrieval, reports, and controlled data portability.
 
-The application starts empty. No production project, task, financial, risk, or other business fixture is created.
+The application starts empty. No production account, project, task, financial, risk, document, or other business fixture is created. Autonomous AI execution, cloud deployment, multi-user collaboration, semantic/vector retrieval, and OCR remain outside V1.
 
 ## 2. Architecture
 
@@ -23,14 +23,15 @@ React + TypeScript
   |
   | /api/v1/*
   v
-FastAPI application
-  |-- API and authentication
-  |-- application services
-  |-- deterministic analytics
-  |-- AI service -> provider interface -> Gemini provider
+FastAPI API
+  |
+  v
+Application services
+  |-- deterministic domain logic and analytics
+  |-- AI services -> provider abstraction -> Gemini Interactions API
   |-- repositories
   v
-PostgreSQL
+PostgreSQL + private document volume
 ```
 
 This is the simplest structure that preserves the specification's separation requirements. It avoids premature microservices while keeping module boundaries that may later be extracted if operational needs justify it.
@@ -70,7 +71,7 @@ This is the simplest structure that preserves the specification's separation req
 ### Infrastructure
 
 - Docker Compose starts `frontend`, `backend`, and `db` services only.
-- PostgreSQL data is held in a named development volume.
+- PostgreSQL data and private project documents are held in separate named volumes.
 - Backend startup runs migrations before the API server.
 - Vite proxies `/api` to FastAPI during containerized development.
 
@@ -242,7 +243,7 @@ GET  /api/v1/projects/{project_id}/ai/recommendations/{recommendation_id}
 POST /api/v1/projects/{project_id}/ai/recommendations/{recommendation_id}/{accept|reject|ignore}
 ```
 
-Nested objective and success-criterion routes support list, create, update, and delete operations under their owning project.
+Nested objective and success-criterion routes support list, create, update, and delete operations under their owning project. Additional V1 route groups cover Project Log/meetings/decisions/activity; health/KPIs/alerts; daily briefing/weekly review/scenarios/meeting analysis; documents/knowledge; deterministic reports; CSV/XLSX/PDF export; and validated imports. All remain owner/project scoped through the same service boundary.
 
 Operational endpoints remain outside versioned product APIs:
 
@@ -274,10 +275,10 @@ Scheduling dependencies are stored as the user-facing `BLOCKS`, `DEPENDS_ON`, or
 
 Public routes contain the login screen. Protected routes render an `AppShell` composed of:
 
-- responsive sidebar with Portfolio, Projects, AI Copilot, and Settings;
+- responsive sidebar with Portfolio, Projects, and AI Copilot;
 - top navigation with theme, language, and account/logout controls;
 - main outlet area with route-level loading and error states;
-- placeholder pages only for future areas, without simulating their functionality.
+- project workspaces for planning, people, finance, control, memory, intelligence, documents, and reports.
 
 The portfolio and project routes fetch authenticated API data. Projects provide a searchable and filterable card view, a three-step creation wizard, editable overview data, objectives, success criteria, planning metrics, and archive confirmation. The first-project call to action opens the same creation wizard. Unsupported future metrics are labelled unavailable instead of derived from incomplete data.
 
@@ -320,6 +321,32 @@ V1 conversation continuity is stateless: at most six recent user/assistant messa
 
 The Project Assistant is read-only. Persisted active insights and pending recommendations are included as bounded evidence in later Assistant context, but chat cannot review or mutate them.
 
+V1 AI dependency flow:
+
+```text
+AI application services
+        ↓
+AIProvider protocol
+        ↓
+Gemini Interactions REST API
+```
+
+Document-grounded question flow:
+
+```text
+Upload → bounded extraction → deterministic chunks → project-scoped lexical retrieval
+       → Project Assistant context → Gemini → backend evidence resolution
+```
+
+Human-confirmed Meeting Assistant flow:
+
+```text
+AI proposal → user review → explicit item confirmation → domain validation/service
+            → operational persistence + audit
+```
+
+Only the final flow can create an operational record, and only after explicit confirmation. Daily briefings, weekly reviews, scenarios, insights, recommendations, and ordinary Assistant chat remain read-only with respect to operational project data.
+
 Proactive analysis follows a separate use case over the same provider protocol:
 
 ```text
@@ -342,7 +369,7 @@ Operational data  -> analytics service -> KPI/health values -> API/alerts/AI con
 Notification request -> preferences/policy -> channel adapter
 ```
 
-Only package boundaries are created now. Queueing, Redis, schedulers, and email providers are deferred until a feature requires them.
+Deterministic analytics and the eight V1 automation rule families run synchronously in application services. Queueing, Redis, schedulers, and external notification providers remain deferred until a concrete delivery requirement exists.
 
 ### Project intelligence and automation
 
@@ -422,28 +449,26 @@ No migration or startup hook inserts business records.
 
 ## 13. Development phases
 
-1. Foundation (complete): architecture, auth, shell, i18n, themes, migrations, AI boundary, Docker, tests.
-2. Projects (complete): project ownership, creation wizard, objectives, criteria, archive workflow, audit events, and portfolio aggregation.
-3. Work planning (complete): tasks, one-level subtasks, dependencies, milestones, deterministic progress, project overview metrics, and shared List/Kanban/Timeline data.
-4. People (complete): reusable people, membership, roles, stakeholders, task assignees, workload analytics, and project overview signals.
-5. Finance (complete): budgets, categories, expenses, deterministic analytics, thresholds, project overview signals, and audit events.
-6. Control (complete): risks, deterministic scoring and matrix, issues, governed change requests, project overview signals, and audit events.
-7. Project memory (complete): project log, meetings, reviewable action items, decisions, read-only activity, meaningful automatic entries, overview signals, and bilingual UI. Alerts and automation remain deferred.
-8. Intelligence (complete): centralized KPIs, health and history, automatic alerts, predefined automation, overview/portfolio signals, audit/log integration, and bilingual UI.
-9. AI foundation (complete): Gemini execution, provider-neutral service, deterministic context packages, structured evidence-grounded Project Assistant, safe failures, usage/audit metadata, and bilingual UI.
-10. Proactive AI (complete): deterministic candidate selection, explicit bounded analysis, persistent evidence-backed insights and recommendations, stable deduplication/freshness, human-only review lifecycle, Assistant/Overview integration, audit/Project Log history, and bilingual UI. Briefings, scenarios, meeting AI, documents, reports, autonomous execution, and knowledge retrieval remain deferred.
-10. Documents and delivery: retrieval, reports, validated import/export, notifications, and release hardening.
+1. Foundation and Projects: authentication, ownership, shell, project lifecycle, objectives, audit, and portfolio.
+2. Work Planning: tasks, subtasks, dependencies, milestones, progress, List, Kanban, and Timeline.
+3. People and Finance: reusable people, stakeholders, assignments, workload, budgets, expenses, and analytics.
+4. Control and Memory: risks, issues, governed changes, Project Log, meetings, decisions, and Activity.
+5. Intelligence: KPIs, weighted health, history, alerts, predefined automation, and portfolio signals.
+6. AI Foundation and Analysis: Gemini provider abstraction, evidence-grounded Assistant, insights, recommendations, deduplication, and human review.
+7. Operational AI: briefings, rolling weekly review, read-only scenarios, and individually confirmed meeting proposals.
+8. Documents and Delivery: private storage, extraction, lexical knowledge, reports, exports, validated imports, and V1 audit.
+9. Release Readiness: v1.0.0 metadata, portfolio documentation, safe local operations, backup/restore, demo planning, and release checklists.
 
-Each phase adds schema via migrations, implements use cases behind services, exposes typed APIs, and completes UI/empty/error states with tests.
+Every schema change is migration-backed; release readiness adds no new product tables or behavior.
 
 ## 14. Significant constraints and deferred choices
 
 - There is no fake production data.
 - There is no public registration in the personal first release.
 - Gemini is optional and backend-only; without a key, core application startup and readiness remain healthy.
-- No charting, Pandas, job queue, mail provider, object storage, or RAG dependency is added before a concrete use case exists.
-- Kubernetes and microservices are outside V1.
-- Hosted deployment is deferred; the required target is local Docker Compose.
+- No job queue, mail provider, cloud object storage, vector database, or OCR dependency is present in V1.
+- Kubernetes, microservices, hosted deployment, integrations, and enterprise RBAC are outside V1.
+- The required runtime target is local Docker Compose with named PostgreSQL and document volumes.
 
 ## Sprint 11 operational AI
 
@@ -462,3 +487,12 @@ Project documents use an owner-scoped metadata model plus a configurable local s
 Extracted text is split deterministically into bounded overlapping chunks with real page/sheet/section metadata when available. Retrieval is deterministic lexical scoring within one owned project. The Project Assistant adds only relevant top-five excerpts, labels them untrusted data, and registers each `document_chunk:<uuid>` reference in the backend evidence catalog. Provider output cannot introduce an unregistered document reference.
 
 Reports are deterministic snapshots assembled from database facts. Weekly reports use a rolling seven-day period ending at generation time and explicitly describe the available history. PDF rendering and CSV/XLSX exports occur server-side and are audited. Imports support only task and expense templates in CSV/XLSX/JSON: preview persists normalized rows and errors, while confirmation rechecks ownership/archive state and commits the entire valid batch atomically.
+
+
+## Sprint 13 — release and portfolio readiness
+
+The authoritative application release metadata lives in `backend/app/version.py`; Hatch reads that source for backend package metadata, FastAPI uses it for OpenAPI, and `/health` exposes only the safe version string with liveness status. The private frontend package mirrors the release number for build metadata.
+
+Local operator scripts wrap Compose without hiding its behavior: start builds and waits for health; status inspects PostgreSQL/backend; stop uses `docker compose down` without `-v`. Backup creates a PostgreSQL custom-format dump and a separate document-volume archive. Restore requires explicit paths and confirmation, validates formats and archive containment, creates pre-restore backups, stops application access, restores both stores, and restarts services. Backup artifacts and local environment variants are gitignored.
+
+Release preparation does not create a Git tag, publish a release, seed demonstration records, make provider calls, or add product behavior. Screenshots must be captured from the real UI using a separate disposable Compose project.
