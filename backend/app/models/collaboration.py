@@ -9,6 +9,7 @@ from uuid import UUID
 
 from sqlalchemy import (
     CheckConstraint,
+    DateTime,
     Enum,
     ForeignKey,
     ForeignKeyConstraint,
@@ -118,8 +119,8 @@ class ProjectMembership(UUIDTimestampMixin, Base):
     status: Mapped[MembershipStatus] = mapped_column(
         membership_status_enum, nullable=False, default=MembershipStatus.ACTIVE
     )
-    joined_at: Mapped[datetime | None] = mapped_column(nullable=True)
-    invited_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    joined_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    invited_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_by_user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
@@ -149,7 +150,7 @@ class CollaborationComment(UUIDTimestampMixin, Base):
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
     body: Mapped[str] = mapped_column(Text, nullable=False)
-    deleted_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     author: Mapped[User] = relationship(foreign_keys=[author_user_id])
 
@@ -172,4 +173,4 @@ class Notification(UUIDTimestampMixin, Base):
     message: Mapped[str] = mapped_column(String(500), nullable=False)
     entity_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
     entity_id: Mapped[UUID | None] = mapped_column(nullable=True)
-    read_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

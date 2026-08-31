@@ -214,7 +214,7 @@ Demo records never run at startup. The recommended demo uses a separate Compose 
 
 ## Project status
 
-**v1.0.0 remains the stable release. V2.1 collaboration is in development on `v2-development`.**
+**v1.0.0 remains the stable release. V2.1 collaboration is complete on `v2-development`; V2.2 advanced scheduling is in validation.**
 
 The authoritative runtime release value remains `backend/app/version.py` at `1.0.0`; V2 development intentionally does not create or move release tags.
 
@@ -232,7 +232,7 @@ Additional accepted boundaries are documented in the [V1 feature audit](docs/V1_
 
 ## Roadmap
 
-V2.1 implements the collaboration foundation. Invitation delivery, ownership transfer, structured mentions, notification preferences, cloud deployment, object storage, semantic retrieval, integrations, advanced report design, and OCR remain future work. See [V2_ROADMAP.md](docs/V2_ROADMAP.md).
+V2.1 implements the collaboration foundation. V2.2 adds deterministic dependency scheduling, critical path and float, explicit baselines, schedule variance, recursive preview/apply, and schedule-aware scenarios. Invitation delivery, ownership transfer, structured mentions, notification preferences, cloud deployment, object storage, semantic retrieval, integrations, advanced report design, and OCR remain future work. See [V2_ROADMAP.md](docs/V2_ROADMAP.md).
 
 ## License
 

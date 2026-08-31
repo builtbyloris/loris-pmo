@@ -23,6 +23,8 @@ class Capability(StrEnum):
     TASKS_CREATE = "tasks.create"
     TASKS_UPDATE = "tasks.update"
     TASKS_DELETE = "tasks.delete"
+    SCHEDULE_READ = "schedule.read"
+    SCHEDULE_MANAGE = "schedule.manage"
     FINANCE_READ = "finance.read"
     FINANCE_MANAGE = "finance.manage"
     CONTROL_READ = "control.read"
@@ -47,6 +49,7 @@ READ_CAPABILITIES = {
     Capability.MEMBERS_READ,
     Capability.PEOPLE_READ,
     Capability.TASKS_READ,
+    Capability.SCHEDULE_READ,
     Capability.CONTROL_READ,
     Capability.MEETINGS_READ,
     Capability.DOCUMENTS_READ,
@@ -60,6 +63,7 @@ MANAGER_CAPABILITIES = READ_CAPABILITIES | {
     Capability.TASKS_CREATE,
     Capability.TASKS_UPDATE,
     Capability.TASKS_DELETE,
+    Capability.SCHEDULE_MANAGE,
     Capability.FINANCE_READ,
     Capability.FINANCE_MANAGE,
     Capability.CONTROL_MANAGE,

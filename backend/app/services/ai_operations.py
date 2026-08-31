@@ -43,7 +43,6 @@ from app.models.memory import (
 )
 from app.models.people import ProjectMember, TaskAssignee
 from app.models.task import Task, TaskStatus
-from app.models.task_dependency import DependencyType
 from app.repositories.ai_operations import AIOperationsRepository
 from app.repositories.control import ControlRepository
 from app.repositories.work_planning import WorkPlanningRepository
@@ -61,10 +60,12 @@ from app.schemas.ai_operations import (
     MeetingAIProposalRead,
     WeeklyReviewOutput,
 )
+from app.schemas.scheduling import ScheduleChangeRequest
 from app.services.ai_analysis import AIAnalysisService
 from app.services.audit import AuditService
 from app.services.finance import FinanceService
 from app.services.intelligence import ProjectIntelligenceService
+from app.services.scheduling import SchedulingService
 
 ATTENTION_QUESTION = (
     "What requires attention now across alerts health overdue or blocked tasks upcoming "
@@ -588,36 +589,46 @@ class AIOperationsService:
             task = await work.get_task(project.id, data.task_id)
             if not task:
                 raise AppError(code="task_not_found", message="Task not found.", status_code=404)
+            if not task.start_date or not task.due_date:
+                raise AppError(
+                    code="task_schedule_incomplete",
+                    message="Task dates are required for delay simulation.",
+                    status_code=422,
+                )
             ref = f"task:{task.id}"
             add(ref, AIEvidenceType.TASK, task.id, task.title, f"due {task.due_date}")
-            projected = task.due_date + timedelta(days=data.delay_days) if task.due_date else None
-            dependencies = await work.list_dependencies(project.id)
-            downstream = []
-            for dep in dependencies:
-                affected = (
-                    dep.target_task_id
-                    if dep.dependency_type == DependencyType.BLOCKS
-                    and dep.source_task_id == task.id
-                    else dep.source_task_id
-                    if dep.dependency_type == DependencyType.DEPENDS_ON
-                    and dep.target_task_id == task.id
-                    else None
-                )
-                if affected:
-                    downstream.append(str(affected))
-            impact = {
-                "projected_due_date": projected,
-                "delay_days": data.delay_days,
-                "direct_downstream_task_ids": downstream,
-                "project_deadline_breach": bool(
-                    projected and project.target_end_date and projected > project.target_end_date
+            preview = await SchedulingService(self.session, self.owner_user_id).preview(
+                project.id,
+                ScheduleChangeRequest(
+                    entity_type="TASK",
+                    task_id=task.id,
+                    start_date=task.start_date + timedelta(days=data.delay_days),
+                    due_date=task.due_date + timedelta(days=data.delay_days),
                 ),
+            )
+            impact = {
+                "projected_due_date": task.due_date + timedelta(days=data.delay_days),
+                "delay_days": data.delay_days,
+                "affected_tasks": [item.model_dump(mode="json") for item in preview.affected_tasks],
+                "milestone_impacts": [
+                    item.model_dump(mode="json")
+                    for item in preview.milestone_impacts
+                    if item.affected_task_ids
+                ],
+                "deadline_impact": preview.deadline_impact.model_dump(mode="json"),
+                "critical_path": preview.critical_path.model_dump(mode="json"),
             }
         elif data.type == AIScenarioType.MILESTONE_DELAY:
             milestone = await work.get_milestone(project.id, data.milestone_id)
             if not milestone:
                 raise AppError(
                     code="milestone_not_found", message="Milestone not found.", status_code=404
+                )
+            if not milestone.due_date:
+                raise AppError(
+                    code="milestone_schedule_incomplete",
+                    message="Milestone date is required for delay simulation.",
+                    status_code=422,
                 )
             ref = f"milestone:{milestone.id}"
             add(
@@ -627,29 +638,24 @@ class AIOperationsService:
                 milestone.title,
                 f"due {milestone.due_date}",
             )
-            projected = (
-                milestone.due_date + timedelta(days=data.delay_days) if milestone.due_date else None
-            )
-            count = len(
-                (
-                    await self.session.execute(
-                        select(Task.id).where(
-                            Task.project_id == project.id,
-                            Task.milestone_id == milestone.id,
-                            Task.status.not_in([TaskStatus.DONE, TaskStatus.CANCELLED]),
-                        )
-                    )
-                )
-                .scalars()
-                .all()
+            preview = await SchedulingService(self.session, self.owner_user_id).preview(
+                project.id,
+                ScheduleChangeRequest(
+                    entity_type="MILESTONE",
+                    milestone_id=milestone.id,
+                    due_date=milestone.due_date + timedelta(days=data.delay_days),
+                ),
             )
             impact = {
-                "projected_due_date": projected,
+                "projected_due_date": milestone.due_date + timedelta(days=data.delay_days),
                 "delay_days": data.delay_days,
-                "incomplete_linked_tasks": count,
-                "project_deadline_breach": bool(
-                    projected and project.target_end_date and projected > project.target_end_date
-                ),
+                "milestone_impacts": [
+                    item.model_dump(mode="json")
+                    for item in preview.milestone_impacts
+                    if item.id == milestone.id
+                ],
+                "deadline_impact": preview.deadline_impact.model_dump(mode="json"),
+                "critical_path": preview.critical_path.model_dump(mode="json"),
             }
         elif data.type == AIScenarioType.COST_INCREASE:
             totals = (

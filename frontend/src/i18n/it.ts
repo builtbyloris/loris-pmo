@@ -372,6 +372,13 @@ export const it = {
       overdue: "{{count}} in ritardo",
     },
     dependencies: { eyebrow: "LOGICA DI PIANIFICAZIONE", title: "Dipendenze attività" },
+    schedule: {
+      projectedFinish: "Fine prevista", deadlineVariance: "Varianza scadenza", criticalTasks: "Attività critiche", baselineVariance: "Varianza baseline massima", completeness: "Completezza pianificazione",
+      current: "Corrente", baseline: "Baseline", projected: "Previsto", hypothetical: "IPOTETICO", critical: "Critica", createBaseline: "Crea baseline", replaceBaseline: "Sostituisci baseline", replaceBaselineConfirm: "Sostituire la baseline esistente con la pianificazione corrente?",
+      baselineAt: "Baseline acquisita {{date}}", float: "{{count}} giorni di margine totale", floatUnavailable: "Margine non disponibile", dependencies: "Dipendenze fine-inizio", noDependencies: "Nessuna dipendenza di pianificazione.",
+      changeTitle: "Anteprima impatto pianificazione", task: "Attività", preview: "Anteprima impatto", previewTitle: "Impatto proposto sulla pianificazione", previewBody: "Cambierebbero le date di {{count}} attività.",
+      milestoneImpacts: "Impatto sulle milestone", warnings: "Avvisi", deadlineImpact: "Impatto sulla scadenza progetto", confirmApply: "Conferma e applica", previewError: "Impossibile calcolare l’anteprima. Aggiorna la pianificazione e riprova."
+    },
     timeline: {
       range: "{{count}} giorno",
       range_other: "{{count}} giorni",
@@ -424,6 +431,10 @@ export const it = {
     alertStatus: { ACTIVE: "Attivo", ACKNOWLEDGED: "Preso in carico", RESOLVED: "Risolto" },
     alerts: {
       eyebrow: "AUTOMAZIONE", title: "Avvisi automatici", description: "Sono attive {{count}} regole deterministiche. Le condizioni si risolvono automaticamente quando cambiano i dati sottostanti.", statusFilter: "Stato", severityFilter: "Gravità", empty: "Nessun avviso corrisponde ai filtri.", acknowledge: "Prendi in carico",
+      scheduleProjectedLate: { title: "Fine progetto prevista in ritardo", reason: "La fine prevista supera l’obiettivo di {{variance_days}} giorni." },
+      scheduleMilestoneLate: { title: "Milestone prevista in ritardo", reason: "{{title}} supera la data corrente di {{variance_days}} giorni." },
+      scheduleVariance: { title: "Varianza baseline significativa", reason: "{{title}} è {{variance_days}} giorni oltre la baseline." },
+      scheduleDependency: { title: "Violazione dipendenza", reason: "{{successor}} inizia prima che {{predecessor}} termini." },
       taskOverdue: { title: "Attività in ritardo", reason: "{{title}} è in ritardo di {{days}} giorni." },
       taskBlocked: { title: "Attività bloccata", reason: "{{title}} è bloccata da {{days}} giorni." },
       milestoneOverdue: { title: "Milestone in ritardo", reason: "{{title}} è in ritardo di {{days}} giorni." },

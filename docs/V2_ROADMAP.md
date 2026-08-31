@@ -37,10 +37,16 @@ The backend capability registry is authoritative. The frontend consumes the effe
 - Report generation and audit activity require manager-level capabilities. Finance-category documents and finance-derived KPI/health/alert projections are filtered without `finance.read`; mixed reports omit finance sections, while budget reports, expense exports/imports, and finance APIs require finance capabilities.
 - AI context removes finance topics/evidence when the caller lacks finance access. Project Assistant remains read-only; proactive AI and meeting proposal confirmation require manager-level capabilities.
 
+## V2.2 — Advanced scheduling
+
+V2.2 adds backend-owned deterministic scheduling over existing tasks, milestones, project deadlines, and task dependencies. It includes finish-to-start graph semantics, CPM earliest/latest dates, critical path, total/free float, explicit normalized baselines, signed variance, recursive propagation preview, fingerprint-bound apply, milestone/deadline impact, schedule-aware health and alerts, a Timeline/Gantt workspace, and schedule-aware read-only scenario simulation.
+
+Calendar-day scheduling is intentional. Business calendars, lag/lead, resource leveling, drag-and-drop scheduling, probabilistic forecasting, fallback inference for missing dates, and autonomous AI schedule changes are deferred. Only managers/administrators/owners may create/replace baselines or apply recursive changes; read access follows project access.
+
 ## Planned V2 increments
 
-- V2.2: invitation lifecycle and ownership transfer with explicit acceptance and recovery rules.
-- V2.3: structured mentions, additional assignment-notification families, notification preferences, and retention management.
+- V2.3: invitation lifecycle and ownership transfer with explicit acceptance and recovery rules.
+- V2.4: structured mentions, additional assignment-notification families, notification preferences, and retention management.
 - Later V2: cloud deployment, external identity, integrations, object storage, semantic retrieval, and advanced reporting only when separately designed and authorized.
 
 This roadmap does not change the published V1 release notes or the `v1.0.0` tag.

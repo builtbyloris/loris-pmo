@@ -8,8 +8,9 @@ import { KanbanBoard } from "./components/KanbanBoard";
 import { MilestonePanel } from "./components/MilestonePanel";
 import { TaskFormModal } from "./components/TaskFormModal";
 import { TaskListView } from "./components/TaskListView";
+import { TimelineView } from "./components/TimelineView";
 import { useWorkPlanning } from "./hooks/useWorkPlanning";
-import type { Milestone, Task, WorkPlanningSummary } from "./types";
+import type { Milestone, Schedule, Task, WorkPlanningSummary } from "./types";
 
 const task: Task = {
   id: "task-1",
@@ -54,6 +55,14 @@ const summary: WorkPlanningSummary = {
   overdue_tasks: 0,
   upcoming_milestones: 1,
   progress: 25,
+};
+
+const schedule: Schedule = {
+  project_id: "project-1", generated_at: "2026-09-01T00:00:00Z", fingerprint: "f", calendar_model: "CALENDAR_DAYS", calculation_complete: true, scheduling_completeness_percent: 100,
+  tasks: [{ id: task.id, title: task.title, start: task.start_date, finish: task.due_date, duration_days: 10, progress: 25, milestone_id: milestone.id, dependencies: [], critical: true, earliest_start_offset: 0, earliest_finish_offset: 9, latest_start_offset: 0, latest_finish_offset: 9, total_float: 0, free_float: 0, baseline_start: "2026-08-30", baseline_finish: "2026-09-08", start_variance: 2, finish_variance: 2, warnings: [] }],
+  milestones: [{ id: milestone.id, title: milestone.title, current_date: milestone.due_date, projected_date: milestone.due_date, baseline_date: "2026-09-10", variance_days: 2, status: "AT_RISK", affected_task_ids: [] }],
+  dependencies: [], critical_path: { complete: true, reasons: [], project_duration_days: 10, critical_task_ids: [task.id], critical_sequences: [[task.id]] },
+  deadline_impact: { projected_finish: "2026-09-12", deadline: "2026-09-15", variance_days: -3, status: "AT_RISK" }, baseline_variance_days: -3, baseline_created_at: "2026-09-01T00:00:00Z",
 };
 
 beforeEach(() => void i18n.changeLanguage("en"));
@@ -116,6 +125,18 @@ describe("work-planning views", () => {
     expect(screen.getByText("0 of 1 tasks complete")).toBeInTheDocument();
   });
 
+  it("renders schedule intelligence and opens a controlled impact preview", async () => {
+    const onPreview = vi.fn().mockResolvedValue(true);
+    render(<TimelineView schedule={schedule} canManage preview={null} onPreview={onPreview} onApply={vi.fn()} onCancel={vi.fn()} onBaseline={vi.fn()} />);
+    expect(screen.getByText("Critical tasks")).toBeInTheDocument();
+    expect(screen.getAllByText(/\+2d/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Critical").length).toBeGreaterThan(0);
+    fireEvent.change(screen.getByLabelText("Start date"), { target: { value: "2026-09-03" } });
+    fireEvent.change(screen.getByLabelText("Due date"), { target: { value: "2026-09-12" } });
+    fireEvent.click(screen.getByRole("button", { name: "Preview impact" }));
+    await waitFor(() => expect(onPreview).toHaveBeenCalledWith(expect.objectContaining({ entity_type: "TASK", task_id: task.id, start_date: "2026-09-03", due_date: "2026-09-12" })));
+  });
+
   it("validates and submits the task creation form", async () => {
     const onCreate = vi.fn().mockResolvedValue(true);
     render(<TaskFormModal open onClose={vi.fn()} onCreate={onCreate} tasks={[]} milestones={[milestone]} members={[]} />);
@@ -139,6 +160,7 @@ it("refreshes the shared task state after a Kanban-style status update", async (
   vi.spyOn(workPlanningApi, "listDependencies").mockResolvedValue([]);
   vi.spyOn(workPlanningApi, "summary").mockResolvedValue(summary);
   vi.spyOn(peopleApi, "listMembers").mockResolvedValue([]);
+  vi.spyOn(workPlanningApi, "schedule").mockResolvedValue(schedule);
   const updateTask = vi.spyOn(workPlanningApi, "updateTask").mockResolvedValue(doneTask);
 
   const { result } = renderHook(() => useWorkPlanning("project-1"));

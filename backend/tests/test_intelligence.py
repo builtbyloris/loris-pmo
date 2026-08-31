@@ -82,7 +82,7 @@ async def test_missing_data_is_explicit_and_weights_are_redistributed(
     assert dimensions["objectives"]["available"] is False
     assert dimensions["risks"]["effective_weight"] == 100
     assert body["health"]["score"] == 100
-    assert len(body["automation_rules"]) == 8
+    assert len(body["automation_rules"]) == 9
 
 
 async def test_kpis_health_alert_lifecycle_dedup_reappearance_and_portfolio(

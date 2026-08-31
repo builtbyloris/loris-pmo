@@ -22,6 +22,7 @@ from app.models.task import Task, TaskPriority, TaskStatus
 from app.schemas.finance import FinancialTotals
 from app.schemas.intelligence import HealthDimension, HealthDriver, HealthRead, KPIValue
 from app.schemas.people import MemberWorkload, WorkloadStatus
+from app.schemas.scheduling import DeadlineStatus, ScheduleRead
 
 DIMENSION_WEIGHTS = {
     "schedule": 25,
@@ -48,6 +49,7 @@ class ProjectFacts:
     action_statuses: list[ActionItemStatus]
     decisions: list[Decision]
     log_entries: list[ProjectLogEntry]
+    schedule: ScheduleRead | None = None
 
 
 def health_status(score: int) -> HealthStatus:
@@ -298,6 +300,15 @@ def calculate_health(facts: ProjectFacts, today: date, calculated_at) -> HealthR
             and facts.project.status != ProjectStatus.COMPLETED
         ):
             schedule_score -= 30
+        if facts.schedule:
+            if facts.schedule.deadline_impact.status == DeadlineStatus.LATE:
+                schedule_score -= 15
+            elif facts.schedule.deadline_impact.status == DeadlineStatus.AT_RISK:
+                schedule_score -= 5
+            material_variances = sum(
+                (task.finish_variance or 0) > 7 for task in facts.schedule.tasks
+            )
+            schedule_score -= min(15, material_variances * 5)
         schedule_score = max(0, schedule_score)
     task_score = None
     if eligible:
@@ -355,6 +366,12 @@ def calculate_health(facts: ProjectFacts, today: date, calculated_at) -> HealthR
                 "overdue_tasks": len(overdue),
                 "overdue_milestones": len(overdue_ms),
                 "approaching_milestones": len(approaching_ms),
+                "projected_deadline_status": facts.schedule.deadline_impact.status.value
+                if facts.schedule
+                else None,
+                "critical_tasks": len(facts.schedule.critical_path.critical_task_ids)
+                if facts.schedule
+                else None,
             },
         ),
         _dimension(

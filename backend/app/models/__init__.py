@@ -82,6 +82,7 @@ from app.models.people import (
     TaskAssignee,
 )
 from app.models.project import Project, ProjectPriority, ProjectStatus
+from app.models.scheduling import ScheduleBaseline, ScheduleBaselineMilestone, ScheduleBaselineTask
 from app.models.success_criterion import SuccessCriterion, SuccessCriterionStatus
 from app.models.task import Task, TaskPriority, TaskStatus
 from app.models.task_dependency import DependencyType, TaskDependency
@@ -166,6 +167,9 @@ __all__ = [
     "RiskMilestoneLink",
     "RiskStatus",
     "RiskTaskLink",
+    "ScheduleBaseline",
+    "ScheduleBaselineMilestone",
+    "ScheduleBaselineTask",
     "SuccessCriterion",
     "SuccessCriterionStatus",
     "Stakeholder",

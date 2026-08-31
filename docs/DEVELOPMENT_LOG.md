@@ -307,3 +307,38 @@ Reason: A read-only project role must not gain audit history or trigger report g
 Decision: Keep V1 runtime version `1.0.0` and the V1 release documentation/tag unchanged during V2 branch development.
 
 Reason: V2.1 is an unreleased development increment. Release identity changes only through a later explicit release process.
+
+
+## 2026-09-02 — V2.2 advanced scheduling
+
+Decision: Add a pure deterministic scheduling engine and one project-scoped scheduling service rather than embedding date logic in routes or the Timeline.
+
+Reason: CPM, float, recursive propagation, baselines, deadline impact, intelligence, and scenarios must consume the same explainable backend truth. The frontend remains presentation and explicit user control.
+
+Decision: Interpret existing `BLOCKS` and `DEPENDS_ON` task relations as finish-to-start scheduling edges and leave `RELATED_TO` non-scheduling.
+
+Reason: V2.2 can add useful dependency scheduling without changing the existing dependency schema or inventing lag, lead, start-to-start, calendars, or hidden semantics.
+
+Decision: Use inclusive calendar-day durations and signed baseline variance (`current - baseline`).
+
+Reason: These rules are deterministic with the existing date-only model. Positive variance is late, negative variance is early, and incomplete task dates remain explicitly unavailable rather than inferred.
+
+Decision: Persist one normalized schedule baseline per project and require explicit creation or replacement.
+
+Reason: Baseline comparisons need durable factual snapshots and same-project foreign keys. Automatic replacement would erase the reference plan and make variance misleading.
+
+Decision: Require non-mutating preview plus a fingerprint-bound confirmation token before recursive schedule apply.
+
+Reason: Users must see affected tasks, milestones, critical path, and deadline impact before a manager-level transaction changes dates. Recalculation at apply time prevents stale previews from overwriting concurrent work.
+
+Decision: Reuse schedule preview for Sprint 11 task and milestone delay scenarios.
+
+Reason: Scenario analysis must show the same recursive impacts as operational scheduling while remaining read-only. No AI output can call apply or mutate operational project data.
+
+Decision: Add schedule-aware health and stable automatic alert conditions.
+
+Reason: Projected deadline lateness, milestone lateness, material baseline variance, critical blocked tasks, and dependency violations are deterministic conditions suitable for existing alert reconciliation and lifecycle behavior.
+
+Validation scope includes exact CPM/float graphs, disconnected and incomplete schedules, recursive chain/branch/convergence, baseline create/replace and signed variance, preview non-mutation, stale-token rejection, atomic apply, audit events, manager/viewer authorization, schedule-aware scenarios, frontend preview/apply behavior, Alembic head migration, PostgreSQL, and browser E2E.
+
+Compatibility fix: Live PostgreSQL validation exposed timezone-naive SQLAlchemy mappings for V2.1 collaboration timestamps even though migration `20260901_0013` created timezone-aware columns. The model now explicitly uses `DateTime(timezone=True)` for membership, comment-deletion, and notification-read timestamps; no schema migration was required. A mapping regression test and authenticated PostgreSQL project-creation flow verify the fix.

@@ -17,8 +17,10 @@ from app.models.memory import (
     MeetingParticipant,
     MeetingStatus,
 )
+from app.models.milestone import Milestone
 from app.models.people import Person, ProjectMember
 from app.models.task import Task, TaskPriority, TaskStatus
+from app.models.task_dependency import DependencyType, TaskDependency
 from app.repositories.users import UserRepository
 
 PASSWORD = "a secure operational ai test password"
@@ -177,27 +179,74 @@ async def test_scenario_is_persisted_simulation_without_task_mutation(
 ):
     _, headers = await login(client, session, "scenario@example.com")
     value = await project(client, headers, "SCENARIO-AI")
-    task = Task(
-        project_id=UUID(value["id"]),
-        title="Delivery",
-        status=TaskStatus.TODO,
-        priority=TaskPriority.HIGH,
-        due_date=date.today() + timedelta(days=5),
+    project_id = UUID(value["id"])
+    milestone = Milestone(
+        project_id=project_id,
+        title="Release",
+        due_date=date.today() + timedelta(days=9),
     )
-    session.add(task)
+    session.add(milestone)
+    await session.flush()
+    tasks = [
+        Task(
+            project_id=project_id,
+            milestone_id=milestone.id,
+            title=title,
+            status=TaskStatus.TODO,
+            priority=TaskPriority.HIGH,
+            start_date=date.today() + timedelta(days=start),
+            due_date=date.today() + timedelta(days=finish),
+        )
+        for title, start, finish in (("Design", 1, 3), ("Build", 4, 6), ("Delivery", 7, 9))
+    ]
+    session.add_all(tasks)
+    await session.flush()
+    session.add_all(
+        TaskDependency(
+            project_id=project_id,
+            source_task_id=source.id,
+            target_task_id=target.id,
+            dependency_type=DependencyType.BLOCKS,
+        )
+        for source, target in zip(tasks, tasks[1:], strict=False)
+    )
     await session.commit()
+    original_dates = [(task.start_date, task.due_date) for task in tasks]
     provider = OperationsProvider()
     use_provider(client, provider)
     response = await client.post(
         f"/api/v1/projects/{value['id']}/ai/scenarios",
-        json={"type": "TASK_DELAY", "task_id": str(task.id), "delay_days": 7},
+        json={"type": "TASK_DELAY", "task_id": str(tasks[0].id), "delay_days": 7},
         headers=headers,
     )
     assert response.status_code == 200, response.text
-    assert response.json()["deterministic_impact"]["simulation_only"] is True
-    await session.refresh(task)
-    assert task.due_date == date.today() + timedelta(days=5)
-    assert await session.scalar(select(func.count(AIScenario.id))) == 1
+    impact = response.json()["deterministic_impact"]
+    assert impact["simulation_only"] is True
+    assert len(impact["affected_tasks"]) == 3
+    assert (
+        impact["affected_tasks"][-1]["projected_finish"]
+        == (date.today() + timedelta(days=16)).isoformat()
+    )
+    milestone_response = await client.post(
+        f"/api/v1/projects/{value['id']}/ai/scenarios",
+        json={
+            "type": "MILESTONE_DELAY",
+            "milestone_id": str(milestone.id),
+            "delay_days": 4,
+        },
+        headers=headers,
+    )
+    assert milestone_response.status_code == 200, milestone_response.text
+    assert (
+        milestone_response.json()["deterministic_impact"]["milestone_impacts"][0]["projected_date"]
+        == (milestone.due_date + timedelta(days=4)).isoformat()
+    )
+    for task, expected in zip(tasks, original_dates, strict=True):
+        await session.refresh(task)
+        assert (task.start_date, task.due_date) == expected
+    await session.refresh(milestone)
+    assert milestone.due_date == date.today() + timedelta(days=9)
+    assert await session.scalar(select(func.count(AIScenario.id))) == 2
 
 
 async def test_meeting_proposal_requires_confirmation_and_rejects_fabricated_evidence(

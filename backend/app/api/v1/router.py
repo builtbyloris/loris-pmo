@@ -12,6 +12,7 @@ from app.api.v1 import (
     people,
     portfolio,
     projects,
+    scheduling,
     work_planning,
 )
 
@@ -28,4 +29,5 @@ api_router.include_router(people.people_router)
 api_router.include_router(people.project_router)
 api_router.include_router(portfolio.router)
 api_router.include_router(projects.router)
+api_router.include_router(scheduling.router)
 api_router.include_router(work_planning.router)

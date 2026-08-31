@@ -8,6 +8,9 @@ import type {
   TaskInput,
   TaskStatus,
   WorkPlanningSummary,
+  Schedule,
+  ScheduleChange,
+  SchedulePreview,
 } from "../types";
 
 const root = (projectId: string) => `/api/v1/projects/${projectId}`;
@@ -25,5 +28,9 @@ export const workPlanningApi = {
   createDependency: (projectId: string, sourceTaskId: string, targetTaskId: string, dependencyType: DependencyType) => apiRequest<TaskDependency>(`${root(projectId)}/task-dependencies`, { method: "POST", body: JSON.stringify({ source_task_id: sourceTaskId, target_task_id: targetTaskId, dependency_type: dependencyType }) }),
   deleteDependency: (projectId: string, dependencyId: string) => apiRequest<void>(`${root(projectId)}/task-dependencies/${dependencyId}`, { method: "DELETE" }),
   summary: (projectId: string) => apiRequest<WorkPlanningSummary>(`${root(projectId)}/work-planning/summary`),
+  schedule: (projectId: string) => apiRequest<Schedule>(`${root(projectId)}/schedule`),
+  createBaseline: (projectId: string, replace = false) => apiRequest(`${root(projectId)}/schedule/baseline`, { method: "POST", body: JSON.stringify({ replace }) }),
+  previewSchedule: (projectId: string, change: ScheduleChange) => apiRequest<SchedulePreview>(`${root(projectId)}/schedule/preview`, { method: "POST", body: JSON.stringify(change) }),
+  applySchedule: (projectId: string, preview: SchedulePreview) => apiRequest(`${root(projectId)}/schedule/apply`, { method: "POST", body: JSON.stringify({ preview_token: preview.preview_token, change: preview.proposed_change }) }),
 };
 

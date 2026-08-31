@@ -7,10 +7,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.ai.context import ProjectContextBuilder
 from app.auth.passwords import hash_password
 from app.models.audit import AuditEvent
-from app.models.collaboration import ProjectAccessRole, ProjectMembership
+from app.models.collaboration import (
+    CollaborationComment,
+    Notification,
+    ProjectAccessRole,
+    ProjectMembership,
+)
 from app.repositories.users import UserRepository
 
 PASSWORD = "a secure collaboration test password"
+
+
+def test_collaboration_datetime_mappings_match_timezone_aware_migration() -> None:
+    assert ProjectMembership.__table__.c.joined_at.type.timezone is True
+    assert ProjectMembership.__table__.c.invited_at.type.timezone is True
+    assert CollaborationComment.__table__.c.deleted_at.type.timezone is True
+    assert Notification.__table__.c.read_at.type.timezone is True
 
 
 async def create_user(session: AsyncSession, email: str):

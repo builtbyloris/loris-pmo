@@ -27,6 +27,7 @@ from app.services.audit import AuditService
 from app.services.authorization import AuthorizationService, Capability
 from app.services.finance import FinanceService
 from app.services.people import PeopleService
+from app.services.scheduling import SchedulingService
 
 FINANCE_KPI_KEYS = {
     "planned_budget",
@@ -115,6 +116,7 @@ class ProjectIntelligenceService:
             action_statuses=[item.status for item in rows["actions"]],
             decisions=rows["decisions"],
             log_entries=rows["logs"],
+            schedule=await SchedulingService(self.session, self.owner_user_id).schedule(project_id),
         )
 
     async def _health(self, facts: ProjectFacts, now: datetime) -> HealthRead:

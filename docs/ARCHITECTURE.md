@@ -517,3 +517,26 @@ Comments use an enumerated target type plus UUID and are accepted only after ser
 Finance is a distinct capability boundary. Project payloads mask `planned_budget` for unauthorized roles; finance APIs reject access; permission-aware intelligence removes finance KPIs, budget alerts/history, and recalculates health without the budget dimension; reports omit finance sections or reject finance-specific reports; finance-category documents are filtered from library, download, and knowledge retrieval; expense portability requires finance capabilities; and the AI context builder excludes finance topics and evidence. Proactive AI generation and proposal confirmation require manager-level capabilities, while CONTRIBUTOR may use the read-only Project Assistant.
 
 No Gemini transport, response contract, evidence validator, operational AI workflow, database tool, or autonomous action capability changes in V2.1.
+
+
+## 17. V2.2 advanced scheduling
+
+V2.2 extends the modular monolith with a deterministic scheduling domain. PostgreSQL remains the factual store; `SchedulingService` assembles one project-scoped dependency graph and delegates pure calculations to `app.analytics.scheduling`. The frontend renders the returned facts and never recomputes critical path, float, propagation, or deadline status.
+
+```text
+Tasks + finish-to-start dependencies + milestones + project deadline
+  -> deterministic graph / CPM calculation
+  -> current schedule, critical path, float, projected dates
+  -> non-mutating preview token
+  -> explicit authorized apply in one transaction
+```
+
+Only `BLOCKS` and `DEPENDS_ON` relationships have scheduling semantics. Both normalize to predecessor-to-successor finish-to-start edges; `RELATED_TO` remains descriptive. Durations and offsets use inclusive calendar days. There are no business calendars, holidays, lag/lead, resource leveling, probabilistic dates, or hidden date inference in V2.2. Tasks lacking both valid dates are excluded and the response explicitly marks the calculation incomplete. Cycles continue to be rejected by dependency validation and are also rejected defensively by the pure graph calculator.
+
+The CPM forward pass calculates earliest start/finish offsets, and the backward pass calculates latest start/finish, total float, and free float. A task is critical when total float is zero. Critical sequences are deterministic paths through zero-float finish-to-start edges. Disconnected components share the project calculation horizon, so shorter independent paths correctly retain float.
+
+A schedule baseline is a normalized, project-owned snapshot of task dates, milestone dates, and the project target end date. Creation and replacement are explicit manager actions; replacement never happens implicitly. Variance is signed calendar days (`current - baseline`), so positive values are late and negative values are early.
+
+Schedule changes follow preview then apply. Preview recursively shifts only dependency-constrained successors, derives milestone and deadline impact, and returns a token bound to the current project schedule fingerprint and proposed result. It does not mutate data. Apply requires schedule-management capability, recomputes the preview, rejects stale tokens, and writes all confirmed date changes atomically with audit events. Contributors and viewers may not invoke project-wide schedule propagation; viewer access is read-only.
+
+Project deadline status is `LATE` after the target, `AT_RISK` within seven calendar days of the target, `ON_TRACK` otherwise, and `UNAVAILABLE` when facts are insufficient. Schedule health and automatic alerts consume these deterministic results. Scenario analysis reuses the same preview engine for task and milestone delays and persists simulation output only; it cannot apply changes.

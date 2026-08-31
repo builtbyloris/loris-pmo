@@ -32,7 +32,7 @@ export function WorkPlanningPage() {
   useEffect(() => { projectsApi.get(projectId).then(setProject).catch(() => setProjectError(true)); }, [projectId]);
   if (projectError || planning.error) return <div className="content-state error-state" role="alert"><AlertCircle /><h1>{t("workPlanning.loadError")}</h1><Link className="secondary-button" to="/projects">{t("projects.backToProjects")}</Link></div>;
   if (!project || !planning.data) return <div className="content-state"><span className="spinner" />{t("common.loading")}</div>;
-  const { tasks, milestones, dependencies, summary, members } = planning.data;
+  const { tasks, milestones, dependencies, summary, members, schedule } = planning.data;
   const readOnly = Boolean(project.archived_at) || !can("tasks.update");
   const canCreate = !project.archived_at && can("tasks.create");
   const tabs: Array<[View, typeof ListChecks]> = [["list", ListChecks], ["kanban", Columns3], ["timeline", CalendarRange], ["milestones", Flag]];
@@ -46,7 +46,7 @@ export function WorkPlanningPage() {
     <section className="work-surface">
       {view === "list" && <TaskListView projectId={projectId} canComment={can("comments.write")} tasks={tasks} milestones={milestones} dependencies={dependencies} members={members} readOnly={readOnly} onStatusChange={planning.updateTaskStatus} onAssigneeChange={planning.updateTaskAssignees} />}
       {view === "kanban" && <KanbanBoard tasks={tasks} milestones={milestones} members={members} readOnly={readOnly} error={planning.mutationError} movingTaskId={planning.movingTaskId} onMove={planning.updateTaskStatus} />}
-      {view === "timeline" && <TimelineView tasks={tasks} milestones={milestones} dependencies={dependencies} members={members} />}
+      {view === "timeline" && <TimelineView schedule={schedule} canManage={!project.archived_at && can("schedule.manage")} preview={planning.schedulePreview} onPreview={planning.previewSchedule} onApply={planning.applySchedule} onCancel={planning.cancelSchedulePreview} onBaseline={planning.createBaseline} />}
       {view === "milestones" && <MilestonePanel milestones={milestones} tasks={tasks} dependencies={dependencies} readOnly={readOnly} onStatus={(id, status: MilestoneStatus) => planning.updateMilestone(id, { status })} onDeleteDependency={planning.deleteDependency} />}
     </section>
     <TaskFormModal open={taskOpen} onClose={() => setTaskOpen(false)} onCreate={planning.createTask} tasks={tasks} milestones={milestones} members={members} />

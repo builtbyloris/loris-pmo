@@ -372,6 +372,13 @@ export const en = {
       overdue: "{{count}} overdue",
     },
     dependencies: { eyebrow: "SCHEDULE LOGIC", title: "Task dependencies" },
+    schedule: {
+      projectedFinish: "Projected finish", deadlineVariance: "Deadline variance", criticalTasks: "Critical tasks", baselineVariance: "Max baseline variance", completeness: "Scheduling completeness",
+      current: "Current", baseline: "Baseline", projected: "Projected", hypothetical: "HYPOTHETICAL", critical: "Critical", createBaseline: "Create baseline", replaceBaseline: "Replace baseline", replaceBaselineConfirm: "Replace the existing baseline with the current schedule?",
+      baselineAt: "Baseline captured {{date}}", float: "{{count}} days total float", floatUnavailable: "Float unavailable", dependencies: "Finish-to-start dependencies", noDependencies: "No scheduling dependencies.",
+      changeTitle: "Schedule impact preview", task: "Task", preview: "Preview impact", previewTitle: "Proposed schedule impact", previewBody: "{{count}} task dates would change.",
+      milestoneImpacts: "Milestone impacts", warnings: "Warnings", deadlineImpact: "Project deadline impact", confirmApply: "Confirm and apply", previewError: "The schedule preview could not be calculated. Refresh the schedule and try again."
+    },
     timeline: {
       range: "{{count}} day",
       range_other: "{{count}} days",
@@ -429,6 +436,10 @@ export const en = {
     alertStatus: { ACTIVE: "Active", ACKNOWLEDGED: "Acknowledged", RESOLVED: "Resolved" },
     alerts: {
       eyebrow: "AUTOMATION", title: "Automatic alerts", description: "{{count}} deterministic rules are enabled. Conditions resolve automatically when the underlying facts change.", statusFilter: "Status", severityFilter: "Severity", empty: "No alerts match these filters.", acknowledge: "Acknowledge",
+      scheduleProjectedLate: { title: "Projected project finish is late", reason: "Projected finish exceeds the target by {{variance_days}} days." },
+      scheduleMilestoneLate: { title: "Milestone projected late", reason: "{{title}} is projected beyond its current date by {{variance_days}} days." },
+      scheduleVariance: { title: "Material baseline variance", reason: "{{title}} is {{variance_days}} days later than baseline." },
+      scheduleDependency: { title: "Dependency constraint violation", reason: "{{successor}} starts before {{predecessor}} finishes." },
       taskOverdue: { title: "Task overdue", reason: "{{title}} is {{days}} days overdue." },
       taskBlocked: { title: "Task blocked", reason: "{{title}} has been blocked for {{days}} days." },
       milestoneOverdue: { title: "Milestone overdue", reason: "{{title}} is {{days}} days overdue." },
