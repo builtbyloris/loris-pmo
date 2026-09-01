@@ -7,6 +7,7 @@ import { ControlWorkspacePage } from "./features/control/pages/ControlWorkspaceP
 import { DocumentsPage } from "./features/documents/pages/DocumentsPage";
 import { ReportsPage } from "./features/documents/pages/ReportsPage";
 import { FinanceWorkspacePage } from "./features/finance/pages/FinanceWorkspacePage";
+import { IntegrationsPage } from "./features/integrations/pages/IntegrationsPage";
 import { PeopleWorkspacePage } from "./features/people/pages/PeopleWorkspacePage";
 import { ProjectMemoryPage } from "./features/memory/pages/ProjectMemoryPage";
 import { PortfolioPage } from "./features/projects/pages/PortfolioPage";
@@ -32,6 +33,7 @@ export function App() {
           <Route path="projects/:projectId/collaborators" element={<CollaboratorsPage />} />
           <Route path="projects/:projectId/people" element={<PeopleWorkspacePage />} />
           <Route path="projects/:projectId/finance" element={<FinanceWorkspacePage />} />
+          <Route path="projects/:projectId/integrations" element={<IntegrationsPage />} />
           <Route path="projects/:projectId/control" element={<ControlWorkspacePage />} />
           <Route path="projects/:projectId/memory" element={<ProjectMemoryPage />} />
           <Route path="projects/:projectId/documents" element={<DocumentsPage />} />

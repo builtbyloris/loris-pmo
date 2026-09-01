@@ -42,6 +42,9 @@ class Capability(StrEnum):
     COMMENTS_READ = "comments.read"
     COMMENTS_WRITE = "comments.write"
     AUDIT_READ = "audit.read"
+    INTEGRATIONS_READ = "integrations.read"
+    INTEGRATIONS_MANAGE = "integrations.manage"
+    INTEGRATIONS_SYNC = "integrations.sync"
 
 
 READ_CAPABILITIES = {
@@ -56,6 +59,7 @@ READ_CAPABILITIES = {
     Capability.REPORTS_READ,
     Capability.AI_READ,
     Capability.COMMENTS_READ,
+    Capability.INTEGRATIONS_READ,
 }
 MANAGER_CAPABILITIES = READ_CAPABILITIES | {
     Capability.PROJECT_UPDATE,
@@ -75,6 +79,8 @@ MANAGER_CAPABILITIES = READ_CAPABILITIES | {
     Capability.AI_CONFIRM_PROPOSALS,
     Capability.COMMENTS_WRITE,
     Capability.AUDIT_READ,
+    Capability.INTEGRATIONS_MANAGE,
+    Capability.INTEGRATIONS_SYNC,
 }
 ROLE_CAPABILITIES: dict[ProjectAccessRole, frozenset[Capability]] = {
     ProjectAccessRole.OWNER: frozenset(

@@ -371,3 +371,28 @@ Decision: Preserve lexical availability when embeddings are absent or fail and e
 Reason: Provider configuration, quota, network, or malformed responses must not make uploaded documents unusable. `LEXICAL_ONLY`, `FAILED`, and `PARTIAL` states plus safe fallback diagnostics are honest without exposing provider payloads.
 
 Known V2.3 boundaries: indexing is synchronous; ranking uses a bounded application-side vector scan; there is no OCR, background queue, dedicated vector index/database, cross-project corpus, integrations, cloud deployment, or autonomous AI execution.
+
+
+## 2026-09-04 — V2.4 integrations
+
+Decision: Add provider-neutral OAuth, calendar, email, and source-control protocols coordinated by one application integration service.
+
+Reason: Google and GitHub transport details must remain replaceable and testable without leaking into domain services, routes, AI, or frontend behavior. The modular monolith retains one authorization/audit boundary and no parallel integration architecture.
+
+Decision: Make OAuth accounts user-owned, encrypt access/refresh tokens with a dedicated Fernet key, and store OAuth state only as a time-bounded user/provider-bound digest with PKCE.
+
+Reason: Project membership does not authorize using another user's external identity. Credentials must remain server-side, authenticated at rest, absent from APIs/logs/audit/AI, and explicitly removable. Missing provider configuration is a supported non-blocking state.
+
+Decision: Keep provider operations read-only and require explicit selection, linking, or preview/confirmation before any local domain record is created.
+
+Reason: Calendar browsing, Gmail search, and GitHub browsing must not silently import, poll, or mutate project state. Calendar Meeting import refetches and verifies a signed preview fingerprint; Gmail links are private by default; GitHub task links do not change task lifecycle.
+
+Decision: Preserve local records when credentials are revoked or upstream objects disappear.
+
+Reason: Provider availability cannot control the integrity of the project system of record. Disconnect deletes credentials and marks connections/links unavailable; refresh not-found updates availability only. Reconnection and unlinking remain explicit user actions.
+
+Decision: Admit only explicit authorized external links into the existing backend-owned evidence catalog and label all external content untrusted.
+
+Reason: Gemini receives no live provider access, credentials, inbox/repository dump, tools, or write capability. Permission filtering occurs before context construction, content cannot override system rules, and fabricated/cross-project/private/finance-restricted evidence remains invalid.
+
+Known V2.4 boundaries: no webhooks or background synchronization, no provider write-back, no Gmail body/attachment ingestion, no shared OAuth accounts, no autonomous AI execution, and no cloud secret manager. GitHub's default `read:user` scope supports public repositories; private repository access requires an explicit operator scope override. Live provider acceptance requires operator-owned OAuth applications and credentials and is therefore optional when unavailable.

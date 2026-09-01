@@ -57,6 +57,18 @@ from app.models.documents import (
     ProjectDocument,
 )
 from app.models.finance import BudgetCategory, Expense, ExpenseStatus
+from app.models.integrations import (
+    ExternalLink,
+    ExternalLinkVisibility,
+    ExternalObjectType,
+    IntegrationAccount,
+    IntegrationAccountStatus,
+    IntegrationOAuthState,
+    IntegrationProvider,
+    ProjectIntegration,
+    ProjectIntegrationKind,
+    ProjectIntegrationStatus,
+)
 from app.models.intelligence import Alert, AlertSeverity, AlertStatus, HealthSnapshot, HealthStatus
 from app.models.memory import (
     ActionItemStatus,
@@ -143,6 +155,16 @@ __all__ = [
     "ImpactLevel",
     "HealthSnapshot",
     "HealthStatus",
+    "IntegrationProvider",
+    "IntegrationAccountStatus",
+    "IntegrationAccount",
+    "IntegrationOAuthState",
+    "ProjectIntegration",
+    "ProjectIntegrationKind",
+    "ProjectIntegrationStatus",
+    "ExternalLink",
+    "ExternalLinkVisibility",
+    "ExternalObjectType",
     "Issue",
     "IssueMilestoneLink",
     "IssueStatus",

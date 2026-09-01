@@ -2,7 +2,7 @@
 
 Loris PMO is a professional-grade project management and project intelligence platform. It combines operational project control, deterministic analytics, multi-user collaboration, advanced scheduling, and evidence-backed AI assistance in a secure role-based workspace.
 
-This public GitHub repository contains the stable **v1.0.0** release on `main` and unreleased V2 development on `v2-development`. The current development milestone is **V2.3 AI & Knowledge 2.0**. No `v2.0.0` release or tag exists.
+This public GitHub repository contains the stable **v1.0.0** release on `main` and unreleased V2 development on `v2-development`. The current development milestone is **V2.4 Integrations**. No `v2.0.0` release or tag exists.
 
 ## Overview
 
@@ -59,7 +59,16 @@ V2 development is available on `v2-development` and has not been released as `v2
 - Lexical fallback when embeddings are unavailable or fail
 - Prompt-injection-resistant document context and retrieval diagnostics
 
-V2.4 and V2.5 are roadmap milestones and are not implemented yet.
+**V2.4 — Integrations**
+
+- User-owned OAuth connections for Google and GitHub with encrypted server-side tokens
+- Read-only Google Calendar browsing and explicit Meeting import with preview/confirm
+- Bounded Gmail search and explicit private, project, or finance-scoped message links
+- Read-only GitHub repository, issue, pull-request, and commit browsing with explicit task links
+- Provider-neutral adapters, manual refresh, safe reauthorization/failure states, and preserved local records
+- Project membership, RBAC, account isolation, audit history, and prompt-injection-safe external evidence
+
+V2.5 is the next roadmap milestone and is not implemented yet.
 
 ## AI philosophy
 
@@ -184,8 +193,12 @@ Copy `.env.example` to the ignored `.env` file and replace every credential plac
 - `GEMINI_MODEL`: defaults to `gemini-3.6-flash`
 - `AI_TIMEOUT_SECONDS`, `AI_MAX_OUTPUT_TOKENS`, `AI_TEMPERATURE`: centralized bounded generation controls
 - `DOCUMENT_STORAGE_PATH`, `DOCUMENT_MAX_UPLOAD_MB`: private storage location and upload limit
+- `INTEGRATION_TOKEN_ENCRYPTION_KEY`: dedicated Fernet key for OAuth token encryption at rest
+- Google/GitHub OAuth client, redirect, and scope settings: optional; integrations stay unavailable when absent
 
 Do not commit `.env`. `.env.example` contains placeholders only.
+
+Provider setup, redirect URI, scope, encryption-key rotation, disconnect, and recovery guidance is in [Integrations](docs/INTEGRATIONS.md).
 
 ## Running tests
 
@@ -257,7 +270,7 @@ Demo records never run at startup. The recommended demo uses a separate Compose 
 - ✅ V2.1 Multi-user / RBAC / Collaboration
 - ✅ V2.2 Advanced Scheduling
 - ✅ V2.3 AI & Knowledge 2.0
-- ⏳ V2.4 Integrations
+- ✅ V2.4 Integrations
 - ⏳ V2.5 Cloud & Production Readiness
 
 V2 has not been released as `v2.0.0`. The authoritative runtime release value remains `backend/app/version.py` at `1.0.0`; V2 development intentionally does not create or move release tags.
@@ -286,7 +299,7 @@ Additional accepted boundaries are documented in the [V1 feature audit](docs/V1_
 - No drag-and-drop scheduling
 - Semantic vectors use bounded PostgreSQL-compatible JSON storage and application-side ranking; no dedicated vector index or external vector database
 - Embedding and reindex work is synchronous; no background indexing queue
-- No external integrations yet
+- No realtime provider push/webhook synchronization; integrations use explicit bounded refresh
 - No cloud deployment yet
 
 ## Roadmap
@@ -294,7 +307,7 @@ Additional accepted boundaries are documented in the [V1 feature audit](docs/V1_
 - ✅ V2.1 — Multi-user, RBAC & Collaboration
 - ✅ V2.2 — Advanced Scheduling
 - ✅ V2.3 — AI & Knowledge 2.0
-- ⏳ V2.4 — Integrations
+- ✅ V2.4 — Integrations
 - ⏳ V2.5 — Cloud & Production Readiness
 
 See [V2_ROADMAP.md](docs/V2_ROADMAP.md) for the detailed development plan. Roadmap items are not implemented until explicitly marked complete.

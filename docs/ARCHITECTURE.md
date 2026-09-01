@@ -1,6 +1,6 @@
 # Loris PMO architecture
 
-Status: V1.0.0 release baseline plus V2.1–V2.3 development architecture
+Status: V1.0.0 release baseline plus V2.1–V2.4 development architecture
 Date: 2026-09-03
 Product authority: `PROJECT_INTELLIGENCE_SPEC.md`
 
@@ -565,3 +565,27 @@ Authorization filtering occurs before scoring and AI context construction. Queri
 Multi-document Q&A and comparison reuse the existing read-only generation provider. Document excerpts are explicitly labeled untrusted, separated from system rules and user input, and cannot grant permissions or actions. Structured comparison returns bounded agreements, differences, potential conflicts, missing information, and evidence ids. Every evidence id must resolve to an authorized `document_chunk:<uuid>` supplied by the backend; partial retrieval is represented as missing/unavailable evidence rather than claimed full-document coverage.
 
 Known limitations are synchronous embedding/reindex work, bounded application-side vector ranking rather than a dedicated vector index, no OCR, no external vector database, no semantic retrieval across projects, and no background job queue. These constraints are intentional for the local modular-monolith scope and can be revisited only with measured scale requirements.
+
+
+## 19. V2.4 integrations
+
+V2.4 adds optional provider-neutral integration boundaries inside the modular monolith. `IntegrationService` coordinates authorization, encrypted credential use, normalization, explicit link/import workflows, audit, and failure mapping; provider adapters contain Google and GitHub HTTP contracts. PostgreSQL stores user-owned provider accounts, one-time OAuth state digests, project connections, and bounded normalized external links. Raw provider payloads and credentials are never domain records.
+
+```text
+Authenticated user + active project membership + capability
+  -> user-owned encrypted OAuth account
+  -> provider-neutral read-only adapter
+  -> bounded normalized external object
+  -> explicit link or preview/confirm import
+  -> audit / Project Log / authorized evidence catalog
+```
+
+OAuth uses random state stored only as a SHA-256 digest, ten-minute expiry, initiator/provider binding, single-use consumption, and PKCE S256. Access and refresh tokens are encrypted with a dedicated Fernet key and omitted from API, frontend, logs, audit metadata, and AI context. Missing provider configuration is an optional unavailable state and makes no startup call. Authentication failure requires explicit reauthorization; disconnect revokes when possible, always deletes local ciphertext, and preserves local project records.
+
+Project integration access is the intersection of active project membership, centralized `integrations.read`/`integrations.manage`/`integrations.sync` capabilities, and ownership of the selected OAuth account. Only owners, administrators, and managers attach resources or run sync/link/import mutations. Contributors and viewers may read authorized project-visible external links, while private Gmail links remain creator-only and finance links additionally require finance access. The frontend mirrors capabilities for presentation but is never the security boundary.
+
+Google Calendar, Gmail, and GitHub are read-only. Calendar import uses a short-lived fingerprint-bound preview and refetches before explicit Meeting creation; idempotency prevents duplicate local imports. Gmail searches are explicit and bounded and persist only selected metadata/snippets. GitHub issues, pull requests, and commits may be explicitly related to tasks without changing task status, dates, or assignment. There is no provider write-back, autonomous execution, webhook/background sync, inbox ingestion, or page-load provider call.
+
+AI context never queries a provider. It includes only bounded, available `ExternalLink` records already selected by an authorized user and visible to the caller. Each becomes a backend-owned evidence identifier; external strings are explicitly untrusted, cannot change system instructions or permissions, and fabricated/cross-project/unavailable identifiers remain invalid. Provider content cannot grant tools or operational mutation.
+
+Provider 401/403, not-found, rate-limit, timeout, unavailable, and malformed responses map to stable safe application errors without upstream bodies. Manual refresh updates safe status/timestamps; a missing provider object marks its link unavailable but cannot delete a Meeting, task, issue, or other local fact. See `docs/INTEGRATIONS.md` for setup, scopes, credential rotation, disconnect, and recovery procedures.

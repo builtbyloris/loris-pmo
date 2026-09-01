@@ -891,3 +891,25 @@ h1, h2, p { margin-top: 0; }
 .knowledge-evidence small { color: var(--text-muted); overflow-wrap: anywhere; }
 .s12-list article > input[type="checkbox"] { accent-color: var(--accent); }
 @media (max-width: 850px) { .s12-search { grid-template-columns: 1fr; } }
+
+/* V2.4 explicit external-integration workspace */
+.integrations-workspace { display: grid; gap: 1.25rem; }
+.integration-section { display: grid; gap: 1rem; }
+.integration-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+.integration-card-title, .integration-connection > header, .integration-account > div:first-child { display: flex; align-items: center; gap: .65rem; justify-content: space-between; }
+.integration-card-title { justify-content: flex-start; }
+.integration-account { border-top: 1px solid var(--border); padding-top: .85rem; margin-top: .85rem; display: grid; gap: .65rem; }
+.integration-account span, .integration-connection header span, .integration-items span { color: var(--text-muted); font-size: .82rem; display: block; }
+.link-list-item { width: 100%; display: flex; align-items: center; gap: .5rem; padding: .65rem; border: 1px solid var(--border); border-radius: .65rem; background: var(--surface-soft); color: var(--text); text-align: left; cursor: pointer; }
+.integration-connection { display: grid; gap: 1rem; }
+.integration-items { display: grid; gap: .7rem; margin-top: .8rem; }
+.integration-items > article { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: .85rem; border: 1px solid var(--border); border-radius: .75rem; background: var(--surface-soft); }
+.integration-items > article.unavailable { opacity: .68; border-style: dashed; }
+.integration-items p { margin: .3rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.integration-search, .integration-task-link { display: flex; gap: .65rem; align-items: center; flex-wrap: wrap; }
+.integration-search input { flex: 1 1 260px; }
+.integration-search select, .integration-task-link select { min-width: 180px; }
+.status-pill { border-radius: 999px; padding: .18rem .5rem; width: fit-content; }
+.status-pill.healthy { background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); }
+.status-pill.attention { background: color-mix(in srgb, var(--warning) 15%, transparent); color: var(--warning); }
+@media (max-width: 720px) { .integration-items > article, .integration-connection > header { flex-direction: column; } }

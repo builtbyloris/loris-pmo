@@ -7,6 +7,7 @@ from app.api.v1 import (
     control,
     documents,
     finance,
+    integrations,
     intelligence,
     memory,
     people,
@@ -24,6 +25,7 @@ api_router.include_router(control.router)
 api_router.include_router(documents.router)
 api_router.include_router(finance.router)
 api_router.include_router(intelligence.router)
+api_router.include_router(integrations.router)
 api_router.include_router(memory.router)
 api_router.include_router(people.people_router)
 api_router.include_router(people.project_router)

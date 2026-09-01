@@ -25,6 +25,23 @@ class Settings(BaseSettings):
     knowledge_candidate_limit: int = Field(default=500, ge=50, le=2000)
     document_storage_path: str = ".data/documents"
     document_max_upload_mb: int = Field(default=10, ge=1, le=100)
+    integration_token_encryption_key: str | None = None
+    integration_timeout_seconds: float = Field(default=15.0, ge=1.0, le=60.0)
+    google_oauth_client_id: str | None = None
+    google_oauth_client_secret: str | None = None
+    google_oauth_redirect_uri: str = (
+        "http://localhost:8000/api/v1/integrations/oauth/google/callback"
+    )
+    google_oauth_scopes: str = (
+        "openid email https://www.googleapis.com/auth/calendar.readonly "
+        "https://www.googleapis.com/auth/gmail.readonly"
+    )
+    github_oauth_client_id: str | None = None
+    github_oauth_client_secret: str | None = None
+    github_oauth_redirect_uri: str = (
+        "http://localhost:8000/api/v1/integrations/oauth/github/callback"
+    )
+    github_oauth_scopes: str = "read:user"
     log_level: str = "INFO"
 
     model_config = SettingsConfigDict(

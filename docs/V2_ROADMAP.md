@@ -53,9 +53,18 @@ Project Assistant document routing is deterministic and adds only bounded author
 
 Known boundaries: synchronous indexing, no background queue, no OCR, bounded application-side cosine similarity over PostgreSQL-compatible JSON vectors, no dedicated vector index/vector database, and no cross-project/global corpus retrieval.
 
-## Planned V2 increments
+## V2.4 — Integrations
 
-- V2.4: external integrations, only when separately designed and authorized.
+V2.4 adds optional user-owned Google and GitHub OAuth accounts behind provider-neutral read-only adapters. Credentials remain server-side and encrypted with a dedicated Fernet key; OAuth state is hashed, time-bounded, user-bound, and single-use, with PKCE for both providers. Project connections and every provider call enforce active project membership, centralized integration capabilities, and ownership of the underlying provider account.
+
+Google Calendar provides bounded event browsing, explicit external links, and stale-protected preview/confirm Meeting import. Gmail provides explicit bounded metadata/snippet search and private-by-default links with deliberate project or finance sharing. GitHub provides repository, issue, pull-request, and commit browsing plus explicit task relationships without changing task lifecycle. Provider objects are normalized, raw payloads are not persisted, manual refresh is explicit, disconnect removes credentials while preserving local records, and missing upstream objects only mark links unavailable.
+
+Only explicit authorized external links may enter the existing backend-owned AI evidence catalog. External content is labeled untrusted, permission-filtered, bounded, and never grants Gemini credentials, provider access, tools, or mutation capability. V2.4 has no webhook/background sync, write-back, autonomous action, Gmail body/attachment ingestion, or cross-user OAuth sharing.
+
+See [Integrations](INTEGRATIONS.md) for operator setup, scopes, rotation, lifecycle, and failure recovery.
+
+## Planned V2 increment
+
 - V2.5: cloud and production readiness, including deployment/storage choices only when separately designed and authorized.
 
 This roadmap does not change the published V1 release notes or the `v1.0.0` tag.

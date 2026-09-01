@@ -33,6 +33,11 @@ class AIEvidenceType(StrEnum):
     AI_RECOMMENDATION = "ai_recommendation"
     PERIOD_FACT = "period_fact"
     DOCUMENT = "document"
+    CALENDAR_EVENT = "calendar_event"
+    EMAIL_MESSAGE = "email_message"
+    GITHUB_ISSUE = "github_issue"
+    GITHUB_PULL_REQUEST = "github_pull_request"
+    GITHUB_COMMIT = "github_commit"
     SIMULATION = "simulation"
 
 
