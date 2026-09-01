@@ -1,9 +1,11 @@
+import json
 from time import perf_counter
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.context import ProjectContextBuilder
+from app.ai.embeddings import EmbeddingProvider, UnavailableEmbeddingProvider
 from app.ai.errors import (
     AIError,
     AIInvalidResponseError,
@@ -23,9 +25,78 @@ from app.schemas.ai import (
     AIEvidenceType,
     AIStatusRead,
 )
+from app.schemas.documents import KnowledgeQuery
 from app.services.audit import AuditService
-from app.services.documents import DocumentService
+from app.services.knowledge import KnowledgeService
 from app.services.projects import ProjectService
+
+DOCUMENT_HINTS = {
+    "document",
+    "documents",
+    "file",
+    "files",
+    "source",
+    "sources",
+    "requirement",
+    "requirements",
+    "specification",
+    "specifications",
+    "contract",
+    "contracts",
+    "report",
+    "documento",
+    "documenti",
+    "fonte",
+    "fonti",
+    "requisito",
+    "requisiti",
+    "specifica",
+    "specifiche",
+    "contratto",
+    "contratti",
+    "rapporto",
+}
+OPERATIONAL_HINTS = {
+    "task",
+    "tasks",
+    "milestone",
+    "schedule",
+    "deadline",
+    "budget",
+    "expense",
+    "risk",
+    "issue",
+    "change",
+    "team",
+    "workload",
+    "health",
+    "alert",
+    "objective",
+    "meeting",
+    "decision",
+    "attivita",
+    "pianificazione",
+    "scadenza",
+    "spesa",
+    "rischio",
+    "problema",
+    "modifica",
+    "carico",
+    "salute",
+    "avviso",
+    "obiettivo",
+    "riunione",
+    "decisione",
+}
+
+
+def document_retrieval_relevant(question: str) -> bool:
+    words = {value.strip('.,?!:;()[]{}"').lower() for value in question.split()}
+    if words & DOCUMENT_HINTS:
+        return True
+    if words & OPERATIONAL_HINTS:
+        return False
+    return True
 
 
 class ProjectAssistantService:
@@ -36,11 +107,19 @@ class ProjectAssistantService:
         provider: AIProvider,
         *,
         context_builder: ProjectContextBuilder | None = None,
+        embedding_provider: EmbeddingProvider | None = None,
     ) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
         self.ai = AIService(provider)
         self.context_builder = context_builder or ProjectContextBuilder(session, owner_user_id)
+        settings = get_settings()
+        embedding = embedding_provider or UnavailableEmbeddingProvider(
+            provider=settings.ai_provider,
+            model=settings.gemini_embedding_model,
+            reason="not_configured",
+        )
+        self.knowledge = KnowledgeService(session, owner_user_id, settings, embedding)
         self.audit = AuditService(session, owner_user_id)
 
     async def status(self, project_id: UUID) -> AIStatusRead:
@@ -73,10 +152,14 @@ class ProjectAssistantService:
 
         try:
             context = await self.context_builder.build(project_id, data.message)
-            matches = await DocumentService(
-                self.session, self.owner_user_id, get_settings()
-            ).search(project_id, data.message)
-            if matches:
+            matches = []
+            retrieval = None
+            if document_retrieval_relevant(data.message):
+                retrieval = await self.knowledge.search(
+                    project_id, KnowledgeQuery(query=data.message)
+                )
+                matches = retrieval.matches
+            if matches and retrieval is not None:
                 sections = dict(context.sections)
                 evidence = dict(context.evidence)
                 sections["documents"] = {
@@ -90,6 +173,7 @@ class ProjectAssistantService:
                         }
                         for match in matches
                     ],
+                    "retrieval": retrieval.diagnostics.model_dump(mode="json"),
                     "limits": {"matches": 5, "excerpt_characters": 900},
                 }
                 for match in matches:
@@ -98,7 +182,18 @@ class ProjectAssistantService:
                         type=AIEvidenceType.DOCUMENT,
                         id=match.document_id,
                         label=match.filename,
-                        detail=str(match.location or {}),
+                        detail=json.dumps(
+                            {
+                                "filename": match.filename,
+                                "category": match.category.value,
+                                "location": match.location,
+                                "chunk_index": match.chunk_index,
+                                "rank": match.rank,
+                                "retrieval_mode": match.retrieval_mode.value,
+                            },
+                            ensure_ascii=False,
+                            separators=(",", ":"),
+                        ),
                     )
                 context = type(context)(
                     sections=sections,

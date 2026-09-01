@@ -4,7 +4,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ai.dependencies import get_ai_provider
+from app.ai.dependencies import get_ai_provider, get_embedding_provider
+from app.ai.embeddings import EmbeddingProvider
 from app.ai.provider import AIProvider
 from app.auth.authorization import authorize_project_module
 from app.auth.dependencies import CurrentUser, require_csrf
@@ -56,6 +57,7 @@ router = APIRouter(
 )
 Session = Annotated[AsyncSession, Depends(get_db)]
 Provider = Annotated[AIProvider, Depends(get_ai_provider)]
+Embedding = Annotated[EmbeddingProvider, Depends(get_embedding_provider)]
 
 
 @router.get("/status", response_model=AIStatusRead)
@@ -64,8 +66,11 @@ async def status(
     user: CurrentUser,
     session: Session,
     provider: Provider,
+    embedding: Embedding,
 ) -> AIStatusRead:
-    return await ProjectAssistantService(session, user.id, provider).status(project_id)
+    return await ProjectAssistantService(
+        session, user.id, provider, embedding_provider=embedding
+    ).status(project_id)
 
 
 @router.post(
@@ -79,8 +84,11 @@ async def chat(
     user: CurrentUser,
     session: Session,
     provider: Provider,
+    embedding: Embedding,
 ) -> AIChatResponse:
-    return await ProjectAssistantService(session, user.id, provider).chat(project_id, data)
+    return await ProjectAssistantService(
+        session, user.id, provider, embedding_provider=embedding
+    ).chat(project_id, data)
 
 
 @router.get("/analysis", response_model=AIAnalysisSummary)

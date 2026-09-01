@@ -43,10 +43,19 @@ V2.2 adds backend-owned deterministic scheduling over existing tasks, milestones
 
 Calendar-day scheduling is intentional. Business calendars, lag/lead, resource leveling, drag-and-drop scheduling, probabilistic forecasting, fallback inference for missing dates, and autonomous AI schedule changes are deferred. Only managers/administrators/owners may create/replace baselines or apply recursive changes; read access follows project access.
 
+## V2.3 — AI & Knowledge 2.0
+
+V2.3 upgrades the existing private-document knowledge path without creating another chatbot or AI stack. A dedicated provider-neutral embedding boundary uses server-side Gemini credentials, bounded batches, normalized vectors, and centralized model/dimension/version configuration. Embeddings are stored with chunk, document, project, model, version, content hash, and index timestamps in PostgreSQL-compatible JSON. The model/version/content hash lifecycle reuses unchanged chunks and explicit reindexing repairs stale or failed indexes.
+
+Authorized chunk candidates are filtered by active project membership, `documents.read`, project id, selected document/category, and `finance.read` before scoring. Lexical and semantic ranks are merged with deterministic Reciprocal Rank Fusion, then bounded neighbor suppression avoids redundant adjacent excerpts. Provider absence or failure degrades to lexical retrieval while preserving documents and an explicit semantic status.
+
+Project Assistant document routing is deterministic and adds only bounded authorized excerpts when relevant. Multi-document Q&A and comparison use the existing Gemini generation provider, treat excerpts as untrusted data, validate every cited `document_chunk:<uuid>` against a backend-owned evidence catalog, and remain read-only. The Documents workspace exposes semantic readiness, reindexing, grounded answers, comparison sections, evidence locations, and a minimal retrieval-mode indicator without vectors or raw scores.
+
+Known boundaries: synchronous indexing, no background queue, no OCR, bounded application-side cosine similarity over PostgreSQL-compatible JSON vectors, no dedicated vector index/vector database, and no cross-project/global corpus retrieval.
+
 ## Planned V2 increments
 
-- V2.3: invitation lifecycle and ownership transfer with explicit acceptance and recovery rules.
-- V2.4: structured mentions, additional assignment-notification families, notification preferences, and retention management.
-- Later V2: cloud deployment, external identity, integrations, object storage, semantic retrieval, and advanced reporting only when separately designed and authorized.
+- V2.4: external integrations, only when separately designed and authorized.
+- V2.5: cloud and production readiness, including deployment/storage choices only when separately designed and authorized.
 
 This roadmap does not change the published V1 release notes or the `v1.0.0` tag.

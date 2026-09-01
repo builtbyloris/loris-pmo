@@ -1,7 +1,7 @@
 # Loris PMO architecture
 
-Status: V1.0.0 release baseline plus V2.1 development architecture
-Date: 2026-08-31
+Status: V1.0.0 release baseline plus V2.1–V2.3 development architecture
+Date: 2026-09-03
 Product authority: `PROJECT_INTELLIGENCE_SPEC.md`
 
 ## 1. Scope
@@ -28,7 +28,7 @@ FastAPI API
   v
 Application services
   |-- deterministic domain logic and analytics
-  |-- AI services -> provider abstraction -> Gemini Interactions API
+  |-- AI services -> generation/embedding abstractions -> Gemini REST APIs
   |-- repositories
   v
 PostgreSQL + private document volume
@@ -125,7 +125,7 @@ The foundation migration creates `users`, including:
 - password hash, active flag, and timestamps;
 - an index supporting login lookup.
 
-Projects Core adds `projects`, `objectives`, `success_criteria`, and `audit_events`. Later cores add planning, people, finance, control, and memory records. Project Intelligence adds `alerts` and `health_snapshots`. Sprint 10 adds `ai_insights`, `ai_recommendations`, and one `ai_analysis_states` row per analyzed project. AI records store only backend-validated evidence snapshots and bounded structured fields, never raw provider payloads. Confidence uses 0.0–1.0 with database constraints. Alerts have a project-scoped stable condition key, severity, lifecycle timestamps, translation keys, evidence, and an optional polymorphic related-entity reference. Health snapshots persist only a first or materially changed score, status, dimension, or driver set. All records use UUID primary keys, explicit foreign keys, UTC-aware timestamps, constraints, and indexes. Composite foreign keys protect same-project operational relationships, while system-created alert relationships are validated from owned facts and cannot be client-created. Domain mutations and their audit events commit in one transaction.
+Projects Core adds `projects`, `objectives`, `success_criteria`, and `audit_events`. Later cores add planning, people, finance, control, and memory records. Project Intelligence adds `alerts` and `health_snapshots`. Sprint 10 adds `ai_insights`, `ai_recommendations`, and one `ai_analysis_states` row per analyzed project. V2.3 adds one versioned embedding row per indexed document chunk plus semantic lifecycle metadata on project documents. AI records store only backend-validated evidence snapshots and bounded structured fields, never raw provider payloads. Confidence uses 0.0–1.0 with database constraints. Alerts have a project-scoped stable condition key, severity, lifecycle timestamps, translation keys, evidence, and an optional polymorphic related-entity reference. Health snapshots persist only a first or materially changed score, status, dimension, or driver set. All records use UUID primary keys, explicit foreign keys, UTC-aware timestamps, constraints, and indexes. Composite foreign keys protect same-project operational relationships, while system-created alert relationships are validated from owned facts and cannot be client-created. Domain mutations and their audit events commit in one transaction.
 
 People are owner-scoped reusable records and are deliberately separate from authentication users. A project member relates a person to a project and stores the stable role, responsibilities, and availability percentage. Removing a membership never deletes the person. Tasks support multiple assignees through `task_assignees`; each assignee references a project member, and composite constraints prevent cross-project assignment even if application validation is bypassed. `audit_events.project_id` is nullable only for owner-level events such as person creation; project-domain events remain project-scoped.
 
@@ -540,3 +540,28 @@ A schedule baseline is a normalized, project-owned snapshot of task dates, miles
 Schedule changes follow preview then apply. Preview recursively shifts only dependency-constrained successors, derives milestone and deadline impact, and returns a token bound to the current project schedule fingerprint and proposed result. It does not mutate data. Apply requires schedule-management capability, recomputes the preview, rejects stale tokens, and writes all confirmed date changes atomically with audit events. Contributors and viewers may not invoke project-wide schedule propagation; viewer access is read-only.
 
 Project deadline status is `LATE` after the target, `AT_RISK` within seven calendar days of the target, `ON_TRACK` otherwise, and `UNAVAILABLE` when facts are insufficient. Schedule health and automatic alerts consume these deterministic results. Scenario analysis reuses the same preview engine for task and milestone delays and persists simulation output only; it cannot apply changes.
+
+
+## 18. V2.3 AI & Knowledge 2.0
+
+V2.3 preserves the V1 document model, V2.1 authorization policy, and existing Project Assistant/Gemini generation stack. It adds an independent `EmbeddingProvider` protocol and a server-only Gemini embedding adapter; embedding concerns do not leak into the generation provider. Configuration centralizes model, dimension, batch size, index version, timeout, and candidate bounds.
+
+```text
+Active membership + documents.read + optional finance.read
+  -> authorized project/document/chunk SQL scope
+  -> lexical scoring + optional query embedding/cosine scoring
+  -> deterministic Reciprocal Rank Fusion
+  -> bounded neighbor suppression
+  -> backend-owned document evidence
+  -> existing Project Assistant or document AI use case
+```
+
+`document_chunk_embeddings` stores one vector per chunk with project/document/chunk identifiers, provider, model, index version, dimensions, content hash, and timestamps. JSON vector storage is deliberately PostgreSQL-compatible and keeps the local deployment simple; candidate SQL scope is bounded before application-side cosine scoring. A unique chunk constraint prevents duplicate uncontrolled embeddings. Model/version/content-hash equality reuses unchanged chunks. Supported ready documents index after upload, managers may explicitly reindex, and document deletion removes embedding rows. No background reindex loop or page-load embedding call exists.
+
+Semantic lifecycle is explicit: `NOT_INDEXED`, `INDEXING`, `READY`, `PARTIAL`, `FAILED`, or `LEXICAL_ONLY`. Provider absence, provider errors, or missing extractable chunks never make the source document unavailable. Lexical retrieval remains active and diagnostics state the fallback reason. Retrieval exposes only bounded excerpts and safe counts/mode; raw vectors, storage keys, prompts, credentials, and provider payloads never enter the API or audit stream.
+
+Authorization filtering occurs before scoring and AI context construction. Queries require an active project membership and `documents.read`; finance documents additionally require `finance.read`. Non-members, disabled members, cross-project selections, unauthorized finance documents, deleted documents, and fabricated evidence are rejected. Project Assistant routing skips document retrieval for clearly operational questions and uses it for document or ambiguous knowledge questions without asking an LLM to route.
+
+Multi-document Q&A and comparison reuse the existing read-only generation provider. Document excerpts are explicitly labeled untrusted, separated from system rules and user input, and cannot grant permissions or actions. Structured comparison returns bounded agreements, differences, potential conflicts, missing information, and evidence ids. Every evidence id must resolve to an authorized `document_chunk:<uuid>` supplied by the backend; partial retrieval is represented as missing/unavailable evidence rather than claimed full-document coverage.
+
+Known limitations are synchronous embedding/reindex work, bounded application-side vector ranking rather than a dedicated vector index, no OCR, no external vector database, no semantic retrieval across projects, and no background job queue. These constraints are intentional for the local modular-monolith scope and can be revisited only with measured scale requirements.

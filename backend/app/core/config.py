@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     ai_timeout_seconds: float = Field(default=30.0, ge=1.0, le=120.0)
     ai_max_output_tokens: int = Field(default=4096, ge=128, le=8192)
     ai_temperature: float = Field(default=0.2, ge=0.0, le=1.0)
+    gemini_embedding_model: str = "gemini-embedding-2"
+    embedding_dimensions: int = Field(default=768, ge=128, le=3072)
+    embedding_batch_size: int = Field(default=20, ge=1, le=100)
+    embedding_version: str = Field(default="v1", min_length=1, max_length=32)
+    knowledge_candidate_limit: int = Field(default=500, ge=50, le=2000)
     document_storage_path: str = ".data/documents"
     document_max_upload_mb: int = Field(default=10, ge=1, le=100)
     log_level: str = "INFO"

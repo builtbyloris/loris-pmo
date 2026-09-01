@@ -5,19 +5,28 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.dependencies import get_ai_provider, get_embedding_provider
+from app.ai.embeddings import EmbeddingProvider
+from app.ai.provider import AIProvider
 from app.auth.authorization import authorize_project_module
 from app.auth.dependencies import CurrentUser, require_csrf
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
-from app.models.documents import DocumentCategory, ImportTarget
+from app.models.documents import DocumentCategory, DocumentStatus, ImportTarget
+from app.schemas.ai import AIChatResponse
 from app.schemas.documents import (
     DocumentRead,
     DocumentUpdate,
     ExportDataset,
     ImportConfirmRead,
     ImportPreviewRead,
+    KnowledgeAnswerRequest,
+    KnowledgeComparisonRead,
+    KnowledgeComparisonRequest,
+    KnowledgeIndexRead,
     KnowledgeQuery,
     KnowledgeQueryRead,
+    KnowledgeStatusRead,
     ReportRead,
     ReportType,
 )
@@ -25,6 +34,8 @@ from app.services.audit import AuditService
 from app.services.authorization import Capability
 from app.services.data_portability import ExportService, ImportService, ReportingService
 from app.services.documents import DocumentService
+from app.services.knowledge import KnowledgeService
+from app.services.knowledge_ai import KnowledgeAIService
 from app.services.projects import ProjectService
 
 router = APIRouter(
@@ -35,13 +46,19 @@ router = APIRouter(
             authorize_project_module(
                 Capability.DOCUMENTS_READ,
                 Capability.DOCUMENTS_MANAGE,
-                path_overrides={"/knowledge/query": Capability.DOCUMENTS_READ},
+                path_overrides={
+                    "/knowledge/query": Capability.DOCUMENTS_READ,
+                    "/knowledge/answer": Capability.AI_ASSISTANT,
+                    "/knowledge/compare": Capability.AI_ASSISTANT,
+                },
             )
         )
     ],
 )
 Session = Annotated[AsyncSession, Depends(get_db)]
 Config = Annotated[Settings, Depends(get_settings)]
+Embedding = Annotated[EmbeddingProvider, Depends(get_embedding_provider)]
+Provider = Annotated[AIProvider, Depends(get_ai_provider)]
 
 
 @router.get("/documents", response_model=list[DocumentRead])
@@ -60,13 +77,22 @@ async def upload_document(
     user: CurrentUser,
     session: Session,
     settings: Config,
+    embedding: Embedding,
     file: Annotated[UploadFile, File()],
     category: Annotated[DocumentCategory, Form()] = DocumentCategory.OTHER,
     description: Annotated[str | None, Form(max_length=2000)] = None,
 ):
-    return await DocumentService(session, user.id, settings).upload(
+    document = await DocumentService(session, user.id, settings).upload(
         project_id, file, category, description
     )
+    if document.status == DocumentStatus.READY:
+        await KnowledgeService(session, user.id, settings, embedding).index_document(
+            project_id, document.id, require_mutable=False
+        )
+        document = await DocumentService(session, user.id, settings)._document(
+            project_id, document.id
+        )
+    return document
 
 
 @router.patch(
@@ -113,10 +139,81 @@ async def delete_document(
 
 @router.post("/knowledge/query", response_model=KnowledgeQueryRead)
 async def query_knowledge(
-    project_id: UUID, data: KnowledgeQuery, user: CurrentUser, session: Session, settings: Config
+    project_id: UUID,
+    data: KnowledgeQuery,
+    user: CurrentUser,
+    session: Session,
+    settings: Config,
+    embedding: Embedding,
 ):
-    matches = await DocumentService(session, user.id, settings).search(project_id, data.query)
-    return KnowledgeQueryRead(matches=matches)
+    return await KnowledgeService(session, user.id, settings, embedding).search(project_id, data)
+
+
+@router.get("/knowledge/status", response_model=KnowledgeStatusRead)
+async def knowledge_status(
+    project_id: UUID,
+    user: CurrentUser,
+    session: Session,
+    settings: Config,
+    embedding: Embedding,
+):
+    return await KnowledgeService(session, user.id, settings, embedding).status(project_id)
+
+
+@router.post(
+    "/documents/{document_id}/reindex",
+    response_model=KnowledgeIndexRead,
+    dependencies=[Depends(require_csrf)],
+)
+async def reindex_document(
+    project_id: UUID,
+    document_id: UUID,
+    user: CurrentUser,
+    session: Session,
+    settings: Config,
+    embedding: Embedding,
+):
+    return await KnowledgeService(session, user.id, settings, embedding).index_document(
+        project_id, document_id
+    )
+
+
+@router.post(
+    "/knowledge/answer",
+    response_model=AIChatResponse,
+    dependencies=[Depends(require_csrf)],
+)
+async def answer_knowledge(
+    project_id: UUID,
+    data: KnowledgeAnswerRequest,
+    user: CurrentUser,
+    session: Session,
+    settings: Config,
+    embedding: Embedding,
+    provider: Provider,
+):
+    return await KnowledgeAIService(session, user.id, settings, embedding, provider).answer(
+        project_id, data
+    )
+
+
+@router.post(
+    "/knowledge/compare",
+    response_model=KnowledgeComparisonRead,
+    dependencies=[Depends(require_csrf)],
+)
+async def compare_documents(
+    project_id: UUID,
+    data: KnowledgeComparisonRequest,
+    user: CurrentUser,
+    session: Session,
+    settings: Config,
+    embedding: Embedding,
+    provider: Provider,
+):
+    return await KnowledgeAIService(session, user.id, settings, embedding, provider).compare(
+        project_id, data
+    )
 
 
 @router.get("/reports/{report_type}", response_model=ReportRead)

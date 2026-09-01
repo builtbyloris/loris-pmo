@@ -2,7 +2,7 @@
 
 Loris PMO is a professional-grade project management and project intelligence platform. It combines operational project control, deterministic analytics, multi-user collaboration, advanced scheduling, and evidence-backed AI assistance in a secure role-based workspace.
 
-This public GitHub repository contains the stable **v1.0.0** release on `main` and unreleased V2 development on `v2-development`. The current development milestone is **V2.2 Advanced Scheduling**. No `v2.0.0` release or tag exists.
+This public GitHub repository contains the stable **v1.0.0** release on `main` and unreleased V2 development on `v2-development`. The current development milestone is **V2.3 AI & Knowledge 2.0**. No `v2.0.0` release or tag exists.
 
 ## Overview
 
@@ -48,7 +48,18 @@ V2 development is available on `v2-development` and has not been released as `v2
 - Schedule-fingerprint protection against stale previews
 - Scenario Analysis reuse of the same deterministic scheduling engine
 
-V2.3 through V2.5 are roadmap milestones and are not implemented yet.
+**V2.3 — AI & Knowledge 2.0**
+
+- Provider-neutral Gemini embedding boundary with bounded batch indexing
+- Project- and permission-scoped semantic retrieval over document chunks
+- Deterministic Reciprocal Rank Fusion for hybrid lexical + semantic ranking
+- Content-hash/model/version reuse, explicit reindexing, and deletion cleanup
+- Multi-document grounded Q&A and structured document comparison
+- Backend-owned document evidence with page/sheet/section metadata where available
+- Lexical fallback when embeddings are unavailable or fail
+- Prompt-injection-resistant document context and retrieval diagnostics
+
+V2.4 and V2.5 are roadmap milestones and are not implemented yet.
 
 ## AI philosophy
 
@@ -70,7 +81,7 @@ AI is a copilot, not the project manager.
 | Backend | Python 3.12+, FastAPI, Pydantic, SQLAlchemy 2, Alembic, asyncpg |
 | Database | PostgreSQL 17 in Docker Compose |
 | Frontend | React 19, TypeScript, Vite, React Router, i18next |
-| AI | Provider-neutral service, Gemini Interactions REST API, structured JSON |
+| AI | Provider-neutral generation/embedding services, Gemini REST APIs, structured JSON |
 | Documents/data | pypdf, python-docx, openpyxl, ReportLab |
 | Testing | Pytest, HTTPX, Vitest, React Testing Library, Ruff |
 | Infrastructure | Docker Compose |
@@ -95,7 +106,7 @@ See the [V2 roadmap](docs/V2_ROADMAP.md) and [Architecture](docs/ARCHITECTURE.md
 
 ## Portfolio positioning
 
-This project demonstrates end-to-end product engineering rather than a thin AI chat interface: typed API design, relational modeling and migrations, project membership, centralized RBAC, permission-aware AI and data access, deterministic financial analytics, advanced deterministic scheduling, responsive frontend application development, human-in-the-loop AI, prompt/evidence safety, transactional imports, generated reports, automated tests, and reproducible local infrastructure.
+This project demonstrates end-to-end product engineering rather than a thin AI chat interface: typed API design, relational modeling and migrations, project membership, centralized RBAC, permission-aware AI and data access, deterministic financial analytics, advanced deterministic scheduling, permission-aware hybrid retrieval, responsive frontend application development, human-in-the-loop AI, prompt/evidence safety, transactional imports, generated reports, automated tests, and reproducible local infrastructure.
 
 For a concise walkthrough, use the [5–10 minute demo flow](docs/DEMO_FLOW.md).
 
@@ -245,7 +256,7 @@ Demo records never run at startup. The recommended demo uses a separate Compose 
 
 - ✅ V2.1 Multi-user / RBAC / Collaboration
 - ✅ V2.2 Advanced Scheduling
-- ⏳ V2.3 AI & Knowledge 2.0
+- ✅ V2.3 AI & Knowledge 2.0
 - ⏳ V2.4 Integrations
 - ⏳ V2.5 Cloud & Production Readiness
 
@@ -273,7 +284,8 @@ Additional accepted boundaries are documented in the [V1 feature audit](docs/V1_
 - Calendar-day scheduling; no holiday or business calendar
 - No resource leveling or automatic resource assignment
 - No drag-and-drop scheduling
-- No semantic or vector retrieval yet
+- Semantic vectors use bounded PostgreSQL-compatible JSON storage and application-side ranking; no dedicated vector index or external vector database
+- Embedding and reindex work is synchronous; no background indexing queue
 - No external integrations yet
 - No cloud deployment yet
 
@@ -281,7 +293,7 @@ Additional accepted boundaries are documented in the [V1 feature audit](docs/V1_
 
 - ✅ V2.1 — Multi-user, RBAC & Collaboration
 - ✅ V2.2 — Advanced Scheduling
-- ⏳ V2.3 — AI & Knowledge 2.0
+- ✅ V2.3 — AI & Knowledge 2.0
 - ⏳ V2.4 — Integrations
 - ⏳ V2.5 — Cloud & Production Readiness
 

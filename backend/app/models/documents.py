@@ -1,9 +1,11 @@
+from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
 from sqlalchemy import (
     JSON,
     BigInteger,
+    DateTime,
     Enum,
     ForeignKey,
     Index,
@@ -35,6 +37,15 @@ class DocumentStatus(StrEnum):
     UNSUPPORTED = "UNSUPPORTED"
 
 
+class DocumentSemanticStatus(StrEnum):
+    NOT_INDEXED = "NOT_INDEXED"
+    INDEXING = "INDEXING"
+    READY = "READY"
+    PARTIAL = "PARTIAL"
+    FAILED = "FAILED"
+    LEXICAL_ONLY = "LEXICAL_ONLY"
+
+
 class ImportTarget(StrEnum):
     TASKS = "TASKS"
     EXPENSES = "EXPENSES"
@@ -51,6 +62,12 @@ category_enum = Enum(
 )
 status_enum = Enum(
     DocumentStatus, name="document_status", native_enum=False, create_constraint=True
+)
+semantic_status_enum = Enum(
+    DocumentSemanticStatus,
+    name="document_semantic_status",
+    native_enum=False,
+    create_constraint=True,
 )
 import_target_enum = Enum(
     ImportTarget, name="import_target", native_enum=False, create_constraint=True
@@ -84,9 +101,21 @@ class ProjectDocument(UUIDTimestampMixin, Base):
         status_enum, default=DocumentStatus.UPLOADED, nullable=False
     )
     processing_error: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    semantic_status: Mapped[DocumentSemanticStatus] = mapped_column(
+        semantic_status_enum, default=DocumentSemanticStatus.NOT_INDEXED, nullable=False
+    )
+    embedding_model: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    embedding_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    semantic_indexed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    semantic_error: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_by_user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
 
     chunks: Mapped[list["DocumentChunk"]] = relationship(
+        cascade="all, delete-orphan", passive_deletes=True
+    )
+    embeddings: Mapped[list["DocumentChunkEmbedding"]] = relationship(
         cascade="all, delete-orphan", passive_deletes=True
     )
 
@@ -107,6 +136,32 @@ class DocumentChunk(UUIDTimestampMixin, Base):
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     location: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+
+class DocumentChunkEmbedding(UUIDTimestampMixin, Base):
+    __tablename__ = "document_chunk_embeddings"
+    __table_args__ = (
+        UniqueConstraint("chunk_id", name="uq_document_chunk_embeddings_chunk"),
+        Index("ix_document_chunk_embeddings_project_model", "project_id", "model", "version"),
+        Index("ix_document_chunk_embeddings_document", "document_id"),
+    )
+
+    chunk_id: Mapped[UUID] = mapped_column(
+        ForeignKey("document_chunks.id", ondelete="CASCADE"), nullable=False
+    )
+    document_id: Mapped[UUID] = mapped_column(
+        ForeignKey("project_documents.id", ondelete="CASCADE"), nullable=False
+    )
+    project_id: Mapped[UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)
+    model: Mapped[str] = mapped_column(String(100), nullable=False)
+    version: Mapped[str] = mapped_column(String(32), nullable=False)
+    dimensions: Mapped[int] = mapped_column(Integer, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    vector: Mapped[list[float]] = mapped_column(JSON, nullable=False)
+    indexed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class ImportBatch(UUIDTimestampMixin, Base):

@@ -342,3 +342,32 @@ Reason: Projected deadline lateness, milestone lateness, material baseline varia
 Validation scope includes exact CPM/float graphs, disconnected and incomplete schedules, recursive chain/branch/convergence, baseline create/replace and signed variance, preview non-mutation, stale-token rejection, atomic apply, audit events, manager/viewer authorization, schedule-aware scenarios, frontend preview/apply behavior, Alembic head migration, PostgreSQL, and browser E2E.
 
 Compatibility fix: Live PostgreSQL validation exposed timezone-naive SQLAlchemy mappings for V2.1 collaboration timestamps even though migration `20260901_0013` created timezone-aware columns. The model now explicitly uses `DateTime(timezone=True)` for membership, comment-deletion, and notification-read timestamps; no schema migration was required. A mapping regression test and authenticated PostgreSQL project-creation flow verify the fix.
+
+
+## 2026-09-03 — V2.3 AI & Knowledge 2.0
+
+Decision: Add a separate provider-neutral embedding boundary and preserve the existing Gemini Interactions generation provider unchanged.
+
+Reason: Embedding batches, vector validation, and retrieval purposes have different contracts from structured generation. Isolating them keeps credentials server-side, configuration centralized, tests deterministic, and the existing AI architecture intact.
+
+Decision: Store one normalized embedding per document chunk as PostgreSQL-compatible JSON with provider/model/version/dimension/content-hash metadata.
+
+Reason: The current bounded local corpus does not justify an external vector database. A unique chunk constraint prevents duplicates, content hashes reuse unchanged vectors, and explicit version/model metadata makes reindex decisions explainable. Candidate retrieval remains bounded so application-side cosine ranking is maintainable at the intended scale.
+
+Decision: Merge lexical and semantic ranks with deterministic Reciprocal Rank Fusion, then suppress adjacent chunks while better diverse evidence exists.
+
+Reason: RRF is exact, testable, and does not depend on opaque model reranking or incomparable score scales. Neighbor suppression reduces repetitive excerpts without discarding clearly better evidence.
+
+Decision: Filter active membership, project, document selection/category, and finance capability in SQL before either lexical or semantic scoring.
+
+Reason: Semantic search cannot become a late-filter authorization side channel. The same server-side RBAC boundary governs library listing, index status, retrieval, Project Assistant context, grounded Q&A, comparison, and evidence resolution.
+
+Decision: Treat extracted document content as untrusted data and require every AI document citation to resolve through the backend-owned evidence catalog.
+
+Reason: A document may contain prompt injection or fabricated identifiers. System instructions remain separate, no tools/actions are enabled, unknown/cross-project/deleted evidence is rejected, and Q&A/comparison remain read-only.
+
+Decision: Preserve lexical availability when embeddings are absent or fail and expose an explicit semantic lifecycle.
+
+Reason: Provider configuration, quota, network, or malformed responses must not make uploaded documents unusable. `LEXICAL_ONLY`, `FAILED`, and `PARTIAL` states plus safe fallback diagnostics are honest without exposing provider payloads.
+
+Known V2.3 boundaries: indexing is synchronous; ranking uses a bounded application-side vector scan; there is no OCR, background queue, dedicated vector index/database, cross-project corpus, integrations, cloud deployment, or autonomous AI execution.

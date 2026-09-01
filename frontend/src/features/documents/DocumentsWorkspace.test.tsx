@@ -17,6 +17,11 @@ const documentRecord = {
   description: "Release requirements",
   status: "READY",
   processing_error: null,
+  semantic_status: "READY",
+  embedding_model: "gemini-embedding-2",
+  embedding_version: "v1",
+  semantic_indexed_at: "2026-09-01T00:00:00Z",
+  semantic_error: null,
   created_at: "2026-08-31T00:00:00Z",
   updated_at: "2026-08-31T00:00:00Z",
 };
@@ -35,14 +40,32 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe("Sprint 12 data workspaces", () => {
   it("renders extracted document metadata and knowledge controls", async () => {
-    vi.spyOn(globalThis, "fetch").mockImplementation((input) => String(input).endsWith("/access")
-      ? response({ project_id: documentRecord.project_id, role: "PROJECT_MANAGER", status: "ACTIVE", capabilities: ["documents.read", "documents.manage", "finance.read", "finance.manage", "reports.generate"] })
-      : response([documentRecord]));
+    vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+      const url = String(input);
+      if (url.endsWith("/access")) return response({ project_id: documentRecord.project_id, role: "PROJECT_MANAGER", status: "ACTIVE", capabilities: ["documents.read", "documents.manage", "finance.read", "finance.manage", "reports.generate", "ai.assistant"] });
+      if (url.endsWith("/knowledge/status")) return response({
+        provider_available: true,
+        embedding_model: "gemini-embedding-2",
+        embedding_version: "v1",
+        total_documents: 1,
+        ready_documents: 1,
+        indexed_documents: 1,
+        partial_documents: 0,
+        failed_documents: 0,
+        lexical_only_documents: 0,
+        total_chunks: 1,
+        indexed_chunks: 1,
+      });
+      return response([documentRecord]);
+    });
     render(<MemoryRouter initialEntries={[`/projects/${documentRecord.project_id}/documents`]}><Routes><Route path="/projects/:projectId/documents" element={<DocumentsPage />} /></Routes></MemoryRouter>);
     expect(await screen.findByRole("heading", { name: "Documents", level: 1 })).toBeInTheDocument();
     expect(await screen.findByText("requirements.txt")).toBeInTheDocument();
     expect(screen.getByText(/Requirements · 1.0 KB · READY/)).toBeInTheDocument();
+    expect(screen.getByText("Semantic ready")).toBeInTheDocument();
+    expect(screen.getByLabelText("Knowledge index")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ask documents" })).toBeInTheDocument();
   });
 
   it("renders deterministic report, export and validated import controls", async () => {

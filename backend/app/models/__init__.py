@@ -48,6 +48,8 @@ from app.models.control import (
 from app.models.documents import (
     DocumentCategory,
     DocumentChunk,
+    DocumentChunkEmbedding,
+    DocumentSemanticStatus,
     DocumentStatus,
     ImportBatch,
     ImportStatus,
@@ -130,6 +132,8 @@ __all__ = [
     "DecisionStatus",
     "DocumentCategory",
     "DocumentChunk",
+    "DocumentChunkEmbedding",
+    "DocumentSemanticStatus",
     "DocumentStatus",
     "ImportBatch",
     "ImportStatus",

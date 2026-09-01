@@ -10,14 +10,21 @@ from docx import Document as DocxDocument
 from fastapi import UploadFile
 from openpyxl import load_workbook
 from pypdf import PdfReader
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
 from app.core.errors import AppError
-from app.models.documents import DocumentCategory, DocumentChunk, DocumentStatus, ProjectDocument
+from app.models.documents import (
+    DocumentCategory,
+    DocumentChunk,
+    DocumentChunkEmbedding,
+    DocumentSemanticStatus,
+    DocumentStatus,
+    ProjectDocument,
+)
 from app.models.project import Project
-from app.schemas.documents import DocumentUpdate, KnowledgeMatch
+from app.schemas.documents import DocumentUpdate
 from app.services.audit import AuditService
 from app.services.authorization import AuthorizationService, Capability, accessible_project_ids
 from app.services.projects import ProjectService
@@ -225,6 +232,7 @@ class DocumentService:
                         )
                     )
                 document.status = DocumentStatus.READY
+                document.semantic_status = DocumentSemanticStatus.LEXICAL_ONLY
                 document.processing_error = None
         except Exception:
             document.status = DocumentStatus.FAILED
@@ -292,46 +300,12 @@ class DocumentService:
             entity_id=document.id,
             changes={"filename": document.original_filename},
         )
+        await self.session.execute(
+            delete(DocumentChunkEmbedding).where(
+                DocumentChunkEmbedding.document_id == document.id
+            )
+        )
         await self.session.delete(document)
         await self.session.commit()
         if self.root in path.parents:
             path.unlink(missing_ok=True)
-
-    async def search(self, project_id: UUID, query: str, limit: int = 5) -> list[KnowledgeMatch]:
-        await self._project(project_id)
-        terms = _tokens(query)
-        if not terms:
-            return []
-        statement = (
-            select(DocumentChunk, ProjectDocument)
-            .join(ProjectDocument, ProjectDocument.id == DocumentChunk.document_id)
-            .join(Project)
-            .where(
-                DocumentChunk.project_id == project_id,
-                Project.id.in_(accessible_project_ids(self.owner_user_id)),
-                ProjectDocument.status == DocumentStatus.READY,
-            )
-        )
-        if not await AuthorizationService(self.session, self.owner_user_id).can(
-            project_id, Capability.FINANCE_READ
-        ):
-            statement = statement.where(ProjectDocument.category != DocumentCategory.FINANCE)
-        result = await self.session.execute(statement)
-        matches = []
-        lowered = query.lower().strip()
-        for chunk, document in result.all():
-            overlap = terms & _tokens(chunk.text)
-            if not overlap:
-                continue
-            score = len(overlap) / len(terms) + (0.25 if lowered in chunk.text.lower() else 0)
-            matches.append(
-                KnowledgeMatch(
-                    evidence_id=f"document_chunk:{chunk.id}",
-                    document_id=document.id,
-                    filename=document.original_filename,
-                    excerpt=chunk.text[:900],
-                    location=chunk.location,
-                    score=round(score, 4),
-                )
-            )
-        return sorted(matches, key=lambda item: (-item.score, item.filename))[:limit]
