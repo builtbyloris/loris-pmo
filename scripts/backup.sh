@@ -15,6 +15,8 @@ docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 is unavailable
 [ -f .env ] || fail "Missing .env."
 docker compose ps --services --status running | grep -qx db || fail "The Compose database service is not running."
 docker compose ps --services --status running | grep -qx backend || fail "The Compose backend service is not running."
+storage_backend=$(docker compose exec -T backend sh -c 'printf "%s" "${DOCUMENT_STORAGE_BACKEND:-local}"')
+[ "$storage_backend" = "local" ] || fail "This script backs up local document storage only. Follow docs/BACKUP_RESTORE.md for object storage."
 
 mkdir -p backups
 timestamp=$(date -u +%Y%m%dT%H%M%SZ)

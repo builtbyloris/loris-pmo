@@ -29,6 +29,8 @@ db_backup=$1
 doc_backup=${2:-}
 [ -f "$db_backup" ] || fail "Database backup does not exist: $db_backup"
 if [ -n "$doc_backup" ]; then
+  storage_backend=$(docker compose run --rm --no-deps -T backend sh -c 'printf "%s" "${DOCUMENT_STORAGE_BACKEND:-local}"')
+  [ "$storage_backend" = "local" ] || fail "Document archives can be restored only with DOCUMENT_STORAGE_BACKEND=local."
   [ -f "$doc_backup" ] || fail "Document archive does not exist: $doc_backup"
   tar -tzf "$doc_backup" >/dev/null || fail "Document archive is not a readable gzip tar file."
   tar -tzf "$doc_backup" | grep -Eq '^documents(/|$)' || fail "Document archive does not contain the expected documents/ root."

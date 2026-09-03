@@ -12,7 +12,7 @@ export function ProjectEditModal({ project, open, onClose, onSaved }: { project:
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
-    setValues({ name: project.name, code: project.code, description: project.description ?? "", client_or_area: project.client_or_area ?? "", status: project.status, priority: project.priority, start_date: project.start_date ?? "", target_end_date: project.target_end_date ?? "", planned_budget: project.planned_budget, notes: project.notes ?? "" });
+    setValues({ name: project.name, code: project.code, description: project.description ?? "", client_or_area: project.client_or_area ?? "", status: project.status, priority: project.priority, start_date: project.start_date ?? "", target_end_date: project.target_end_date ?? "", planned_budget: (project.planned_budget ?? "0"), notes: project.notes ?? "" });
     setError("");
   }, [project, open]);
   function update(key: string, value: string) { setValues((current) => ({ ...current, [key]: value })); }

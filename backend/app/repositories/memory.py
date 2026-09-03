@@ -21,6 +21,7 @@ from app.models.project import Project
 from app.models.task import Task
 from app.models.user import User
 from app.schemas.memory import SortOrder
+from app.services.authorization import accessible_project_ids
 
 ENTITY_MODELS = {
     MemoryEntityType.TASK: (Task, Task.title),
@@ -42,7 +43,8 @@ class MemoryRepository:
         return (
             await self.session.execute(
                 select(Project).where(
-                    Project.id == project_id, Project.owner_user_id == self.owner_user_id
+                    Project.id == project_id,
+                    Project.id.in_(accessible_project_ids(self.owner_user_id)),
                 )
             )
         ).scalar_one_or_none()
@@ -227,7 +229,7 @@ class MemoryRepository:
         action: str | None,
         entity_type: str | None,
         sort_order: SortOrder,
-    ) -> tuple[list[tuple[AuditEvent, str | None]], int]:
+    ) -> tuple[list[tuple[AuditEvent, str | None, str | None]], int]:
         filters = [AuditEvent.project_id == project_id]
         if search and search.strip():
             term = f"%{search.strip()}%"
@@ -245,7 +247,7 @@ class MemoryRepository:
             else AuditEvent.created_at.desc()
         )
         rows = await self.session.execute(
-            select(AuditEvent, User.email)
+            select(AuditEvent, User.email, User.display_name)
             .outerjoin(User, User.id == AuditEvent.actor_user_id)
             .where(*filters)
             .order_by(ordering, AuditEvent.id)

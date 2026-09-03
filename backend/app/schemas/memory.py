@@ -249,6 +249,8 @@ class ActivityRead(BaseModel):
     id: UUID
     actor_user_id: UUID
     actor_email: str | None
+    actor_display_name: str | None
+    summary: str
     action: str
     entity_type: str
     entity_id: UUID

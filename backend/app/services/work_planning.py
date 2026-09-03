@@ -4,13 +4,20 @@ from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
+from app.models.collaboration import (
+    MembershipStatus,
+    Notification,
+    NotificationType,
+    ProjectMembership,
+)
 from app.models.memory import MemoryEntityType, ProjectLogType
 from app.models.milestone import Milestone, MilestoneStatus
-from app.models.people import TaskAssignee
+from app.models.people import ProjectMember, TaskAssignee
 from app.models.project import Project
 from app.models.task import Task, TaskStatus
 from app.models.task_dependency import DependencyType, TaskDependency
@@ -144,6 +151,43 @@ class WorkPlanningService:
             for member_id in member_ids
         ]
 
+    async def _notify_task_assignees(
+        self, project_id: UUID, task: Task, member_ids: list[UUID]
+    ) -> None:
+        if not member_ids:
+            return
+        recipients = list(
+            (
+                await self.session.scalars(
+                    select(ProjectMembership.user_id)
+                    .join(
+                        ProjectMember,
+                        (ProjectMember.project_id == ProjectMembership.project_id)
+                        & (ProjectMember.person_id == ProjectMembership.person_id),
+                    )
+                    .where(
+                        ProjectMembership.project_id == project_id,
+                        ProjectMembership.status == MembershipStatus.ACTIVE,
+                        ProjectMembership.user_id != self.owner_user_id,
+                        ProjectMember.id.in_(member_ids),
+                    )
+                    .limit(100)
+                )
+            ).all()
+        )
+        for recipient in recipients:
+            self.session.add(
+                Notification(
+                    user_id=recipient,
+                    project_id=project_id,
+                    type=NotificationType.TASK_ASSIGNED,
+                    title="Task assigned",
+                    message="You were assigned to a project task.",
+                    entity_type="TASK",
+                    entity_id=task.id,
+                )
+            )
+
     async def create_task(self, project_id: UUID, data: TaskCreate) -> Task:
         project = await self._project_or_404(project_id)
         self._ensure_mutable(project)
@@ -161,6 +205,7 @@ class WorkPlanningService:
         self.session.add(task)
         await self.session.flush()
         self._set_assignees(task, assignee_ids)
+        await self._notify_task_assignees(project_id, task, assignee_ids)
         self.audit.record(
             project_id=project_id,
             action="task.created",
@@ -224,10 +269,14 @@ class WorkPlanningService:
         for key, value in changes.items():
             setattr(task, key, value)
         if assignee_ids is not None:
-            before_assignees = sorted(str(value) for value in task.assignee_ids)
+            previous_ids = set(task.assignee_ids)
+            before_assignees = sorted(str(value) for value in previous_ids)
             next_assignees = sorted(str(value) for value in assignee_ids)
             if before_assignees != next_assignees:
                 self._set_assignees(task, assignee_ids)
+                await self._notify_task_assignees(
+                    project_id, task, [value for value in assignee_ids if value not in previous_ids]
+                )
                 self.audit.record(
                     project_id=project_id,
                     action="task.assignee_changed",

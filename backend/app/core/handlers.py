@@ -5,9 +5,10 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from app.core.config import get_settings
 from app.core.errors import AppError
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("loris.errors")
 
 
 def _payload(request: Request, code: str, message: str, details: Any = None) -> dict:
@@ -44,7 +45,16 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
-        logger.exception("Unhandled application error", exc_info=exc)
+        if get_settings().app_env == "production":
+            logger.error(
+                "unhandled_application_error",
+                extra={
+                    "request_id": getattr(request.state, "request_id", None),
+                    "exception_type": type(exc).__name__,
+                },
+            )
+        else:
+            logger.exception("Unhandled application error", exc_info=exc)
         return JSONResponse(
             status_code=500,
             content=_payload(

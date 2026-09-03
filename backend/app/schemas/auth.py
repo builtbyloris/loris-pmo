@@ -12,6 +12,7 @@ class LoginRequest(BaseModel):
 class UserRead(BaseModel):
     id: UUID
     email: EmailStr
+    display_name: str | None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

@@ -1,7 +1,8 @@
-import { ArrowDownUp, CalendarDays, GitBranch, Search } from "lucide-react";
+import { ArrowDownUp, CalendarDays, GitBranch, MessageSquare, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { CommentsPanel } from "../../collaboration/components/CommentsPanel";
 import { formatDate } from "../../projects/utils/format";
 import type { ProjectMember } from "../../people/types";
 import type { Milestone, Task, TaskDependency, TaskPriority, TaskStatus } from "../types";
@@ -9,13 +10,14 @@ import { WorkBadge } from "./WorkBadge";
 
 type Sort = "title" | "due" | "priority" | "status";
 
-export function TaskListView({ tasks, milestones, dependencies, members, readOnly, onStatusChange, onAssigneeChange }: { tasks: Task[]; milestones: Milestone[]; dependencies: TaskDependency[]; members: ProjectMember[]; readOnly: boolean; onStatusChange: (taskId: string, status: TaskStatus) => Promise<boolean>; onAssigneeChange: (taskId: string, assigneeIds: string[]) => Promise<boolean> }) {
+export function TaskListView({ projectId = "", tasks, milestones, dependencies, members, readOnly, canComment = false, onStatusChange, onAssigneeChange }: { projectId?: string; tasks: Task[]; milestones: Milestone[]; dependencies: TaskDependency[]; members: ProjectMember[]; readOnly: boolean; canComment?: boolean; onStatusChange: (taskId: string, status: TaskStatus) => Promise<boolean>; onAssigneeChange: (taskId: string, assigneeIds: string[]) => Promise<boolean> }) {
   const { t, i18n } = useTranslation();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<TaskStatus | "">("");
   const [priority, setPriority] = useState<TaskPriority | "">("");
   const [milestone, setMilestone] = useState("");
   const [sort, setSort] = useState<Sort>("due");
+  const [commentTaskId, setCommentTaskId] = useState<string | null>(null);
   const visible = useMemo(() => {
     const filtered = tasks.filter((task) => (!search || `${task.title} ${task.description ?? ""}`.toLowerCase().includes(search.toLowerCase())) && (!status || task.status === status) && (!priority || task.priority === priority) && (!milestone || task.milestone_id === milestone));
     return [...filtered].sort((a, b) => {
@@ -38,7 +40,8 @@ export function TaskListView({ tasks, milestones, dependencies, members, readOnl
       const linked = dependencies.filter((dependency) => dependency.source_task_id === task.id || dependency.target_task_id === task.id).length;
       const milestoneTitle = milestones.find((item) => item.id === task.milestone_id)?.title;
       const names = task.assignee_ids.map((id) => members.find((member) => member.id === id)?.person.name).filter(Boolean);
-      return <tr key={task.id}><td><div className={`task-title-cell ${task.parent_task_id ? "subtask" : ""}`}><strong>{task.title}</strong>{task.parent_task_id && <small>{t("workPlanning.subtask")}</small>}</div></td><td>{readOnly ? <WorkBadge value={task.status} kind="status" /> : <select className="inline-select" aria-label={t("workPlanning.actions.changeStatus", { title: task.title })} value={task.status} onChange={(event) => void onStatusChange(task.id, event.target.value as TaskStatus)}>{(["BACKLOG", "TODO", "IN_PROGRESS", "BLOCKED", "REVIEW", "DONE", "CANCELLED"] as TaskStatus[]).map((value) => <option key={value} value={value}>{t(`workPlanning.status.${value}`)}</option>)}</select>}</td><td><WorkBadge value={task.priority} kind="priority" /></td><td>{readOnly ? names.join(", ") || "—" : <select multiple className="inline-assignee-select" aria-label={t("workPlanning.actions.changeAssignees", { title: task.title })} value={task.assignee_ids} onChange={(event) => void onAssigneeChange(task.id, Array.from(event.target.selectedOptions, (option) => option.value))}>{members.map((member) => <option key={member.id} value={member.id}>{member.person.name}</option>)}</select>}</td><td><div className="date-pair"><span>{formatDate(task.start_date, i18n.resolvedLanguage)}</span><span>{formatDate(task.due_date, i18n.resolvedLanguage)}</span></div></td><td>{milestoneTitle || "—"}</td><td><div className="completion-cell"><span><i style={{ width: `${task.completion_percentage}%` }} /></span><strong>{task.completion_percentage}%</strong></div></td><td>{linked ? <span className="dependency-count"><GitBranch size={13} />{linked}</span> : "—"}</td></tr>;
+      return <tr key={task.id}><td><div className={`task-title-cell ${task.parent_task_id ? "subtask" : ""}`}><strong>{task.title}</strong><button type="button" className="icon-button compact" aria-label={t("collaboration.comments.title")} onClick={() => setCommentTaskId(task.id)}><MessageSquare size={13} /></button>{task.parent_task_id && <small>{t("workPlanning.subtask")}</small>}</div></td><td>{readOnly ? <WorkBadge value={task.status} kind="status" /> : <select className="inline-select" aria-label={t("workPlanning.actions.changeStatus", { title: task.title })} value={task.status} onChange={(event) => void onStatusChange(task.id, event.target.value as TaskStatus)}>{(["BACKLOG", "TODO", "IN_PROGRESS", "BLOCKED", "REVIEW", "DONE", "CANCELLED"] as TaskStatus[]).map((value) => <option key={value} value={value}>{t(`workPlanning.status.${value}`)}</option>)}</select>}</td><td><WorkBadge value={task.priority} kind="priority" /></td><td>{readOnly ? names.join(", ") || "—" : <select multiple className="inline-assignee-select" aria-label={t("workPlanning.actions.changeAssignees", { title: task.title })} value={task.assignee_ids} onChange={(event) => void onAssigneeChange(task.id, Array.from(event.target.selectedOptions, (option) => option.value))}>{members.map((member) => <option key={member.id} value={member.id}>{member.person.name}</option>)}</select>}</td><td><div className="date-pair"><span>{formatDate(task.start_date, i18n.resolvedLanguage)}</span><span>{formatDate(task.due_date, i18n.resolvedLanguage)}</span></div></td><td>{milestoneTitle || "—"}</td><td><div className="completion-cell"><span><i style={{ width: `${task.completion_percentage}%` }} /></span><strong>{task.completion_percentage}%</strong></div></td><td>{linked ? <span className="dependency-count"><GitBranch size={13} />{linked}</span> : "—"}</td></tr>;
     })}</tbody></table></div>}
+    {commentTaskId && projectId && <CommentsPanel projectId={projectId} entityType="TASK" entityId={commentTaskId} canWrite={canComment} />}
   </div>;
 }

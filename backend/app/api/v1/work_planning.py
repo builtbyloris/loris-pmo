@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.authorization import authorize_project_module
 from app.auth.dependencies import CurrentUser, require_csrf
 from app.core.database import get_db
 from app.models.task import TaskPriority, TaskStatus
@@ -21,9 +22,24 @@ from app.schemas.work_planning import (
     TaskUpdate,
     WorkPlanningSummary,
 )
+from app.services.authorization import Capability
 from app.services.work_planning import WorkPlanningService
 
-router = APIRouter(prefix="/projects/{project_id}", tags=["work-planning"])
+router = APIRouter(
+    prefix="/projects/{project_id}",
+    tags=["work-planning"],
+    dependencies=[
+        Depends(
+            authorize_project_module(
+                Capability.TASKS_READ,
+                Capability.TASKS_UPDATE,
+                create=Capability.TASKS_CREATE,
+                delete=Capability.TASKS_DELETE,
+                path_overrides={"/archive": Capability.TASKS_DELETE},
+            )
+        )
+    ],
+)
 Session = Annotated[AsyncSession, Depends(get_db)]
 
 

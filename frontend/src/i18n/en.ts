@@ -33,10 +33,13 @@ export const en = {
     settings: "Settings",
   },
   documents: {
-    eyebrow: "PROJECT KNOWLEDGE", title: "Documents", subtitle: "Secure project files and evidence-backed knowledge.", back: "Back to project", openReports: "Reports & data", upload: "Upload document", uploadHelp: "PDF, DOCX, XLSX, CSV, TXT and images up to the configured limit.", file: "Document file", description: "Optional description", library: "Document library", libraryHelp: "Files remain scoped to this project and its owner.", empty: "No documents uploaded yet.", download: "Download document", deleteConfirm: "Delete this document and its extracted knowledge?", knowledge: "Knowledge search", knowledgeHelp: "Deterministic lexical retrieval over extracted project text.", askAi: "Ask Project Assistant", search: "Search", searchPlaceholder: "Search project documents…", error: "Documents could not be loaded.", categories: { REQUIREMENTS: "Requirements", SPECIFICATIONS: "Specifications", MEETING_NOTES: "Meeting notes", CONTRACTS: "Contracts", REPORTS: "Reports", FINANCE: "Finance", OTHER: "Other" }
+    eyebrow: "PROJECT KNOWLEDGE", title: "Documents", subtitle: "Secure project files and evidence-backed knowledge.", back: "Back to project", openReports: "Reports & data", upload: "Upload document", uploadHelp: "PDF, DOCX, XLSX, CSV, TXT and images up to the configured limit.", file: "Document file", description: "Optional description", library: "Document library", libraryHelp: "Files remain scoped to this project and its owner.", empty: "No documents uploaded yet.", download: "Download document", deleteConfirm: "Delete this document and its extracted knowledge?", knowledge: "Knowledge search", knowledgeHelp: "Deterministic lexical retrieval over extracted project text.", askAi: "Ask Project Assistant", search: "Search", searchPlaceholder: "Search project documents…", error: "Documents could not be loaded.", indexStatus: "Knowledge index", indexSummary: "{{indexed}} of {{total}} chunks semantically indexed", lexicalFallback: "Lexical search available; semantic provider is not configured", selectForComparison: "Select {{name}} for comparison", lastIndexed: "Last indexed {{date}}", semanticDegraded: "Semantic indexing is degraded; lexical search remains available.", reindex: "Reindex document", askDocuments: "Ask documents", compare: "Compare", compareDefault: "Compare the selected documents.", groundedAnswer: "Grounded answer", comparison: "Document comparison", agreements: "Agreements", differences: "Differences", conflicts: "Potential conflicts", missingInformation: "Missing information", evidence: "Verified document evidence", selectedChunks: "{{count}} evidence chunks selected", semanticStatus: { NOT_INDEXED: "Not indexed", INDEXING: "Indexing", READY: "Semantic ready", PARTIAL: "Partially indexed", FAILED: "Semantic failed", LEXICAL_ONLY: "Lexical only" }, retrievalMode: { LEXICAL: "Lexical retrieval", SEMANTIC: "Semantic retrieval", HYBRID: "Hybrid retrieval" }, categories: { REQUIREMENTS: "Requirements", SPECIFICATIONS: "Specifications", MEETING_NOTES: "Meeting notes", CONTRACTS: "Contracts", REPORTS: "Reports", FINANCE: "Finance", OTHER: "Other" }
   },
   reports: {
     eyebrow: "V1 DATA WORKSPACE", title: "Reports & data", subtitle: "Deterministic reporting, portable exports and validated imports.", back: "Back to project", openDocuments: "Documents", preview: "Report preview", previewHelp: "Generated from current backend facts; missing facts are never invented.", generate: "Generate preview", pdf: "Download PDF", export: "Data export", exportHelp: "Export current project datasets as CSV or XLSX.", import: "Validated import", importHelp: "Preview task or expense rows before an atomic confirmation.", validate: "Validate preview", confirm: "Confirm import", tasks: "Tasks", expenses: "Expenses", previewCount: "{{valid}} valid of {{total}} rows", row: "Row {{row}}", imported: "Imported {{count}} records.", error: "The report or data operation failed.", types: { "project-summary": "Project summary", "executive-summary": "Executive summary", weekly: "Weekly review", budget: "Budget report", control: "Risk and control", team: "Team and workload" }, datasets: { tasks: "Tasks", milestones: "Milestones", expenses: "Expenses", risks: "Risks", issues: "Issues", changes: "Change requests", team: "Team", activity: "Project activity" }
+  },
+  collaboration: {
+    eyebrow: "PROJECT ACCESS", title: "Members & access", subtitle: "Manage who can access this project and what they can do.", back: "Back to project", open: "Members", email: "Existing user email", role: "Access role", status: "Status", joined: "Joined", person: "Linked person", member: "Member", add: "Add member", error: "The membership could not be changed.", roles: { OWNER: "Owner", PROJECT_ADMIN: "Project admin", PROJECT_MANAGER: "Project manager", CONTRIBUTOR: "Contributor", VIEWER: "Viewer" }, comments: { title: "Comments", empty: "No comments yet.", add: "Add comment", edit: "Edit comment" }, notifications: { title: "Notifications", empty: "No notifications yet.", readAll: "Mark all read" }
   },
   login: {
     eyebrow: "PRIVATE WORKSPACE",
@@ -369,6 +372,13 @@ export const en = {
       overdue: "{{count}} overdue",
     },
     dependencies: { eyebrow: "SCHEDULE LOGIC", title: "Task dependencies" },
+    schedule: {
+      projectedFinish: "Projected finish", deadlineVariance: "Deadline variance", criticalTasks: "Critical tasks", baselineVariance: "Max baseline variance", completeness: "Scheduling completeness",
+      current: "Current", baseline: "Baseline", projected: "Projected", hypothetical: "HYPOTHETICAL", critical: "Critical", createBaseline: "Create baseline", replaceBaseline: "Replace baseline", replaceBaselineConfirm: "Replace the existing baseline with the current schedule?",
+      baselineAt: "Baseline captured {{date}}", float: "{{count}} days total float", floatUnavailable: "Float unavailable", dependencies: "Finish-to-start dependencies", noDependencies: "No scheduling dependencies.",
+      changeTitle: "Schedule impact preview", task: "Task", preview: "Preview impact", previewTitle: "Proposed schedule impact", previewBody: "{{count}} task dates would change.",
+      milestoneImpacts: "Milestone impacts", warnings: "Warnings", deadlineImpact: "Project deadline impact", confirmApply: "Confirm and apply", previewError: "The schedule preview could not be calculated. Refresh the schedule and try again."
+    },
     timeline: {
       range: "{{count}} day",
       range_other: "{{count}} days",
@@ -426,6 +436,10 @@ export const en = {
     alertStatus: { ACTIVE: "Active", ACKNOWLEDGED: "Acknowledged", RESOLVED: "Resolved" },
     alerts: {
       eyebrow: "AUTOMATION", title: "Automatic alerts", description: "{{count}} deterministic rules are enabled. Conditions resolve automatically when the underlying facts change.", statusFilter: "Status", severityFilter: "Severity", empty: "No alerts match these filters.", acknowledge: "Acknowledge",
+      scheduleProjectedLate: { title: "Projected project finish is late", reason: "Projected finish exceeds the target by {{variance_days}} days." },
+      scheduleMilestoneLate: { title: "Milestone projected late", reason: "{{title}} is projected beyond its current date by {{variance_days}} days." },
+      scheduleVariance: { title: "Material baseline variance", reason: "{{title}} is {{variance_days}} days later than baseline." },
+      scheduleDependency: { title: "Dependency constraint violation", reason: "{{successor}} starts before {{predecessor}} finishes." },
       taskOverdue: { title: "Task overdue", reason: "{{title}} is {{days}} days overdue." },
       taskBlocked: { title: "Task blocked", reason: "{{title}} has been blocked for {{days}} days." },
       milestoneOverdue: { title: "Milestone overdue", reason: "{{title}} is {{days}} days overdue." },
@@ -553,6 +567,22 @@ export const en = {
       ai_invalid_response: "The AI provider returned an invalid response. Nothing was changed.",
       ai_context_unavailable: "Project context could not be prepared. Nothing was changed.",
     },
+  },
+  integrations: {
+    eyebrow: "EXTERNAL REFERENCES", title: "Integrations", subtitle: "Connect authorized provider accounts and explicitly link bounded external references.", back: "Back to project", google: "Google", primary: "Primary", private: "Private", notConfigured: "External providers are not configured. The rest of Loris PMO remains available.",
+    accounts: { eyebrow: "USER CONNECTIONS", title: "Connected accounts", help: "Credentials belong to you and remain encrypted on the server." },
+    connections: { eyebrow: "PROJECT CONNECTIONS", title: "Project integrations", help: "Only project managers can connect or refresh provider resources.", empty: "No external resource is linked to this project." },
+    links: { eyebrow: "BOUNDED EVIDENCE", title: "External links", help: "Explicit references remain local even if the provider later becomes unavailable.", empty: "No external references have been linked." },
+    actions: { connect: "Connect", reconnect: "Reconnect", disconnect: "Disconnect", browse: "Choose resource", refresh: "Refresh", unlink: "Unlink", link: "Link", open: "Open source" },
+    status: { CONNECTED: "Connected", REAUTH_REQUIRED: "Reconnect required", ERROR: "Error", DISCONNECTED: "Disconnected" },
+    connectionStatus: { ACTIVE: "Active", STALE: "Stale", UNAVAILABLE: "Unavailable" },
+    kind: { GOOGLE_CALENDAR: "Google Calendar", GMAIL: "Gmail", GITHUB_REPOSITORY: "GitHub repository" },
+    object: { CALENDAR_EVENT: "Calendar event", EMAIL_MESSAGE: "Email message", GITHUB_ISSUE: "GitHub issue", GITHUB_PULL_REQUEST: "GitHub pull request", GITHUB_COMMIT: "GitHub commit" },
+    calendar: { browse: "Browse next 30 days", preview: "Preview meeting", previewTitle: "Calendar event preview", confirm: "Create Loris meeting" },
+    gmail: { link: "Link Gmail to project", search: "Search Gmail", placeholder: "Search a bounded set of messages…" },
+    github: { issues: "Issues", "pull-requests": "Pull requests", commits: "Recent commits", task: "Loris task", linkTask: "Link to task" },
+    visibility: { label: "Link visibility", PRIVATE: "Private to me", PROJECT: "Project members", FINANCE: "Finance-authorized members" },
+    errors: { load: "Integrations could not be loaded. No provider or project data was changed.", action: "The integration action failed safely. No project data was changed." },
   },
   placeholder: {
     eyebrow: "FOUNDATION READY",

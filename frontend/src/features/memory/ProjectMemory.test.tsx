@@ -6,6 +6,7 @@ import i18n from "../../i18n/config";
 import { memoryApi } from "./api/memoryApi";
 import { ProjectMemoryPage } from "./pages/ProjectMemoryPage";
 
+vi.mock("../collaboration/api/collaborationApi", () => ({ collaborationApi: { access: vi.fn(async () => ({ project_id: "p1", role: "PROJECT_MANAGER", status: "ACTIVE", capabilities: ["meetings.manage", "ai.confirm_proposals", "comments.write", "audit.read"] })) } }));
 vi.mock("../projects/api/projectsApi", () => ({ projectsApi: { get: vi.fn(async () => ({ id: "p1", name: "Apollo", archived_at: null })) } }));
 vi.mock("../people/api/peopleApi", () => ({ peopleApi: { listMembers: vi.fn(async () => [{ id: "member-1", person: { name: "Ada" } }]) } }));
 vi.mock("../work-planning/api/workPlanningApi", () => ({ workPlanningApi: { listTasks: vi.fn(async () => ({ items: [{ id: "task-1", title: "Prepare" }], total: 1 })), listMilestones: vi.fn(async () => [{ id: "milestone-1", title: "Launch" }]) } }));

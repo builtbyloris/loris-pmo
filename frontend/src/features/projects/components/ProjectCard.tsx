@@ -18,7 +18,7 @@ export function ProjectCard({ project }: { project: Project }) {
       <dl className="project-card-details">
         <div><dt><Building2 size={15} />{t("projects.fields.client")}</dt><dd>{project.client_or_area || "—"}</dd></div>
         <div><dt><CalendarDays size={15} />{t("projects.fields.targetDate")}</dt><dd>{formatDate(project.target_end_date, i18n.resolvedLanguage)}</dd></div>
-        <div><dt><WalletCards size={15} />{t("projects.fields.plannedBudget")}</dt><dd>{formatCurrency(project.planned_budget, i18n.resolvedLanguage)}</dd></div>
+        <div><dt><WalletCards size={15} />{t("projects.fields.plannedBudget")}</dt><dd>{formatCurrency((project.planned_budget ?? "0"), i18n.resolvedLanguage)}</dd></div>
       </dl>
     </Link>
   );

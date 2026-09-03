@@ -1,8 +1,8 @@
 # Loris PMO
 
-Loris PMO is a private, professional-grade project management and project intelligence application. It combines operational project control, deterministic analytics, and evidence-backed AI assistance in one owner-scoped workspace.
+Loris PMO is a professional-grade project management and project intelligence platform. It combines operational project control, deterministic analytics, multi-user collaboration, advanced scheduling, and evidence-backed AI assistance in a secure role-based workspace.
 
-**Release:** v1.0.0 · **Status:** V1 · **Release date:** 2026-08-31
+This public GitHub repository contains the stable **v1.0.0** release on `main` and unreleased V2 development on `v2-development`. The current development milestone is **V2.5 Cloud & Production Readiness**. No `v2.0.0` release or tag exists.
 
 ## Overview
 
@@ -27,12 +27,65 @@ The repository is a modular monolith designed for reliable local operation with 
 
 The evidence-backed scope and V1 boundaries for all 33 official product areas are recorded in [the V1 feature audit](docs/V1_FEATURE_AUDIT.md).
 
+### V2 development
+
+V2 development is available on `v2-development` and has not been released as `v2.0.0`.
+
+**V2.1 — Multi-user, RBAC & Collaboration**
+
+- Multi-user project membership with centralized server-side RBAC
+- `OWNER`, `PROJECT_ADMIN`, `PROJECT_MANAGER`, `CONTRIBUTOR`, and `VIEWER` roles
+- Project comments, in-app notifications, and actor-aware activity
+- Permission-aware finance, documents, reports, exports, and AI context
+
+**V2.2 — Advanced Scheduling**
+
+- Recursive finish-to-start dependency propagation
+- Deterministic Critical Path Method with total and free float
+- Explicit schedule baselines and signed schedule variance
+- Milestone and project-deadline impact calculations
+- Non-mutating preview followed by explicit transactional apply
+- Schedule-fingerprint protection against stale previews
+- Scenario Analysis reuse of the same deterministic scheduling engine
+
+**V2.3 — AI & Knowledge 2.0**
+
+- Provider-neutral Gemini embedding boundary with bounded batch indexing
+- Project- and permission-scoped semantic retrieval over document chunks
+- Deterministic Reciprocal Rank Fusion for hybrid lexical + semantic ranking
+- Content-hash/model/version reuse, explicit reindexing, and deletion cleanup
+- Multi-document grounded Q&A and structured document comparison
+- Backend-owned document evidence with page/sheet/section metadata where available
+- Lexical fallback when embeddings are unavailable or fail
+- Prompt-injection-resistant document context and retrieval diagnostics
+
+**V2.4 — Integrations**
+
+- User-owned OAuth connections for Google and GitHub with encrypted server-side tokens
+- Read-only Google Calendar browsing and explicit Meeting import with preview/confirm
+- Bounded Gmail search and explicit private, project, or finance-scoped message links
+- Read-only GitHub repository, issue, pull-request, and commit browsing with explicit task links
+- Provider-neutral adapters, manual refresh, safe reauthorization/failure states, and preserved local records
+- Project membership, RBAC, account isolation, audit history, and prompt-injection-safe external evidence
+
+**V2.5 — Cloud & Production Readiness**
+
+- Fail-closed development/test/production configuration and safe configuration check
+- Secure production cookies, exact CORS, trusted hosts, security headers, and request correlation
+- Managed-PostgreSQL pool/TLS configuration with explicit one-off migration workflow
+- Provider-neutral private document storage with local and S3-compatible adapters
+- Static production frontend and non-root backend images while preserving local Compose
+- Local/cloud backup guidance, optional dated zero-cost deployment plan, and build/test CI
+
+V2.1–V2.5 are technically complete on the unreleased development branch. The three final production logging/configuration blockers were fixed and runtime-validated; see the [V2 feature audit](docs/V2_FEATURE_AUDIT.md). No cloud deployment, merge, release, or `v2.0.0` tag has been created.
+
 ## AI philosophy
 
 AI is a copilot, not the project manager.
 
 - Backend data and deterministic calculations are authoritative.
-- Gemini receives bounded, owner-scoped context through a provider-neutral interface.
+- Gemini receives bounded, permission-aware context through a provider-neutral interface.
+- AI context follows server-side project membership and RBAC rules and cannot bypass domain permissions.
 - AI interprets, summarizes, simulates, extracts proposals, and recommends; it does not receive database tools or autonomous actions.
 - Model evidence identifiers are accepted only when they resolve through a backend-owned catalog.
 - Recommendations record agreement or rejection but do not execute project changes.
@@ -46,10 +99,10 @@ AI is a copilot, not the project manager.
 | Backend | Python 3.12+, FastAPI, Pydantic, SQLAlchemy 2, Alembic, asyncpg |
 | Database | PostgreSQL 17 in Docker Compose |
 | Frontend | React 19, TypeScript, Vite, React Router, i18next |
-| AI | Provider-neutral service, Gemini Interactions REST API, structured JSON |
+| AI | Provider-neutral generation/embedding services, Gemini REST APIs, structured JSON |
 | Documents/data | pypdf, python-docx, openpyxl, ReportLab |
 | Testing | Pytest, HTTPX, Vitest, React Testing Library, Ruff |
-| Infrastructure | Docker Compose |
+| Infrastructure | Local Docker Compose, production container references, GitHub Actions CI |
 
 ## Architecture
 
@@ -67,11 +120,11 @@ Deterministic domain logic / provider-neutral AI
 PostgreSQL + private document storage
 ```
 
-See [Architecture](docs/ARCHITECTURE.md) for domain boundaries, security controls, AI flows, storage, and decisions. See [Development Log](docs/DEVELOPMENT_LOG.md) for the rationale behind significant implementation choices.
+See the [V2 roadmap](docs/V2_ROADMAP.md) and [Architecture](docs/ARCHITECTURE.md) for domain boundaries, security controls, AI flows, storage, and decisions. See [Development Log](docs/DEVELOPMENT_LOG.md) for the rationale behind significant implementation choices.
 
 ## Portfolio positioning
 
-This project demonstrates end-to-end product engineering rather than a thin AI chat interface: typed API design, relational modeling and migrations, owner/project security boundaries, deterministic financial and schedule logic, responsive frontend application development, human-in-the-loop AI, prompt/evidence safety, transactional imports, generated reports, automated tests, and reproducible local infrastructure.
+This project demonstrates end-to-end product engineering rather than a thin AI chat interface: typed API design, relational modeling and migrations, project membership, centralized RBAC, permission-aware AI and data access, deterministic financial analytics, advanced deterministic scheduling, permission-aware hybrid retrieval, responsive frontend application development, human-in-the-loop AI, prompt/evidence safety, transactional imports, generated reports, automated tests, and reproducible local infrastructure.
 
 For a concise walkthrough, use the [5–10 minute demo flow](docs/DEMO_FLOW.md).
 
@@ -133,7 +186,7 @@ docker compose exec backend python -m app.cli create-user
 You may supply only the email argument; the password is still entered securely without terminal echo:
 
 ```bash
-docker compose exec backend python -m app.cli create-user --email you@example.test
+docker compose exec backend python -m app.cli create-user --email you@example.com
 ```
 
 Never put real credentials in source files, command history, screenshots, or documentation.
@@ -144,13 +197,19 @@ Copy `.env.example` to the ignored `.env` file and replace every credential plac
 
 - `SECRET_KEY`: JWT signing secret, minimum 32 characters
 - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `DATABASE_URL`: local PostgreSQL configuration
-- `FRONTEND_URL`: allowed browser origin
+- `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS`, `TRUSTED_HOSTS`: browser and host boundaries
+- `DATABASE_SSL_MODE` and pool settings: managed PostgreSQL transport/capacity controls
 - `GEMINI_API_KEY`: optional, backend-only Gemini credential
 - `GEMINI_MODEL`: defaults to `gemini-3.6-flash`
 - `AI_TIMEOUT_SECONDS`, `AI_MAX_OUTPUT_TOKENS`, `AI_TEMPERATURE`: centralized bounded generation controls
-- `DOCUMENT_STORAGE_PATH`, `DOCUMENT_MAX_UPLOAD_MB`: private storage location and upload limit
+- `DOCUMENT_STORAGE_BACKEND`, `DOCUMENT_STORAGE_PATH`, `DOCUMENT_MAX_UPLOAD_MB`: private storage mode/location/limit
+- `S3_*`: optional backend-only S3-compatible object-storage configuration
+- `INTEGRATION_TOKEN_ENCRYPTION_KEY`: dedicated Fernet key for OAuth token encryption at rest
+- Google/GitHub OAuth client, redirect, and scope settings: optional; integrations stay unavailable when absent
 
 Do not commit `.env`. `.env.example` contains placeholders only.
+
+Provider setup, redirect URI, scope, encryption-key rotation, disconnect, and recovery guidance is in [Integrations](docs/INTEGRATIONS.md). Production deployment and configuration are documented in [Production operations](docs/PRODUCTION.md); the optional non-SLA example is in [Zero-cost cloud deployment](docs/CLOUD_FREE_DEPLOYMENT.md).
 
 ## Running tests
 
@@ -213,13 +272,24 @@ Demo records never run at startup. The recommended demo uses a separate Compose 
 
 ## Project status
 
-**v1.0.0 — Complete with documented non-blocking limitations.**
+**Stable:** `v1.0.0` — released and stable on `main`.
 
-The authoritative release value is `backend/app/version.py`; FastAPI and `/health` expose it safely. The repository is not tagged or published automatically.
+**Development:** V2 is in progress on `v2-development`.
 
-## Known V1 limitations
+**Milestones:**
 
-- Single authenticated owner; no multi-user collaboration or RBAC
+- ✅ V2.1 Multi-user / RBAC / Collaboration
+- ✅ V2.2 Advanced Scheduling
+- ✅ V2.3 AI & Knowledge 2.0
+- ✅ V2.4 Integrations
+- ✅ V2.5 Cloud & Production Readiness
+
+V2 has not been released as `v2.0.0`. The authoritative runtime release value remains `backend/app/version.py` at `1.0.0`; V2 development intentionally does not create or move release tags.
+
+## Stable V1 limitations
+
+- V1 uses a single-owner workspace without multi-user RBAC; V2.1 addresses this on the unreleased development branch
+- V1 provides the original task dependency and Timeline behavior; V2.2 adds advanced deterministic scheduling on the unreleased development branch
 - Local named-volume document storage; no cloud object storage
 - Deterministic lexical document retrieval; no vector search
 - Image storage without OCR
@@ -229,10 +299,35 @@ The authoritative release value is `backend/app/version.py`; FastAPI and `/healt
 
 Additional accepted boundaries are documented in the [V1 feature audit](docs/V1_FEATURE_AUDIT.md).
 
+## Current V2 development limitations
+
+- No ownership transfer
+- No outbound email invitations
+- No realtime or WebSocket collaboration
+- Finish-to-start scheduling dependencies only
+- Calendar-day scheduling; no holiday or business calendar
+- No resource leveling or automatic resource assignment
+- No drag-and-drop scheduling
+- Semantic vectors use bounded PostgreSQL-compatible JSON storage and application-side ranking; no dedicated vector index or external vector database
+- Embedding and reindex work is synchronous; no background indexing queue
+- No realtime provider push/webhook synchronization; integrations use explicit bounded refresh
+- No cloud deployment is performed by the repository; deployment remains optional and operator-controlled
+- Free-tier cloud examples have quotas, sleep/cold starts, changing terms, and no SLA
+- No automatic cloud backup, local/cloud synchronization, or automatic local-to-S3 migration
+- Rate/request-size limiting is delegated to the trusted production gateway
+
 ## Roadmap
 
-Possible post-V1 work includes cloud deployment, invitations and RBAC, object storage, semantic retrieval, integrations, advanced report design, deeper scheduling, and optional OCR. These are roadmap possibilities, not implemented V1 capabilities.
+- ✅ V2.1 — Multi-user, RBAC & Collaboration
+- ✅ V2.2 — Advanced Scheduling
+- ✅ V2.3 — AI & Knowledge 2.0
+- ✅ V2.4 — Integrations
+- ✅ V2.5 — Cloud & Production Readiness
+
+See [V2_ROADMAP.md](docs/V2_ROADMAP.md) and the evidence-backed [V2 feature audit](docs/V2_FEATURE_AUDIT.md). V2 is technically complete but remains unreleased; release actions require explicit approval.
 
 ## License
 
-This is currently a private personal project. No open-source license has been granted; all rights are reserved unless the owner explicitly chooses a license later.
+This repository is publicly viewable for portfolio and demonstration purposes.
+
+No open-source license has been granted. Unless explicitly stated otherwise, all rights are reserved.

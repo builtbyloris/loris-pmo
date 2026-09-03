@@ -11,6 +11,7 @@ from app.models.ai import (
     AIRecommendationStatus,
 )
 from app.models.project import Project
+from app.services.authorization import accessible_project_ids
 
 
 class AIAnalysisRepository:
@@ -22,7 +23,8 @@ class AIAnalysisRepository:
         return (
             await self.session.execute(
                 select(Project).where(
-                    Project.id == project_id, Project.owner_user_id == self.owner_user_id
+                    Project.id == project_id,
+                    Project.id.in_(accessible_project_ids(self.owner_user_id)),
                 )
             )
         ).scalar_one_or_none()

@@ -11,6 +11,7 @@ from app.models.project import ProjectStatus
 from app.models.task import TaskPriority, TaskStatus
 from app.schemas.intelligence import AutomationRuleRead, HealthRead
 from app.schemas.people import WorkloadStatus
+from app.schemas.scheduling import DeadlineStatus
 
 RULES = [
     AutomationRuleRead(
@@ -60,6 +61,18 @@ RULES = [
         trigger="project.changed",
         conditions=["deadline overdue", "deadline due in 14 days"],
         actions=["reconcile alert", "recalculate health"],
+        enabled=True,
+    ),
+    AutomationRuleRead(
+        key="advanced_schedule",
+        trigger="schedule.changed",
+        conditions=[
+            "critical task blocked",
+            "projected milestone/deadline late",
+            "baseline variance > 7 days",
+            "dependency violation",
+        ],
+        actions=["reconcile alert", "recalculate health", "audit on state change"],
         enabled=True,
     ),
     AutomationRuleRead(
@@ -119,7 +132,9 @@ def evaluate_conditions(
                 AlertCondition(
                     "task_blocked",
                     f"task_blocked:{task.id}",
-                    AlertSeverity.WARNING,
+                    AlertSeverity.CRITICAL
+                    if task.priority == TaskPriority.CRITICAL
+                    else AlertSeverity.WARNING,
                     "intelligence.alerts.taskBlocked.title",
                     "intelligence.alerts.taskBlocked.reason",
                     {"title": task.title, "days": days},
@@ -299,6 +314,84 @@ def evaluate_conditions(
                     facts.project.id,
                 )
             )
+    if facts.schedule:
+        schedule = facts.schedule
+        if schedule.deadline_impact.status == DeadlineStatus.LATE:
+            result.append(
+                AlertCondition(
+                    "advanced_schedule",
+                    "schedule_projected_late:project",
+                    AlertSeverity.CRITICAL,
+                    "intelligence.alerts.scheduleProjectedLate.title",
+                    "intelligence.alerts.scheduleProjectedLate.reason",
+                    {
+                        "variance_days": schedule.deadline_impact.variance_days,
+                        "projected_finish": schedule.deadline_impact.projected_finish.isoformat()
+                        if schedule.deadline_impact.projected_finish
+                        else None,
+                    },
+                    "project",
+                    facts.project.id,
+                )
+            )
+        for milestone in schedule.milestones:
+            if milestone.status == DeadlineStatus.LATE:
+                result.append(
+                    AlertCondition(
+                        "advanced_schedule",
+                        f"schedule_milestone_late:{milestone.id}",
+                        AlertSeverity.CRITICAL,
+                        "intelligence.alerts.scheduleMilestoneLate.title",
+                        "intelligence.alerts.scheduleMilestoneLate.reason",
+                        {
+                            "title": milestone.title,
+                            "variance_days": (
+                                milestone.projected_date - milestone.current_date
+                            ).days
+                            if milestone.projected_date and milestone.current_date
+                            else None,
+                        },
+                        "milestone",
+                        milestone.id,
+                    )
+                )
+        for task in schedule.tasks:
+            if task.finish_variance is not None and task.finish_variance > 7:
+                result.append(
+                    AlertCondition(
+                        "advanced_schedule",
+                        f"schedule_baseline_variance:{task.id}",
+                        AlertSeverity.WARNING,
+                        "intelligence.alerts.scheduleVariance.title",
+                        "intelligence.alerts.scheduleVariance.reason",
+                        {"title": task.title, "variance_days": task.finish_variance},
+                        "task",
+                        task.id,
+                    )
+                )
+        by_id = {task.id: task for task in schedule.tasks}
+        for dependency in schedule.dependencies:
+            predecessor = by_id.get(dependency.predecessor_id)
+            successor = by_id.get(dependency.successor_id)
+            if (
+                predecessor
+                and successor
+                and predecessor.finish
+                and successor.start
+                and successor.start <= predecessor.finish
+            ):
+                result.append(
+                    AlertCondition(
+                        "advanced_schedule",
+                        f"schedule_dependency_violation:{predecessor.id}:{successor.id}",
+                        AlertSeverity.WARNING,
+                        "intelligence.alerts.scheduleDependency.title",
+                        "intelligence.alerts.scheduleDependency.reason",
+                        {"predecessor": predecessor.title, "successor": successor.title},
+                        "task",
+                        successor.id,
+                    )
+                )
     if health.status in (HealthStatus.AT_RISK, HealthStatus.CRITICAL):
         result.append(
             AlertCondition(

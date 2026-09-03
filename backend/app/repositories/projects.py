@@ -10,6 +10,7 @@ from app.models.objective import Objective
 from app.models.project import Project, ProjectPriority, ProjectStatus
 from app.models.success_criterion import SuccessCriterion
 from app.schemas.projects import ProjectSort, SortOrder
+from app.services.authorization import accessible_project_ids
 
 
 class ProjectRepository:
@@ -18,7 +19,7 @@ class ProjectRepository:
         self.owner_user_id = owner_user_id
 
     def _owned(self) -> Select[tuple[Project]]:
-        return select(Project).where(Project.owner_user_id == self.owner_user_id)
+        return select(Project).where(Project.id.in_(accessible_project_ids(self.owner_user_id)))
 
     async def get(self, project_id: UUID, *, with_children: bool = False) -> Project | None:
         query = self._owned().where(Project.id == project_id)
@@ -29,9 +30,15 @@ class ProjectRepository:
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
-    async def code_exists(self, code: str, *, exclude_project_id: UUID | None = None) -> bool:
+    async def code_exists(
+        self,
+        code: str,
+        *,
+        exclude_project_id: UUID | None = None,
+        owner_user_id: UUID | None = None,
+    ) -> bool:
         query = select(func.count(Project.id)).where(
-            Project.owner_user_id == self.owner_user_id, Project.code == code
+            Project.owner_user_id == (owner_user_id or self.owner_user_id), Project.code == code
         )
         if exclude_project_id:
             query = query.where(Project.id != exclude_project_id)
@@ -47,7 +54,7 @@ class ProjectRepository:
         sort_by: ProjectSort,
         sort_order: SortOrder,
     ) -> tuple[list[Project], int]:
-        filters = [Project.owner_user_id == self.owner_user_id]
+        filters = [Project.id.in_(accessible_project_ids(self.owner_user_id))]
         if not include_archived:
             filters.append(Project.archived_at.is_(None))
         if status:
@@ -74,7 +81,10 @@ class ProjectRepository:
         return list(result.scalars()), count
 
     async def portfolio_counts(self) -> tuple[int, int, int, int]:
-        base = [Project.owner_user_id == self.owner_user_id, Project.archived_at.is_(None)]
+        base = [
+            Project.id.in_(accessible_project_ids(self.owner_user_id)),
+            Project.archived_at.is_(None),
+        ]
         query = select(
             func.count(Project.id),
             func.count(Project.id).filter(Project.status == ProjectStatus.ACTIVE),
@@ -91,7 +101,7 @@ class ProjectRepository:
             .where(
                 Objective.id == objective_id,
                 Objective.project_id == project_id,
-                Project.owner_user_id == self.owner_user_id,
+                Project.id.in_(accessible_project_ids(self.owner_user_id)),
             )
         )
         return result.scalar_one_or_none()
@@ -121,7 +131,7 @@ class ProjectRepository:
             .where(
                 SuccessCriterion.id == criterion_id,
                 SuccessCriterion.project_id == project_id,
-                Project.owner_user_id == self.owner_user_id,
+                Project.id.in_(accessible_project_ids(self.owner_user_id)),
             )
         )
         return result.scalar_one_or_none()

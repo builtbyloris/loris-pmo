@@ -4,13 +4,21 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.authorization import authorize_project_module
 from app.auth.dependencies import CurrentUser, require_csrf
 from app.core.database import get_db
 from app.models.intelligence import AlertSeverity, AlertStatus
 from app.schemas.intelligence import AlertRead, HealthRead, IntelligenceRead, KPIValue
+from app.services.authorization import Capability
 from app.services.intelligence import ProjectIntelligenceService
 
-router = APIRouter(prefix="/projects/{project_id}", tags=["intelligence"])
+router = APIRouter(
+    prefix="/projects/{project_id}",
+    tags=["intelligence"],
+    dependencies=[
+        Depends(authorize_project_module(Capability.PROJECT_READ, Capability.PROJECT_UPDATE))
+    ],
+)
 Session = Annotated[AsyncSession, Depends(get_db)]
 
 

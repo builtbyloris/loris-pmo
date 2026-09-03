@@ -1,0 +1,80 @@
+# Loris PMO V2 roadmap
+
+Status: V2 technically complete on unreleased `v2-development`
+Baseline: immutable `v1.0.0` release
+
+## V2.1 — Multi-user, RBAC, and collaboration foundation
+
+V2.1 adds authenticated project access without changing the V1 operational people model. A `User` authenticates; a `Person` describes a reusable human/resource; a `ProjectMember` links a Person to delivery work; and a `ProjectMembership` grants a User access to a project. A membership may optionally map to one operational project Person. None of these concepts is substituted for another.
+
+Existing `projects.owner_user_id` remains the ownership anchor. Migration `20260901_0013` creates exactly one active OWNER membership for every existing project. OWNER memberships cannot be removed or reassigned; ownership transfer is deliberately deferred.
+
+### Stable roles and default capabilities
+
+| Area | OWNER | PROJECT_ADMIN | PROJECT_MANAGER | CONTRIBUTOR | VIEWER |
+|---|---:|---:|---:|---:|---:|
+| Read project/work/control/people/memory/documents/reports | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Update project | ✓ | ✓ | ✓ | — | — |
+| Archive project | ✓ | — | — | — | — |
+| Manage authenticated memberships | ✓ | ✓ | — | — | — |
+| Create/update delivery work | ✓ | ✓ | ✓ | ✓ | — |
+| Delete/archive delivery work | ✓ | ✓ | ✓ | — | — |
+| Manage people/control/meetings/documents | ✓ | ✓ | ✓ | meetings only | — |
+| Read/manage finance | ✓ | ✓ | ✓ | — | — |
+| Generate reports / read audit activity | ✓ | ✓ | ✓ | — | — |
+| Use Project Assistant | ✓ | ✓ | ✓ | ✓ | — |
+| Generate proactive AI / confirm proposals | ✓ | ✓ | ✓ | — | — |
+| Write comments | ✓ | ✓ | ✓ | ✓ | — |
+
+The backend capability registry is authoritative. The frontend consumes the effective capabilities only to present appropriate controls; hidden controls are not a security boundary. A non-member receives a project-not-found response, while a member lacking a capability receives a safe permission error.
+
+### Collaboration scope
+
+- Existing users are added by exact email. There is no public user directory, registration flow, outbound email, or invitation delivery in V2.1.
+- Comments are bounded to 4,000 characters and target tasks, risks, issues, change requests, meetings, or decisions after same-project validation. Structured mentions are deferred.
+- In-app notifications are recipient-only, capped to 100 per request, and generated for membership/role changes, comments, and task assignment when the application user is mapped to the assigned project Person. Email/push delivery is deferred.
+- Activity continues to use append-only audit events and now includes actor display name plus a human-readable summary.
+- Report generation and audit activity require manager-level capabilities. Finance-category documents and finance-derived KPI/health/alert projections are filtered without `finance.read`; mixed reports omit finance sections, while budget reports, expense exports/imports, and finance APIs require finance capabilities.
+- AI context removes finance topics/evidence when the caller lacks finance access. Project Assistant remains read-only; proactive AI and meeting proposal confirmation require manager-level capabilities.
+
+## V2.2 — Advanced scheduling
+
+V2.2 adds backend-owned deterministic scheduling over existing tasks, milestones, project deadlines, and task dependencies. It includes finish-to-start graph semantics, CPM earliest/latest dates, critical path, total/free float, explicit normalized baselines, signed variance, recursive propagation preview, fingerprint-bound apply, milestone/deadline impact, schedule-aware health and alerts, a Timeline/Gantt workspace, and schedule-aware read-only scenario simulation.
+
+Calendar-day scheduling is intentional. Business calendars, lag/lead, resource leveling, drag-and-drop scheduling, probabilistic forecasting, fallback inference for missing dates, and autonomous AI schedule changes are deferred. Only managers/administrators/owners may create/replace baselines or apply recursive changes; read access follows project access.
+
+## V2.3 — AI & Knowledge 2.0
+
+V2.3 upgrades the existing private-document knowledge path without creating another chatbot or AI stack. A dedicated provider-neutral embedding boundary uses server-side Gemini credentials, bounded batches, normalized vectors, and centralized model/dimension/version configuration. Embeddings are stored with chunk, document, project, model, version, content hash, and index timestamps in PostgreSQL-compatible JSON. The model/version/content hash lifecycle reuses unchanged chunks and explicit reindexing repairs stale or failed indexes.
+
+Authorized chunk candidates are filtered by active project membership, `documents.read`, project id, selected document/category, and `finance.read` before scoring. Lexical and semantic ranks are merged with deterministic Reciprocal Rank Fusion, then bounded neighbor suppression avoids redundant adjacent excerpts. Provider absence or failure degrades to lexical retrieval while preserving documents and an explicit semantic status.
+
+Project Assistant document routing is deterministic and adds only bounded authorized excerpts when relevant. Multi-document Q&A and comparison use the existing Gemini generation provider, treat excerpts as untrusted data, validate every cited `document_chunk:<uuid>` against a backend-owned evidence catalog, and remain read-only. The Documents workspace exposes semantic readiness, reindexing, grounded answers, comparison sections, evidence locations, and a minimal retrieval-mode indicator without vectors or raw scores.
+
+Known boundaries: synchronous indexing, no background queue, no OCR, bounded application-side cosine similarity over PostgreSQL-compatible JSON vectors, no dedicated vector index/vector database, and no cross-project/global corpus retrieval.
+
+## V2.4 — Integrations
+
+V2.4 adds optional user-owned Google and GitHub OAuth accounts behind provider-neutral read-only adapters. Credentials remain server-side and encrypted with a dedicated Fernet key; OAuth state is hashed, time-bounded, user-bound, and single-use, with PKCE for both providers. Project connections and every provider call enforce active project membership, centralized integration capabilities, and ownership of the underlying provider account.
+
+Google Calendar provides bounded event browsing, explicit external links, and stale-protected preview/confirm Meeting import. Gmail provides explicit bounded metadata/snippet search and private-by-default links with deliberate project or finance sharing. GitHub provides repository, issue, pull-request, and commit browsing plus explicit task relationships without changing task lifecycle. Provider objects are normalized, raw payloads are not persisted, manual refresh is explicit, disconnect removes credentials while preserving local records, and missing upstream objects only mark links unavailable.
+
+Only explicit authorized external links may enter the existing backend-owned AI evidence catalog. External content is labeled untrusted, permission-filtered, bounded, and never grants Gemini credentials, provider access, tools, or mutation capability. V2.4 has no webhook/background sync, write-back, autonomous action, Gmail body/attachment ingestion, or cross-user OAuth sharing.
+
+See [Integrations](INTEGRATIONS.md) for operator setup, scopes, rotation, lifecycle, and failure recovery.
+
+## V2.5 — Cloud and production readiness
+
+V2.5 implements fail-closed production configuration, secure cookie/CORS/host boundaries, health/readiness, application/runtime safe structured logs and request IDs, managed PostgreSQL pool/TLS settings, explicit one-off migration operations, provider-neutral local/S3-compatible private document storage, frontend API-base configuration, production container references, CI, backup/recovery guidance, and an optional dated zero-cost cloud plan. The three final runtime/configuration blockers are resolved with regression coverage; see [V2 feature audit](V2_FEATURE_AUDIT.md).
+
+Local Compose remains the preferred runtime and requires no cloud credentials. Production deployment is not automated. A same-origin TLS gateway is recommended for the current cookie/CSRF model; rate and request-size enforcement belongs at that trusted gateway. Cloud backup, local/cloud synchronization, automatic local-to-S3 migration, and SLA/high-availability orchestration are accepted non-blocking limitations.
+
+## Final V2 milestone state
+
+- ✅ V2.1 — Multi-user, RBAC & Collaboration
+- ✅ V2.2 — Advanced Scheduling
+- ✅ V2.3 — AI & Knowledge 2.0
+- ✅ V2.4 — Integrations
+- ✅ V2.5 — Cloud & Production Readiness
+
+V2 is technically complete and has not been released as `v2.0.0`. This roadmap does not change the published V1 release notes, the `v1.0.0` tag, `main`, or release history. No V3 roadmap or redesign is started; further work and release actions require explicit approval.

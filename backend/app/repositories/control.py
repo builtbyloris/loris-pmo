@@ -27,6 +27,7 @@ from app.models.people import ProjectMember
 from app.models.project import Project
 from app.models.task import Task
 from app.schemas.control import ChangeSort, IssueSort, RiskSort, SortOrder
+from app.services.authorization import accessible_project_ids
 
 
 class ControlRepository:
@@ -38,7 +39,8 @@ class ControlRepository:
         return (
             await self.session.execute(
                 select(Project).where(
-                    Project.id == project_id, Project.owner_user_id == self.owner_user_id
+                    Project.id == project_id,
+                    Project.id.in_(accessible_project_ids(self.owner_user_id)),
                 )
             )
         ).scalar_one_or_none()
@@ -52,7 +54,7 @@ class ControlRepository:
                 .where(
                     Risk.id == risk_id,
                     Risk.project_id == project_id,
-                    Project.owner_user_id == self.owner_user_id,
+                    Project.id.in_(accessible_project_ids(self.owner_user_id)),
                 )
                 .execution_options(populate_existing=True)
             )
@@ -114,7 +116,7 @@ class ControlRepository:
                 .where(
                     Issue.id == issue_id,
                     Issue.project_id == project_id,
-                    Project.owner_user_id == self.owner_user_id,
+                    Project.id.in_(accessible_project_ids(self.owner_user_id)),
                 )
                 .execution_options(populate_existing=True)
             )
@@ -177,7 +179,7 @@ class ControlRepository:
                 .where(
                     ChangeRequest.id == change_id,
                     ChangeRequest.project_id == project_id,
-                    Project.owner_user_id == self.owner_user_id,
+                    Project.id.in_(accessible_project_ids(self.owner_user_id)),
                 )
                 .execution_options(populate_existing=True)
             )

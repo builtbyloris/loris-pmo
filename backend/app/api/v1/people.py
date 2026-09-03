@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.authorization import authorize_project_module
 from app.auth.dependencies import CurrentUser, require_csrf
 from app.core.database import get_db
 from app.schemas.people import (
@@ -19,10 +20,17 @@ from app.schemas.people import (
     StakeholderRead,
     StakeholderUpdate,
 )
+from app.services.authorization import Capability
 from app.services.people import PeopleService
 
 people_router = APIRouter(prefix="/people", tags=["people"])
-project_router = APIRouter(prefix="/projects/{project_id}", tags=["people"])
+project_router = APIRouter(
+    prefix="/projects/{project_id}",
+    tags=["people"],
+    dependencies=[
+        Depends(authorize_project_module(Capability.PEOPLE_READ, Capability.PEOPLE_MANAGE))
+    ],
+)
 Session = Annotated[AsyncSession, Depends(get_db)]
 
 

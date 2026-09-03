@@ -45,11 +45,14 @@ describe("application foundation", () => {
   });
 
   it("renders the real empty portfolio and supports appearance and language preferences", async () => {
-    vi.spyOn(globalThis, "fetch")
-      .mockImplementationOnce(() => jsonResponse(user))
-      .mockImplementationOnce(() => jsonResponse(emptySummary))
-      .mockImplementationOnce(() => jsonResponse(emptyProjects))
-      .mockImplementationOnce(() => jsonResponse(emptyIntelligence));
+    vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+      const path = String(input);
+      if (path.endsWith("/auth/me")) return jsonResponse(user);
+      if (path.endsWith("/notifications")) return jsonResponse({ items: [], unread_count: 0 });
+      if (path.endsWith("/portfolio/summary")) return jsonResponse(emptySummary);
+      if (path.includes("/portfolio/intelligence")) return jsonResponse(emptyIntelligence);
+      return jsonResponse(emptyProjects);
+    });
     renderApp();
     expect(await screen.findByRole("heading", { name: "Portfolio overview" })).toBeInTheDocument();
     expect(screen.getByText("You don’t have any projects yet.")).toBeInTheDocument();

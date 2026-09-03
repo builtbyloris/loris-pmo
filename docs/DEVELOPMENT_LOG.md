@@ -276,3 +276,182 @@ Decision: Retain private-project licensing status and defer tagging/publishing.
 Reason: No open-source license should be inferred. The `v1.0.0` tag and GitHub release remain explicit owner actions after the final visual/manual acceptance pass.
 
 Final V1 status: functionally complete with documented non-blocking limitations; Sprint 13 introduces no new product feature, migration, AI capability, or provider call.
+
+
+## 2026-09-01 — V2.1 multi-user, RBAC, and collaboration foundation
+
+Decision: Introduce `ProjectMembership` as a new authenticated-access relationship and preserve `Person` plus operational `ProjectMember` unchanged.
+
+Reason: Authentication identity, reusable people/resource data, delivery participation, and authorization are different concerns. Optional same-project mapping supports a real human occupying both roles without forcing every user to be a resource or every resource to log in.
+
+Decision: Preserve `projects.owner_user_id`, backfill one immutable OWNER membership per existing project, and defer ownership transfer.
+
+Reason: This gives V1 data a lossless forward migration, retains owner-scoped code uniqueness, prevents orphaned projects, and avoids inventing an unsafe transfer workflow.
+
+Decision: Centralize stable role capabilities in one backend authorization policy and return effective capabilities to the frontend.
+
+Reason: Server enforcement remains authoritative across API, reports, exports/imports, AI context, and direct service use. The UI can remain role-aware without duplicating the security model. Non-members receive 404 to avoid project enumeration; members without a capability receive 403.
+
+Decision: Restrict finance to OWNER, PROJECT_ADMIN, and PROJECT_MANAGER and enforce section-aware reporting and AI context.
+
+Reason: Hiding a navigation link is insufficient. Project budget fields are masked, finance endpoints reject unauthorized callers, finance-specific portability is blocked, mixed reports omit financial sections, and backend AI evidence never includes unauthorized financial facts.
+
+Decision: Implement bounded entity comments and recipient-owned in-app notifications without mentions, outbound email, or background infrastructure.
+
+Reason: V2.1 needs useful collaboration with a small, auditable persistence surface. Same-project target validation, 4,000-character comments, 100-recipient fan-out/list bounds, soft deletion, and append-only audit events preserve isolation and history. Membership, role, comment, and mapped task-assignment events generate safe in-app notifications.
+
+Decision: Treat deterministic report generation and audit activity as separate manager-level capabilities, and treat finance-category documents as finance-sensitive.
+
+Reason: A read-only project role must not gain audit history or trigger report generation implicitly, and document/knowledge endpoints must not become a finance side channel. Mixed reports, document lists/downloads/search, exports, and AI context all enforce the underlying domain capability.
+
+Decision: Keep V1 runtime version `1.0.0` and the V1 release documentation/tag unchanged during V2 branch development.
+
+Reason: V2.1 is an unreleased development increment. Release identity changes only through a later explicit release process.
+
+
+## 2026-09-02 — V2.2 advanced scheduling
+
+Decision: Add a pure deterministic scheduling engine and one project-scoped scheduling service rather than embedding date logic in routes or the Timeline.
+
+Reason: CPM, float, recursive propagation, baselines, deadline impact, intelligence, and scenarios must consume the same explainable backend truth. The frontend remains presentation and explicit user control.
+
+Decision: Interpret existing `BLOCKS` and `DEPENDS_ON` task relations as finish-to-start scheduling edges and leave `RELATED_TO` non-scheduling.
+
+Reason: V2.2 can add useful dependency scheduling without changing the existing dependency schema or inventing lag, lead, start-to-start, calendars, or hidden semantics.
+
+Decision: Use inclusive calendar-day durations and signed baseline variance (`current - baseline`).
+
+Reason: These rules are deterministic with the existing date-only model. Positive variance is late, negative variance is early, and incomplete task dates remain explicitly unavailable rather than inferred.
+
+Decision: Persist one normalized schedule baseline per project and require explicit creation or replacement.
+
+Reason: Baseline comparisons need durable factual snapshots and same-project foreign keys. Automatic replacement would erase the reference plan and make variance misleading.
+
+Decision: Require non-mutating preview plus a fingerprint-bound confirmation token before recursive schedule apply.
+
+Reason: Users must see affected tasks, milestones, critical path, and deadline impact before a manager-level transaction changes dates. Recalculation at apply time prevents stale previews from overwriting concurrent work.
+
+Decision: Reuse schedule preview for Sprint 11 task and milestone delay scenarios.
+
+Reason: Scenario analysis must show the same recursive impacts as operational scheduling while remaining read-only. No AI output can call apply or mutate operational project data.
+
+Decision: Add schedule-aware health and stable automatic alert conditions.
+
+Reason: Projected deadline lateness, milestone lateness, material baseline variance, critical blocked tasks, and dependency violations are deterministic conditions suitable for existing alert reconciliation and lifecycle behavior.
+
+Validation scope includes exact CPM/float graphs, disconnected and incomplete schedules, recursive chain/branch/convergence, baseline create/replace and signed variance, preview non-mutation, stale-token rejection, atomic apply, audit events, manager/viewer authorization, schedule-aware scenarios, frontend preview/apply behavior, Alembic head migration, PostgreSQL, and browser E2E.
+
+Compatibility fix: Live PostgreSQL validation exposed timezone-naive SQLAlchemy mappings for V2.1 collaboration timestamps even though migration `20260901_0013` created timezone-aware columns. The model now explicitly uses `DateTime(timezone=True)` for membership, comment-deletion, and notification-read timestamps; no schema migration was required. A mapping regression test and authenticated PostgreSQL project-creation flow verify the fix.
+
+
+## 2026-09-03 — V2.3 AI & Knowledge 2.0
+
+Decision: Add a separate provider-neutral embedding boundary and preserve the existing Gemini Interactions generation provider unchanged.
+
+Reason: Embedding batches, vector validation, and retrieval purposes have different contracts from structured generation. Isolating them keeps credentials server-side, configuration centralized, tests deterministic, and the existing AI architecture intact.
+
+Decision: Store one normalized embedding per document chunk as PostgreSQL-compatible JSON with provider/model/version/dimension/content-hash metadata.
+
+Reason: The current bounded local corpus does not justify an external vector database. A unique chunk constraint prevents duplicates, content hashes reuse unchanged vectors, and explicit version/model metadata makes reindex decisions explainable. Candidate retrieval remains bounded so application-side cosine ranking is maintainable at the intended scale.
+
+Decision: Merge lexical and semantic ranks with deterministic Reciprocal Rank Fusion, then suppress adjacent chunks while better diverse evidence exists.
+
+Reason: RRF is exact, testable, and does not depend on opaque model reranking or incomparable score scales. Neighbor suppression reduces repetitive excerpts without discarding clearly better evidence.
+
+Decision: Filter active membership, project, document selection/category, and finance capability in SQL before either lexical or semantic scoring.
+
+Reason: Semantic search cannot become a late-filter authorization side channel. The same server-side RBAC boundary governs library listing, index status, retrieval, Project Assistant context, grounded Q&A, comparison, and evidence resolution.
+
+Decision: Treat extracted document content as untrusted data and require every AI document citation to resolve through the backend-owned evidence catalog.
+
+Reason: A document may contain prompt injection or fabricated identifiers. System instructions remain separate, no tools/actions are enabled, unknown/cross-project/deleted evidence is rejected, and Q&A/comparison remain read-only.
+
+Decision: Preserve lexical availability when embeddings are absent or fail and expose an explicit semantic lifecycle.
+
+Reason: Provider configuration, quota, network, or malformed responses must not make uploaded documents unusable. `LEXICAL_ONLY`, `FAILED`, and `PARTIAL` states plus safe fallback diagnostics are honest without exposing provider payloads.
+
+Known V2.3 boundaries: indexing is synchronous; ranking uses a bounded application-side vector scan; there is no OCR, background queue, dedicated vector index/database, cross-project corpus, integrations, cloud deployment, or autonomous AI execution.
+
+
+## 2026-09-04 — V2.4 integrations
+
+Decision: Add provider-neutral OAuth, calendar, email, and source-control protocols coordinated by one application integration service.
+
+Reason: Google and GitHub transport details must remain replaceable and testable without leaking into domain services, routes, AI, or frontend behavior. The modular monolith retains one authorization/audit boundary and no parallel integration architecture.
+
+Decision: Make OAuth accounts user-owned, encrypt access/refresh tokens with a dedicated Fernet key, and store OAuth state only as a time-bounded user/provider-bound digest with PKCE.
+
+Reason: Project membership does not authorize using another user's external identity. Credentials must remain server-side, authenticated at rest, absent from APIs/logs/audit/AI, and explicitly removable. Missing provider configuration is a supported non-blocking state.
+
+Decision: Keep provider operations read-only and require explicit selection, linking, or preview/confirmation before any local domain record is created.
+
+Reason: Calendar browsing, Gmail search, and GitHub browsing must not silently import, poll, or mutate project state. Calendar Meeting import refetches and verifies a signed preview fingerprint; Gmail links are private by default; GitHub task links do not change task lifecycle.
+
+Decision: Preserve local records when credentials are revoked or upstream objects disappear.
+
+Reason: Provider availability cannot control the integrity of the project system of record. Disconnect deletes credentials and marks connections/links unavailable; refresh not-found updates availability only. Reconnection and unlinking remain explicit user actions.
+
+Decision: Admit only explicit authorized external links into the existing backend-owned evidence catalog and label all external content untrusted.
+
+Reason: Gemini receives no live provider access, credentials, inbox/repository dump, tools, or write capability. Permission filtering occurs before context construction, content cannot override system rules, and fabricated/cross-project/private/finance-restricted evidence remains invalid.
+
+Known V2.4 boundaries: no webhooks or background synchronization, no provider write-back, no Gmail body/attachment ingestion, no shared OAuth accounts, no autonomous AI execution, and no cloud secret manager. GitHub's default `read:user` scope supports public repositories; private repository access requires an explicit operator scope override. Live provider acceptance requires operator-owned OAuth applications and credentials and is therefore optional when unavailable.
+
+
+## 2026-09-02 — V2.5 cloud and production readiness
+
+Decision: Preserve local Docker Compose as the default and add a strict environment-validated production profile.
+
+Reason: Cloud readiness must not require cloud credentials or regress local data. Production now fails closed for unsafe secrets, database/TLS, origins, hosts, OAuth, docs/debug, and storage configuration, while optional Gemini and integration providers remain non-blocking.
+
+Decision: Keep one PostgreSQL/Alembic application path and make production migrations an explicit one-off operation.
+
+Reason: Managed PostgreSQL does not justify a second persistence architecture. Configurable pooling and TLS cover remote operation; removing migration execution from the production image command prevents concurrent replicas from racing schema upgrades. Local Compose retains migration-on-start convenience.
+
+Decision: Introduce a provider-neutral `DocumentStorage` contract with local and S3-compatible implementations, and stream authorized downloads through FastAPI.
+
+Reason: Core document behavior must not depend on a public filesystem path or one object provider. Generated keys, containment, server-side credentials, private access, bounded timeouts, and normalized failures preserve security. S3 failure never falls back to local and no existing file is migrated automatically.
+
+Decision: Recommend a same-origin TLS gateway for hosted use and preserve the existing double-submit CSRF design.
+
+Reason: The frontend must read the CSRF cookie. A gateway or deliberately configured same-site subdomains make production cookies work without weakening authentication; unrelated provider default domains are not treated as safely compatible.
+
+Decision: Add build/test CI and production-like container references without deployment automation.
+
+Reason: V2 technical completion needs repeatable quality gates, not authority to publish infrastructure. The workflow uses test-only values, minimal read permission, and no production secrets. The backend image runs non-root; the frontend is a static Nginx build with SPA fallback.
+
+Decision: Document a dated zero-cost demonstration topology but keep it explicitly non-SLA and optional.
+
+Reason: Free tiers change, sleep, impose quotas, and may require account validation. Provider-neutral interfaces and independent local/cloud data keep local Compose the reliable fallback.
+
+No V2.5 schema migration was created. Alembic head remains `20260904_0016`; V2.5 changes configuration, runtime boundaries, storage transport, containers, CI, and operations documentation only.
+
+## 2026-09-04 — V2.5 final cleanup and validation recovery
+
+Resumed the preserved `v2-development` worktree without reset, restart, release, merge, or feature additions. Only final audit/status documentation changed in this recovery pass.
+
+Revalidated 146 backend tests, then the separately configured PostgreSQL connectivity test (one additional pass); 46 frontend tests; Ruff; TypeScript build checks; production frontend build; and Alembic current/head at `20260904_0016`. Existing Python 3.14 dependency deprecation warnings and the frontend chunk-size advisory are non-blocking. Prior disposable migration, production-like container, authenticated document smoke, and backup checks remain recorded validation evidence.
+
+Targeted production boundary checks found three reproducible blockers that the existing passing suite did not cover:
+
+- A real Uvicorn process returns redacted HTTP 500 JSON but still prints a synthetic private exception marker and traceback through its own error logger.
+- The backend image's `localhost` health probe gets HTTP 400 with the production example's API-only trusted hosts.
+- Production Compose rejects the documented empty same-origin API base during interpolation.
+
+No real secret or project content was used in the error diagnostic. The transient process was terminated, no diagnostic file was created, and no application behavior was changed. Final audit/README/roadmap now report **V2 NOT COMPLETE** pending these fixes rather than retaining the previous premature completion claim.
+
+Cleanup verification found no remaining V2.5 smoke containers or databases, no temporary production environment file, and no V2.5 temporary workspace files. Existing local counts remain one user, three projects, and one document. User-owned historical backups and pre-existing Docker volumes were preserved.
+
+## 2026-09-04 — V2.5 verified blocker fixes
+
+Scope: fixed only the three reproduced blockers, preserving the existing architecture and all other V2.5 work.
+
+- Production Uvicorn/asyncio exception-bearing records are sanitized before handlers; formatted lifespan tracebacks are covered. Structured application errors keep request IDs, runtime errors keep safe type/OS error number, ordinary operational messages remain visible, and development/test runtime logging is restored. A permanent test-only Uvicorn factory exercises the real post-response log path without adding a production diagnostic route.
+- The image healthcheck connects to loopback with the first configured public trusted Host header. No additional trusted host, wildcard, or authorization bypass is introduced.
+- Compose permits empty/unset `VITE_API_BASE_URL` for same-origin. Shared build/runtime origin validation and API-base tests cover empty, HTTPS split-origin, and malformed values. OAuth remains backend-routed; no UI behavior was redesigned.
+
+Validation: 150 backend tests including PostgreSQL connectivity; 56 frontend tests; 11 focused production/runtime tests; Ruff; TypeScript; empty and split-origin production builds; invalid-base build rejection. Rebuilt production backend/frontend containers became healthy as non-root/read-only processes. Disposable TLS-enabled PostgreSQL migrated from empty to `20260904_0016`; health/readiness passed. Both a real local Uvicorn subprocess and a rebuilt Docker diagnostic process returned redacted 500 JSON with correlated structured logs and no synthetic marker or traceback. Public Host acceptance and untrusted Host rejection both passed.
+
+Authenticated smoke checks passed project/RBAC, scheduling, knowledge/integration status, reports, exports, documents, task imports, login, secure cookies, and logout. An initial smoke harness used the wrong project-prefixed integration-status URL; correcting the harness to the existing global endpoint resolved its 405 without an application change. No external AI/OAuth call was made.
+
+All disposable containers/database contents, test document volume, network, image tags, temporary environment, and TLS files were removed. Existing local counts remain one user, three projects, and one document; local health/readiness and Alembic head are unchanged. The earlier incomplete verdict is superseded by the runtime-backed **V2 TECHNICALLY COMPLETE** audit. No merge, tag, release, cloud deployment, or redesign was performed.

@@ -18,6 +18,15 @@ from app.models.ai_operations import (
 )
 from app.models.audit import AuditEvent
 from app.models.base import Base
+from app.models.collaboration import (
+    CollaborationComment,
+    CommentEntityType,
+    MembershipStatus,
+    Notification,
+    NotificationType,
+    ProjectAccessRole,
+    ProjectMembership,
+)
 from app.models.control import (
     ChangeRequest,
     ChangeRequestIssueLink,
@@ -39,6 +48,8 @@ from app.models.control import (
 from app.models.documents import (
     DocumentCategory,
     DocumentChunk,
+    DocumentChunkEmbedding,
+    DocumentSemanticStatus,
     DocumentStatus,
     ImportBatch,
     ImportStatus,
@@ -46,6 +57,18 @@ from app.models.documents import (
     ProjectDocument,
 )
 from app.models.finance import BudgetCategory, Expense, ExpenseStatus
+from app.models.integrations import (
+    ExternalLink,
+    ExternalLinkVisibility,
+    ExternalObjectType,
+    IntegrationAccount,
+    IntegrationAccountStatus,
+    IntegrationOAuthState,
+    IntegrationProvider,
+    ProjectIntegration,
+    ProjectIntegrationKind,
+    ProjectIntegrationStatus,
+)
 from app.models.intelligence import Alert, AlertSeverity, AlertStatus, HealthSnapshot, HealthStatus
 from app.models.memory import (
     ActionItemStatus,
@@ -73,6 +96,7 @@ from app.models.people import (
     TaskAssignee,
 )
 from app.models.project import Project, ProjectPriority, ProjectStatus
+from app.models.scheduling import ScheduleBaseline, ScheduleBaselineMilestone, ScheduleBaselineTask
 from app.models.success_criterion import SuccessCriterion, SuccessCriterionStatus
 from app.models.task import Task, TaskPriority, TaskStatus
 from app.models.task_dependency import DependencyType, TaskDependency
@@ -99,6 +123,13 @@ __all__ = [
     "AlertStatus",
     "ActionItemStatus",
     "Base",
+    "ProjectMembership",
+    "ProjectAccessRole",
+    "NotificationType",
+    "Notification",
+    "MembershipStatus",
+    "CommentEntityType",
+    "CollaborationComment",
     "BudgetCategory",
     "ChangeRequest",
     "ChangeRequestIssueLink",
@@ -113,6 +144,8 @@ __all__ = [
     "DecisionStatus",
     "DocumentCategory",
     "DocumentChunk",
+    "DocumentChunkEmbedding",
+    "DocumentSemanticStatus",
     "DocumentStatus",
     "ImportBatch",
     "ImportStatus",
@@ -122,6 +155,16 @@ __all__ = [
     "ImpactLevel",
     "HealthSnapshot",
     "HealthStatus",
+    "IntegrationProvider",
+    "IntegrationAccountStatus",
+    "IntegrationAccount",
+    "IntegrationOAuthState",
+    "ProjectIntegration",
+    "ProjectIntegrationKind",
+    "ProjectIntegrationStatus",
+    "ExternalLink",
+    "ExternalLinkVisibility",
+    "ExternalObjectType",
     "Issue",
     "IssueMilestoneLink",
     "IssueStatus",
@@ -150,6 +193,9 @@ __all__ = [
     "RiskMilestoneLink",
     "RiskStatus",
     "RiskTaskLink",
+    "ScheduleBaseline",
+    "ScheduleBaselineMilestone",
+    "ScheduleBaselineTask",
     "SuccessCriterion",
     "SuccessCriterionStatus",
     "Stakeholder",

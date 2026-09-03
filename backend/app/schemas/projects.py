@@ -181,7 +181,7 @@ class ProjectRead(BaseModel):
     priority: ProjectPriority
     start_date: date | None
     target_end_date: date | None
-    planned_budget: Decimal
+    planned_budget: Decimal | None
     notes: str | None
     archived_at: datetime | None
     created_at: datetime

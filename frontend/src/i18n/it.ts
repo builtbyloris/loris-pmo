@@ -33,10 +33,13 @@ export const it = {
     settings: "Impostazioni",
   },
   documents: {
-    eyebrow: "CONOSCENZA PROGETTO", title: "Documenti", subtitle: "File di progetto sicuri e conoscenza supportata da evidenze.", back: "Torna al progetto", openReports: "Report e dati", upload: "Carica documento", uploadHelp: "PDF, DOCX, XLSX, CSV, TXT e immagini entro il limite configurato.", file: "File documento", description: "Descrizione facoltativa", library: "Raccolta documenti", libraryHelp: "I file restano limitati al progetto e al proprietario.", empty: "Nessun documento caricato.", download: "Scarica documento", deleteConfirm: "Eliminare il documento e la conoscenza estratta?", knowledge: "Ricerca nella conoscenza", knowledgeHelp: "Ricerca lessicale deterministica nel testo estratto.", askAi: "Chiedi all’Assistente", search: "Cerca", searchPlaceholder: "Cerca nei documenti…", error: "Impossibile caricare i documenti.", categories: { REQUIREMENTS: "Requisiti", SPECIFICATIONS: "Specifiche", MEETING_NOTES: "Note riunione", CONTRACTS: "Contratti", REPORTS: "Report", FINANCE: "Finanza", OTHER: "Altro" }
+    eyebrow: "CONOSCENZA PROGETTO", title: "Documenti", subtitle: "File di progetto sicuri e conoscenza supportata da evidenze.", back: "Torna al progetto", openReports: "Report e dati", upload: "Carica documento", uploadHelp: "PDF, DOCX, XLSX, CSV, TXT e immagini entro il limite configurato.", file: "File documento", description: "Descrizione facoltativa", library: "Raccolta documenti", libraryHelp: "I file restano limitati al progetto e al proprietario.", empty: "Nessun documento caricato.", download: "Scarica documento", deleteConfirm: "Eliminare il documento e la conoscenza estratta?", knowledge: "Ricerca nella conoscenza", knowledgeHelp: "Ricerca lessicale deterministica nel testo estratto.", askAi: "Chiedi all’Assistente", search: "Cerca", searchPlaceholder: "Cerca nei documenti…", error: "Impossibile caricare i documenti.", indexStatus: "Indice della conoscenza", indexSummary: "{{indexed}} di {{total}} frammenti indicizzati semanticamente", lexicalFallback: "Ricerca lessicale disponibile; il provider semantico non è configurato", selectForComparison: "Seleziona {{name}} per il confronto", lastIndexed: "Ultima indicizzazione {{date}}", semanticDegraded: "Indicizzazione semantica degradata; la ricerca lessicale resta disponibile.", reindex: "Reindicizza documento", askDocuments: "Chiedi ai documenti", compare: "Confronta", compareDefault: "Confronta i documenti selezionati.", groundedAnswer: "Risposta con evidenze", comparison: "Confronto documenti", agreements: "Punti in comune", differences: "Differenze", conflicts: "Potenziali conflitti", missingInformation: "Informazioni mancanti", evidence: "Evidenze documentali verificate", selectedChunks: "{{count}} frammenti di evidenza selezionati", semanticStatus: { NOT_INDEXED: "Non indicizzato", INDEXING: "Indicizzazione", READY: "Semantica pronta", PARTIAL: "Indicizzato in parte", FAILED: "Semantica non riuscita", LEXICAL_ONLY: "Solo lessicale" }, retrievalMode: { LEXICAL: "Ricerca lessicale", SEMANTIC: "Ricerca semantica", HYBRID: "Ricerca ibrida" }, categories: { REQUIREMENTS: "Requisiti", SPECIFICATIONS: "Specifiche", MEETING_NOTES: "Note riunione", CONTRACTS: "Contratti", REPORTS: "Report", FINANCE: "Finanza", OTHER: "Altro" }
   },
   reports: {
     eyebrow: "AREA DATI V1", title: "Report e dati", subtitle: "Report deterministici, esportazioni portabili e importazioni validate.", back: "Torna al progetto", openDocuments: "Documenti", preview: "Anteprima report", previewHelp: "Generata dai fatti backend attuali, senza inventare dati mancanti.", generate: "Genera anteprima", pdf: "Scarica PDF", export: "Esporta dati", exportHelp: "Esporta i dataset del progetto in CSV o XLSX.", import: "Importazione validata", importHelp: "Controlla attività o spese prima della conferma atomica.", validate: "Valida anteprima", confirm: "Conferma importazione", tasks: "Attività", expenses: "Spese", previewCount: "{{valid}} righe valide su {{total}}", row: "Riga {{row}}", imported: "Importati {{count}} record.", error: "Operazione report o dati non riuscita.", types: { "project-summary": "Riepilogo progetto", "executive-summary": "Riepilogo direzionale", weekly: "Revisione settimanale", budget: "Report budget", control: "Rischi e controllo", team: "Team e carico" }, datasets: { tasks: "Attività", milestones: "Milestone", expenses: "Spese", risks: "Rischi", issues: "Problemi", changes: "Richieste di modifica", team: "Team", activity: "Attività progetto" }
+  },
+  collaboration: {
+    eyebrow: "ACCESSO AL PROGETTO", title: "Membri e accessi", subtitle: "Gestisci chi può accedere al progetto e le relative autorizzazioni.", back: "Torna al progetto", open: "Membri", email: "Email utente esistente", role: "Ruolo di accesso", status: "Stato", joined: "Ingresso", person: "Persona collegata", member: "Membro", add: "Aggiungi membro", error: "Impossibile modificare l'accesso.", roles: { OWNER: "Proprietario", PROJECT_ADMIN: "Amministratore progetto", PROJECT_MANAGER: "Project manager", CONTRIBUTOR: "Collaboratore", VIEWER: "Visualizzatore" }, comments: { title: "Commenti", empty: "Nessun commento.", add: "Aggiungi commento", edit: "Modifica commento" }, notifications: { title: "Notifiche", empty: "Nessuna notifica.", readAll: "Segna tutte come lette" }
   },
   login: {
     eyebrow: "AREA DI LAVORO PRIVATA",
@@ -369,6 +372,13 @@ export const it = {
       overdue: "{{count}} in ritardo",
     },
     dependencies: { eyebrow: "LOGICA DI PIANIFICAZIONE", title: "Dipendenze attività" },
+    schedule: {
+      projectedFinish: "Fine prevista", deadlineVariance: "Varianza scadenza", criticalTasks: "Attività critiche", baselineVariance: "Varianza baseline massima", completeness: "Completezza pianificazione",
+      current: "Corrente", baseline: "Baseline", projected: "Previsto", hypothetical: "IPOTETICO", critical: "Critica", createBaseline: "Crea baseline", replaceBaseline: "Sostituisci baseline", replaceBaselineConfirm: "Sostituire la baseline esistente con la pianificazione corrente?",
+      baselineAt: "Baseline acquisita {{date}}", float: "{{count}} giorni di margine totale", floatUnavailable: "Margine non disponibile", dependencies: "Dipendenze fine-inizio", noDependencies: "Nessuna dipendenza di pianificazione.",
+      changeTitle: "Anteprima impatto pianificazione", task: "Attività", preview: "Anteprima impatto", previewTitle: "Impatto proposto sulla pianificazione", previewBody: "Cambierebbero le date di {{count}} attività.",
+      milestoneImpacts: "Impatto sulle milestone", warnings: "Avvisi", deadlineImpact: "Impatto sulla scadenza progetto", confirmApply: "Conferma e applica", previewError: "Impossibile calcolare l’anteprima. Aggiorna la pianificazione e riprova."
+    },
     timeline: {
       range: "{{count}} giorno",
       range_other: "{{count}} giorni",
@@ -421,6 +431,10 @@ export const it = {
     alertStatus: { ACTIVE: "Attivo", ACKNOWLEDGED: "Preso in carico", RESOLVED: "Risolto" },
     alerts: {
       eyebrow: "AUTOMAZIONE", title: "Avvisi automatici", description: "Sono attive {{count}} regole deterministiche. Le condizioni si risolvono automaticamente quando cambiano i dati sottostanti.", statusFilter: "Stato", severityFilter: "Gravità", empty: "Nessun avviso corrisponde ai filtri.", acknowledge: "Prendi in carico",
+      scheduleProjectedLate: { title: "Fine progetto prevista in ritardo", reason: "La fine prevista supera l’obiettivo di {{variance_days}} giorni." },
+      scheduleMilestoneLate: { title: "Milestone prevista in ritardo", reason: "{{title}} supera la data corrente di {{variance_days}} giorni." },
+      scheduleVariance: { title: "Varianza baseline significativa", reason: "{{title}} è {{variance_days}} giorni oltre la baseline." },
+      scheduleDependency: { title: "Violazione dipendenza", reason: "{{successor}} inizia prima che {{predecessor}} termini." },
       taskOverdue: { title: "Attività in ritardo", reason: "{{title}} è in ritardo di {{days}} giorni." },
       taskBlocked: { title: "Attività bloccata", reason: "{{title}} è bloccata da {{days}} giorni." },
       milestoneOverdue: { title: "Milestone in ritardo", reason: "{{title}} è in ritardo di {{days}} giorni." },
@@ -548,6 +562,22 @@ export const it = {
       ai_invalid_response: "Il provider AI ha restituito una risposta non valida. Nessun dato è stato modificato.",
       ai_context_unavailable: "Impossibile preparare il contesto del progetto. Nessun dato è stato modificato.",
     },
+  },
+  integrations: {
+    eyebrow: "RIFERIMENTI ESTERNI", title: "Integrazioni", subtitle: "Collega account autorizzati e riferimenti esterni limitati con azioni esplicite.", back: "Torna al progetto", google: "Google", primary: "Principale", private: "Privato", notConfigured: "I provider esterni non sono configurati. Il resto di Loris PMO rimane disponibile.",
+    accounts: { eyebrow: "CONNESSIONI UTENTE", title: "Account connessi", help: "Le credenziali appartengono a te e restano cifrate sul server." },
+    connections: { eyebrow: "CONNESSIONI PROGETTO", title: "Integrazioni del progetto", help: "Solo i responsabili di progetto possono collegare o aggiornare risorse esterne.", empty: "Nessuna risorsa esterna collegata al progetto." },
+    links: { eyebrow: "EVIDENZE LIMITATE", title: "Collegamenti esterni", help: "I riferimenti espliciti restano locali anche se il provider non è più disponibile.", empty: "Nessun riferimento esterno collegato." },
+    actions: { connect: "Connetti", reconnect: "Riconnetti", disconnect: "Disconnetti", browse: "Scegli risorsa", refresh: "Aggiorna", unlink: "Scollega", link: "Collega", open: "Apri origine" },
+    status: { CONNECTED: "Connesso", REAUTH_REQUIRED: "Riconnessione richiesta", ERROR: "Errore", DISCONNECTED: "Disconnesso" },
+    connectionStatus: { ACTIVE: "Attiva", STALE: "Obsoleta", UNAVAILABLE: "Non disponibile" },
+    kind: { GOOGLE_CALENDAR: "Google Calendar", GMAIL: "Gmail", GITHUB_REPOSITORY: "Repository GitHub" },
+    object: { CALENDAR_EVENT: "Evento calendario", EMAIL_MESSAGE: "Messaggio email", GITHUB_ISSUE: "Issue GitHub", GITHUB_PULL_REQUEST: "Pull request GitHub", GITHUB_COMMIT: "Commit GitHub" },
+    calendar: { browse: "Esplora i prossimi 30 giorni", preview: "Anteprima riunione", previewTitle: "Anteprima evento calendario", confirm: "Crea riunione Loris" },
+    gmail: { link: "Collega Gmail al progetto", search: "Cerca in Gmail", placeholder: "Cerca un insieme limitato di messaggi…" },
+    github: { issues: "Issue", "pull-requests": "Pull request", commits: "Commit recenti", task: "Attività Loris", linkTask: "Collega all’attività" },
+    visibility: { label: "Visibilità collegamento", PRIVATE: "Privato per me", PROJECT: "Membri del progetto", FINANCE: "Membri autorizzati alla finanza" },
+    errors: { load: "Impossibile caricare le integrazioni. Nessun dato esterno o di progetto è stato modificato.", action: "L’azione di integrazione è fallita in sicurezza. Nessun dato del progetto è stato modificato." },
   },
   placeholder: {
     eyebrow: "FONDAMENTA PRONTE",

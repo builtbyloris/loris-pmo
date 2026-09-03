@@ -1,0 +1,44 @@
+name: loris-pmo-production
+
+x-backend: &backend
+  build:
+    context: ./backend
+  env_file:
+    - .env.production
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp
+  volumes:
+    - document_data:/app/data/documents
+
+services:
+  migrate:
+    <<: *backend
+    profiles: ["migration"]
+    restart: "no"
+    command: ["alembic", "upgrade", "head"]
+
+  backend:
+    <<: *backend
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        # Empty or unset intentionally uses same-origin relative API paths.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+    ports:
+      - "${FRONTEND_PORT:-8080}:8080"
+
+volumes:
+  document_data:

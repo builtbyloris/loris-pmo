@@ -62,9 +62,7 @@ class FinanceService:
                 ) from exc
             raise
 
-    async def _category_or_404(
-        self, project_id: UUID, category_id: UUID
-    ) -> BudgetCategory:
+    async def _category_or_404(self, project_id: UUID, category_id: UUID) -> BudgetCategory:
         category = await self.repository.get_category(project_id, category_id)
         if category is None:
             raise AppError(

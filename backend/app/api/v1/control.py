@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analytics.control import RiskSeverity
+from app.auth.authorization import authorize_project_module
 from app.auth.dependencies import CurrentUser, require_csrf
 from app.core.database import get_db
 from app.models.control import ChangeStatus, ControlPriority, IssueStatus, RiskStatus
@@ -29,9 +30,16 @@ from app.schemas.control import (
     RiskUpdate,
     SortOrder,
 )
+from app.services.authorization import Capability
 from app.services.control import ControlService
 
-router = APIRouter(prefix="/projects/{project_id}", tags=["control"])
+router = APIRouter(
+    prefix="/projects/{project_id}",
+    tags=["control"],
+    dependencies=[
+        Depends(authorize_project_module(Capability.CONTROL_READ, Capability.CONTROL_MANAGE))
+    ],
+)
 Session = Annotated[AsyncSession, Depends(get_db)]
 
 

@@ -3,7 +3,12 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.analytics.intelligence import ProjectFacts, calculate_health, calculate_kpis
+from app.analytics.intelligence import (
+    ProjectFacts,
+    calculate_health,
+    calculate_kpis,
+    health_status,
+)
 from app.automation.intelligence import RULES, evaluate_conditions
 from app.core.errors import AppError
 from app.models.intelligence import Alert, AlertSeverity, AlertStatus, HealthSnapshot, HealthStatus
@@ -19,8 +24,23 @@ from app.schemas.intelligence import (
     PortfolioProjectIntelligence,
 )
 from app.services.audit import AuditService
+from app.services.authorization import AuthorizationService, Capability
 from app.services.finance import FinanceService
 from app.services.people import PeopleService
+from app.services.scheduling import SchedulingService
+
+FINANCE_KPI_KEYS = {
+    "planned_budget",
+    "actual_cost",
+    "committed_cost",
+    "forecast",
+    "remaining_budget",
+    "actual_variance",
+    "forecast_variance",
+    "finance_status",
+    "budget_utilization",
+}
+FINANCE_ALERT_RULES = {"budget_threshold"}
 
 
 class ProjectIntelligenceService:
@@ -29,6 +49,49 @@ class ProjectIntelligenceService:
         self.owner_user_id = owner_user_id
         self.repository = IntelligenceRepository(session, owner_user_id)
         self.audit = AuditService(session, owner_user_id)
+
+    async def _can_read_finance(self, project_id: UUID) -> bool:
+        return await AuthorizationService(self.session, self.owner_user_id).can(
+            project_id, Capability.FINANCE_READ
+        )
+
+    @staticmethod
+    def _without_finance_health(health: HealthRead) -> HealthRead:
+        dimensions = [
+            item.model_copy(deep=True) for item in health.dimensions if item.key != "budget"
+        ]
+        available_weight = sum(item.weight for item in dimensions if item.available)
+        for item in dimensions:
+            item.effective_weight = (
+                round(item.weight / available_weight * 100, 2)
+                if item.available and available_weight
+                else 0
+            )
+        score = (
+            round(
+                sum((item.score or 0) * item.weight for item in dimensions if item.available)
+                / available_weight
+            )
+            if available_weight
+            else None
+        )
+        return health.model_copy(
+            update={
+                "score": score,
+                "status": health_status(score) if score is not None else None,
+                "dimensions": dimensions,
+                "drivers": [
+                    item.model_copy(deep=True)
+                    for item in health.drivers
+                    if item.key != "budget_pressure"
+                ],
+                "history": [],
+            }
+        )
+
+    @staticmethod
+    def _without_finance_alerts(alerts: list[AlertRead]) -> list[AlertRead]:
+        return [item for item in alerts if item.rule_type not in FINANCE_ALERT_RULES]
 
     async def _facts(self, project_id: UUID) -> ProjectFacts:
         project = await self.repository.project(project_id)
@@ -53,6 +116,7 @@ class ProjectIntelligenceService:
             action_statuses=[item.status for item in rows["actions"]],
             decisions=rows["decisions"],
             log_entries=rows["logs"],
+            schedule=await SchedulingService(self.session, self.owner_user_id).schedule(project_id),
         )
 
     async def _health(self, facts: ProjectFacts, now: datetime) -> HealthRead:
@@ -64,11 +128,17 @@ class ProjectIntelligenceService:
         return health
 
     async def kpis(self, project_id: UUID) -> list[KPIValue]:
-        return calculate_kpis(await self._facts(project_id), date.today())
+        items = calculate_kpis(await self._facts(project_id), date.today())
+        if not await self._can_read_finance(project_id):
+            items = [item for item in items if item.key not in FINANCE_KPI_KEYS]
+        return items
 
     async def health(self, project_id: UUID) -> HealthRead:
         facts = await self._facts(project_id)
-        return await self._health(facts, datetime.now(UTC))
+        health = await self._health(facts, datetime.now(UTC))
+        if not await self._can_read_finance(project_id):
+            health = self._without_finance_health(health)
+        return health
 
     async def list_alerts(
         self,
@@ -79,21 +149,33 @@ class ProjectIntelligenceService:
     ) -> list[AlertRead]:
         if await self.repository.project(project_id) is None:
             raise AppError(code="project_not_found", message="Project not found.", status_code=404)
-        return [
+        items = [
             AlertRead.model_validate(item)
             for item in await self.repository.alerts(project_id, status=status, severity=severity)
         ]
+        if not await self._can_read_finance(project_id):
+            items = self._without_finance_alerts(items)
+        return items
 
     async def intelligence(self, project_id: UUID) -> IntelligenceRead:
         facts = await self._facts(project_id)
         now = datetime.now(UTC)
         alerts = await self.repository.alerts(project_id)
+        kpis = calculate_kpis(facts, now.date())
+        health = await self._health(facts, now)
+        alert_items = [AlertRead.model_validate(item) for item in alerts]
+        rules = RULES
+        if not await self._can_read_finance(project_id):
+            kpis = [item for item in kpis if item.key not in FINANCE_KPI_KEYS]
+            health = self._without_finance_health(health)
+            alert_items = self._without_finance_alerts(alert_items)
+            rules = [item for item in RULES if item.key not in FINANCE_ALERT_RULES]
         return IntelligenceRead(
             project_id=project_id,
-            kpis=calculate_kpis(facts, now.date()),
-            health=await self._health(facts, now),
-            alerts=[AlertRead.model_validate(item) for item in alerts],
-            automation_rules=RULES,
+            kpis=kpis,
+            health=health,
+            alerts=alert_items,
+            automation_rules=rules,
         )
 
     def _log(self, project_id: UUID, title: str, description: str) -> None:
@@ -314,6 +396,10 @@ class ProjectIntelligenceService:
             health = calculate_health(facts, now.date(), now)
             kpis = {item.key: item for item in calculate_kpis(facts, now.date())}
             alerts = await self.repository.alerts(project.id)
+            can_finance = await self._can_read_finance(project.id)
+            if not can_finance:
+                health = self._without_finance_health(health)
+                alerts = [item for item in alerts if item.rule_type not in FINANCE_ALERT_RULES]
             active_alerts = [item for item in alerts if item.status != AlertStatus.RESOLVED]
             critical_alerts += sum(
                 item.severity == AlertSeverity.CRITICAL for item in active_alerts
@@ -329,7 +415,7 @@ class ProjectIntelligenceService:
                     high_critical_risks=int(kpis["high_risks"].value or 0)
                     + int(kpis["critical_risks"].value or 0),
                     critical_issues=int(kpis["critical_issues"].value or 0),
-                    budget_status=str(kpis["finance_status"].value),
+                    budget_status=(str(kpis["finance_status"].value) if can_finance else None),
                     active_alerts=len(active_alerts),
                 )
             )

@@ -1,4 +1,4 @@
-# Local Backup and Restore
+# Backup and Restore
 
 The Docker Compose stack stores PostgreSQL data in `postgres_data` and project files in `document_data`. Both must be backed up for a complete local recovery point. Backups are written under the ignored `backups/` directory and must not be committed.
 
@@ -62,3 +62,18 @@ docker compose exec backend alembic current
 ```
 
 Then log in and verify project counts, one document download, and one deterministic report. Do not make a Gemini call solely to validate restore.
+
+## Object-storage and managed-database mode
+
+The shell scripts intentionally cover the local Compose database and `DOCUMENT_STORAGE_BACKEND=local` only. `backup.sh` refuses to claim a complete backup when S3 storage is active; `restore.sh` refuses a document archive restore into S3. A database-only restore remains a separate operator procedure.
+
+For a cloud-ready deployment, configure and test two independent recovery paths:
+
+1. managed PostgreSQL point-in-time recovery and a portable `pg_dump --format=custom --no-owner --no-acl` export;
+2. private object-storage versioning/lifecycle policy plus a provider inventory or copy to an independent protected bucket.
+
+Provider snapshots are not a substitute for exports you have restored successfully. Keep database and object recovery points correlated by timestamp, verify object count and byte size, and test authorized downloads after recovery. Loris PMO does not automate cloud backups or local-to-object-storage migration.
+
+## Integration encryption-key recovery
+
+Back up `INTEGRATION_TOKEN_ENCRYPTION_KEY` separately from the database, with access controls matching other production secrets. Losing it makes existing OAuth ciphertext undecryptable. The application cannot recover provider tokens from the database alone; affected users must disconnect/reconnect providers (or an operator must restore the original key). Never print the key during a recovery test.

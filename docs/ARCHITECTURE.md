@@ -1,7 +1,7 @@
 # Loris PMO architecture
 
-Status: V1.0.0 release architecture
-Date: 2026-08-31
+Status: V1.0.0 release baseline plus V2.1–V2.5 development architecture
+Date: 2026-09-03
 Product authority: `PROJECT_INTELLIGENCE_SPEC.md`
 
 ## 1. Scope
@@ -28,7 +28,7 @@ FastAPI API
   v
 Application services
   |-- deterministic domain logic and analytics
-  |-- AI services -> provider abstraction -> Gemini Interactions API
+  |-- AI services -> generation/embedding abstractions -> Gemini REST APIs
   |-- repositories
   v
 PostgreSQL + private document volume
@@ -125,7 +125,7 @@ The foundation migration creates `users`, including:
 - password hash, active flag, and timestamps;
 - an index supporting login lookup.
 
-Projects Core adds `projects`, `objectives`, `success_criteria`, and `audit_events`. Later cores add planning, people, finance, control, and memory records. Project Intelligence adds `alerts` and `health_snapshots`. Sprint 10 adds `ai_insights`, `ai_recommendations`, and one `ai_analysis_states` row per analyzed project. AI records store only backend-validated evidence snapshots and bounded structured fields, never raw provider payloads. Confidence uses 0.0–1.0 with database constraints. Alerts have a project-scoped stable condition key, severity, lifecycle timestamps, translation keys, evidence, and an optional polymorphic related-entity reference. Health snapshots persist only a first or materially changed score, status, dimension, or driver set. All records use UUID primary keys, explicit foreign keys, UTC-aware timestamps, constraints, and indexes. Composite foreign keys protect same-project operational relationships, while system-created alert relationships are validated from owned facts and cannot be client-created. Domain mutations and their audit events commit in one transaction.
+Projects Core adds `projects`, `objectives`, `success_criteria`, and `audit_events`. Later cores add planning, people, finance, control, and memory records. Project Intelligence adds `alerts` and `health_snapshots`. Sprint 10 adds `ai_insights`, `ai_recommendations`, and one `ai_analysis_states` row per analyzed project. V2.3 adds one versioned embedding row per indexed document chunk plus semantic lifecycle metadata on project documents. AI records store only backend-validated evidence snapshots and bounded structured fields, never raw provider payloads. Confidence uses 0.0–1.0 with database constraints. Alerts have a project-scoped stable condition key, severity, lifecycle timestamps, translation keys, evidence, and an optional polymorphic related-entity reference. Health snapshots persist only a first or materially changed score, status, dimension, or driver set. All records use UUID primary keys, explicit foreign keys, UTC-aware timestamps, constraints, and indexes. Composite foreign keys protect same-project operational relationships, while system-created alert relationships are validated from owned facts and cannot be client-created. Domain mutations and their audit events commit in one transaction.
 
 People are owner-scoped reusable records and are deliberately separate from authentication users. A project member relates a person to a project and stores the stable role, responsibilities, and availability percentage. Removing a membership never deletes the person. Tasks support multiple assignees through `task_assignees`; each assignee references a project member, and composite constraints prevent cross-project assignment even if application validation is bypassed. `audit_events.project_id` is nullable only for owner-level events such as person creation; project-domain events remain project-scoped.
 
@@ -267,7 +267,7 @@ Errors use a stable envelope:
 
 Request IDs are accepted or generated per request and returned in `X-Request-ID`. Validation failures, expected application errors, and unexpected failures are normalized; normal responses never expose stack traces or ORM objects.
 
-The portfolio response aggregates real, non-archived project counts for the authenticated owner. It reports total, active, on-hold, and completed projects and returns zeroes for a new account; it never uses sample content. Work-planning responses use the same owner-scoped project lookup and return `404` for foreign identifiers.
+The portfolio response aggregates real, non-archived projects visible through authenticated membership. It reports total, active, on-hold, and completed projects and returns zeroes for a new account; it never uses sample content. Work-planning responses use the same centralized project authorization and return `404` for inaccessible identifiers.
 
 Scheduling dependencies are stored as the user-facing `BLOCKS`, `DEPENDS_ON`, or `RELATED_TO` relation. Cycle analysis normalizes `A BLOCKS B` and `B DEPENDS_ON A` to the same directed edge. Equivalent scheduling duplicates are rejected; related links are symmetric and normalized by identifier order.
 
@@ -311,7 +311,7 @@ AIProvider protocol
       `--> future provider
 ```
 
-`ProjectAssistantService` first resolves the owner-scoped project, then asks `ProjectContextBuilder` for a question-relevant package. The builder reuses finance, workload, work-planning, and project-intelligence services for facts and formulas. English/Italian keyword selection deterministically chooses work, finance, control, people, objectives, or memory sections. It caps critical tasks at 12, milestones and control records at 8, recent memory at 6 per type, pending actions at 8, and active alerts at 10. Ordering is deterministic by urgency, severity, due date, recency, and stable identifier.
+`ProjectAssistantService` first resolves permission-aware project access, then asks `ProjectContextBuilder` for a question-relevant package filtered by the caller's RBAC capabilities. The builder reuses finance, workload, work-planning, and project-intelligence services for facts and formulas. English/Italian keyword selection deterministically chooses work, finance, control, people, objectives, or memory sections. It caps critical tasks at 12, milestones and control records at 8, recent memory at 6 per type, pending actions at 8, and active alerts at 10. Ordering is deterministic by urgency, severity, due date, recency, and stable identifier.
 
 Gemini is called only through the provider protocol. The Interactions REST adapter sends the API key in the server-side `x-goog-api-key` header, applies centralized model/timeout/token settings, performs no automatic retry loop, sets `store=false`, and requests schema-constrained JSON. It parses only `model_output` text and never exposes thought steps. Provider transport, authentication, rate-limit, timeout, incomplete, empty, malformed, and contract failures map to safe public errors. The application and readiness endpoint do not require a key.
 
@@ -373,7 +373,7 @@ Deterministic analytics and the eight V1 automation rule families run synchronou
 
 ### Project intelligence and automation
 
-The intelligence service gathers owner-scoped operational facts once per project invocation. It returns a consistent KPI structure with `available` and `reason` fields. Objective progress is calculated only from applicable structured success criteria; schedule, budget, task, resource, and objective dimensions remain unavailable when their prerequisite data is absent.
+The intelligence service gathers permission-filtered operational facts once per project invocation. It returns a consistent KPI structure with `available` and `reason` fields. Objective progress is calculated only from applicable structured success criteria; schedule, budget, task, resource, and objective dimensions remain unavailable when their prerequisite data is absent.
 
 Health weights are Schedule 25%, Budget 20%, Tasks 20%, Risks 15%, Resources 10%, and Objectives 10%. Scores use documented penalties over stored facts. Unavailable dimensions are excluded and their weights are redistributed proportionally. Thresholds are Healthy 85–100, Watch 70–84, At Risk 50–69, and Critical 0–49. Structured drivers preserve the evidence behind movement.
 
@@ -482,7 +482,7 @@ Operational AI extends the existing provider-neutral service; it does not create
 
 ## Sprint 12 — documents, knowledge, and data portability
 
-Project documents use an owner-scoped metadata model plus a configurable local storage root (`DOCUMENT_STORAGE_PATH`). API responses never expose storage keys. Generated internal filenames and containment checks prevent path traversal; upload size and extension allowlists bound work. PDF, DOCX, XLSX, CSV, and TXT extraction is synchronous and bounded for V1. Images are stored with an explicit unsupported-knowledge status rather than fabricated OCR output.
+Project documents use a project-scoped, RBAC-protected metadata model plus a provider-neutral local or S3-compatible storage backend. API responses never expose storage keys. Generated internal filenames and containment checks prevent path traversal; upload size and extension allowlists bound work. PDF, DOCX, XLSX, CSV, and TXT extraction is synchronous and bounded for V1. Images are stored with an explicit unsupported-knowledge status rather than fabricated OCR output.
 
 Extracted text is split deterministically into bounded overlapping chunks with real page/sheet/section metadata when available. Retrieval is deterministic lexical scoring within one owned project. The Project Assistant adds only relevant top-five excerpts, labels them untrusted data, and registers each `document_chunk:<uuid>` reference in the backend evidence catalog. Provider output cannot introduce an unregistered document reference.
 
@@ -496,3 +496,125 @@ The authoritative application release metadata lives in `backend/app/version.py`
 Local operator scripts wrap Compose without hiding its behavior: start builds and waits for health; status inspects PostgreSQL/backend; stop uses `docker compose down` without `-v`. Backup creates a PostgreSQL custom-format dump and a separate document-volume archive. Restore requires explicit paths and confirmation, validates formats and archive containment, creates pre-restore backups, stops application access, restores both stores, and restarts services. Backup artifacts and local environment variants are gitignored.
 
 Release preparation does not create a Git tag, publish a release, seed demonstration records, make provider calls, or add product behavior. Screenshots must be captured from the real UI using a separate disposable Compose project.
+
+
+## 16. V2.1 multi-user authorization and collaboration
+
+V2.1 preserves the modular monolith and adds one centralized project-authorization service. Active `project_memberships` are the access boundary used by project repositories and portfolio queries. The stable role-to-capability registry is enforced by API dependencies and services; frontend capability checks only improve presentation.
+
+```text
+User (authentication)
+  └─ ProjectMembership (authorization role/status) ── Project
+       └─ optional mapping to existing ProjectMember(Person)
+
+Request → active membership → capability policy → project service/repository
+```
+
+The existing `ProjectMember` remains an operational Person-to-project relationship for roles, availability, workload, and task assignment. `ProjectMembership` never replaces it. Existing projects are backfilled with an OWNER membership whose user is `projects.owner_user_id`. Ownership transfer is unsupported, and the OWNER relationship is immutable.
+
+Comments use an enumerated target type plus UUID and are accepted only after service validation proves that the target belongs to the same accessible project. Deletes are soft so activity history remains explainable. Notification reads and writes always constrain `user_id` to the authenticated recipient. Membership changes, comments, and mapped task assignments create bounded in-app notifications; collaboration mutations record append-only audit events with the authenticated actor. Audit activity and deterministic report generation require their own manager-level capabilities.
+
+Finance is a distinct capability boundary. Project payloads mask `planned_budget` for unauthorized roles; finance APIs reject access; permission-aware intelligence removes finance KPIs, budget alerts/history, and recalculates health without the budget dimension; reports omit finance sections or reject finance-specific reports; finance-category documents are filtered from library, download, and knowledge retrieval; expense portability requires finance capabilities; and the AI context builder excludes finance topics and evidence. Proactive AI generation and proposal confirmation require manager-level capabilities, while CONTRIBUTOR may use the read-only Project Assistant.
+
+No Gemini transport, response contract, evidence validator, operational AI workflow, database tool, or autonomous action capability changes in V2.1.
+
+
+## 17. V2.2 advanced scheduling
+
+V2.2 extends the modular monolith with a deterministic scheduling domain. PostgreSQL remains the factual store; `SchedulingService` assembles one project-scoped dependency graph and delegates pure calculations to `app.analytics.scheduling`. The frontend renders the returned facts and never recomputes critical path, float, propagation, or deadline status.
+
+```text
+Tasks + finish-to-start dependencies + milestones + project deadline
+  -> deterministic graph / CPM calculation
+  -> current schedule, critical path, float, projected dates
+  -> non-mutating preview token
+  -> explicit authorized apply in one transaction
+```
+
+Only `BLOCKS` and `DEPENDS_ON` relationships have scheduling semantics. Both normalize to predecessor-to-successor finish-to-start edges; `RELATED_TO` remains descriptive. Durations and offsets use inclusive calendar days. There are no business calendars, holidays, lag/lead, resource leveling, probabilistic dates, or hidden date inference in V2.2. Tasks lacking both valid dates are excluded and the response explicitly marks the calculation incomplete. Cycles continue to be rejected by dependency validation and are also rejected defensively by the pure graph calculator.
+
+The CPM forward pass calculates earliest start/finish offsets, and the backward pass calculates latest start/finish, total float, and free float. A task is critical when total float is zero. Critical sequences are deterministic paths through zero-float finish-to-start edges. Disconnected components share the project calculation horizon, so shorter independent paths correctly retain float.
+
+A schedule baseline is a normalized, project-owned snapshot of task dates, milestone dates, and the project target end date. Creation and replacement are explicit manager actions; replacement never happens implicitly. Variance is signed calendar days (`current - baseline`), so positive values are late and negative values are early.
+
+Schedule changes follow preview then apply. Preview recursively shifts only dependency-constrained successors, derives milestone and deadline impact, and returns a token bound to the current project schedule fingerprint and proposed result. It does not mutate data. Apply requires schedule-management capability, recomputes the preview, rejects stale tokens, and writes all confirmed date changes atomically with audit events. Contributors and viewers may not invoke project-wide schedule propagation; viewer access is read-only.
+
+Project deadline status is `LATE` after the target, `AT_RISK` within seven calendar days of the target, `ON_TRACK` otherwise, and `UNAVAILABLE` when facts are insufficient. Schedule health and automatic alerts consume these deterministic results. Scenario analysis reuses the same preview engine for task and milestone delays and persists simulation output only; it cannot apply changes.
+
+
+## 18. V2.3 AI & Knowledge 2.0
+
+V2.3 preserves the V1 document model, V2.1 authorization policy, and existing Project Assistant/Gemini generation stack. It adds an independent `EmbeddingProvider` protocol and a server-only Gemini embedding adapter; embedding concerns do not leak into the generation provider. Configuration centralizes model, dimension, batch size, index version, timeout, and candidate bounds.
+
+```text
+Active membership + documents.read + optional finance.read
+  -> authorized project/document/chunk SQL scope
+  -> lexical scoring + optional query embedding/cosine scoring
+  -> deterministic Reciprocal Rank Fusion
+  -> bounded neighbor suppression
+  -> backend-owned document evidence
+  -> existing Project Assistant or document AI use case
+```
+
+`document_chunk_embeddings` stores one vector per chunk with project/document/chunk identifiers, provider, model, index version, dimensions, content hash, and timestamps. JSON vector storage is deliberately PostgreSQL-compatible and keeps the local deployment simple; candidate SQL scope is bounded before application-side cosine scoring. A unique chunk constraint prevents duplicate uncontrolled embeddings. Model/version/content-hash equality reuses unchanged chunks. Supported ready documents index after upload, managers may explicitly reindex, and document deletion removes embedding rows. No background reindex loop or page-load embedding call exists.
+
+Semantic lifecycle is explicit: `NOT_INDEXED`, `INDEXING`, `READY`, `PARTIAL`, `FAILED`, or `LEXICAL_ONLY`. Provider absence, provider errors, or missing extractable chunks never make the source document unavailable. Lexical retrieval remains active and diagnostics state the fallback reason. Retrieval exposes only bounded excerpts and safe counts/mode; raw vectors, storage keys, prompts, credentials, and provider payloads never enter the API or audit stream.
+
+Authorization filtering occurs before scoring and AI context construction. Queries require an active project membership and `documents.read`; finance documents additionally require `finance.read`. Non-members, disabled members, cross-project selections, unauthorized finance documents, deleted documents, and fabricated evidence are rejected. Project Assistant routing skips document retrieval for clearly operational questions and uses it for document or ambiguous knowledge questions without asking an LLM to route.
+
+Multi-document Q&A and comparison reuse the existing read-only generation provider. Document excerpts are explicitly labeled untrusted, separated from system rules and user input, and cannot grant permissions or actions. Structured comparison returns bounded agreements, differences, potential conflicts, missing information, and evidence ids. Every evidence id must resolve to an authorized `document_chunk:<uuid>` supplied by the backend; partial retrieval is represented as missing/unavailable evidence rather than claimed full-document coverage.
+
+Known limitations are synchronous embedding/reindex work, bounded application-side vector ranking rather than a dedicated vector index, no OCR, no external vector database, no semantic retrieval across projects, and no background job queue. These constraints are intentional for the local modular-monolith scope and can be revisited only with measured scale requirements.
+
+
+## 19. V2.4 integrations
+
+V2.4 adds optional provider-neutral integration boundaries inside the modular monolith. `IntegrationService` coordinates authorization, encrypted credential use, normalization, explicit link/import workflows, audit, and failure mapping; provider adapters contain Google and GitHub HTTP contracts. PostgreSQL stores user-owned provider accounts, one-time OAuth state digests, project connections, and bounded normalized external links. Raw provider payloads and credentials are never domain records.
+
+```text
+Authenticated user + active project membership + capability
+  -> user-owned encrypted OAuth account
+  -> provider-neutral read-only adapter
+  -> bounded normalized external object
+  -> explicit link or preview/confirm import
+  -> audit / Project Log / authorized evidence catalog
+```
+
+OAuth uses random state stored only as a SHA-256 digest, ten-minute expiry, initiator/provider binding, single-use consumption, and PKCE S256. Access and refresh tokens are encrypted with a dedicated Fernet key and omitted from API, frontend, logs, audit metadata, and AI context. Missing provider configuration is an optional unavailable state and makes no startup call. Authentication failure requires explicit reauthorization; disconnect revokes when possible, always deletes local ciphertext, and preserves local project records.
+
+Project integration access is the intersection of active project membership, centralized `integrations.read`/`integrations.manage`/`integrations.sync` capabilities, and ownership of the selected OAuth account. Only owners, administrators, and managers attach resources or run sync/link/import mutations. Contributors and viewers may read authorized project-visible external links, while private Gmail links remain creator-only and finance links additionally require finance access. The frontend mirrors capabilities for presentation but is never the security boundary.
+
+Google Calendar, Gmail, and GitHub are read-only. Calendar import uses a short-lived fingerprint-bound preview and refetches before explicit Meeting creation; idempotency prevents duplicate local imports. Gmail searches are explicit and bounded and persist only selected metadata/snippets. GitHub issues, pull requests, and commits may be explicitly related to tasks without changing task status, dates, or assignment. There is no provider write-back, autonomous execution, webhook/background sync, inbox ingestion, or page-load provider call.
+
+AI context never queries a provider. It includes only bounded, available `ExternalLink` records already selected by an authorized user and visible to the caller. Each becomes a backend-owned evidence identifier; external strings are explicitly untrusted, cannot change system instructions or permissions, and fabricated/cross-project/unavailable identifiers remain invalid. Provider content cannot grant tools or operational mutation.
+
+Provider 401/403, not-found, rate-limit, timeout, unavailable, and malformed responses map to stable safe application errors without upstream bodies. Manual refresh updates safe status/timestamps; a missing provider object marks its link unavailable but cannot delete a Meeting, task, issue, or other local fact. See `docs/INTEGRATIONS.md` for setup, scopes, credential rotation, disconnect, and recovery procedures.
+
+
+## 20. V2.5 cloud and production readiness
+
+V2.5 keeps the modular monolith and local Compose topology. It adds an explicit production profile rather than introducing cloud-specific domain code.
+
+```text
+Environment-validated FastAPI
+  |-- exact CORS / trusted hosts / secure cookie + CSRF policy
+  |-- request correlation / redacted errors / structured console logs
+  |-- configurable PostgreSQL pool + TLS
+  `-- DocumentStorage protocol
+       |-- LocalDocumentStorage
+       `-- S3DocumentStorage (private S3-compatible API)
+```
+
+`Settings` is the single environment authority. Development and test retain safe local defaults; production fails startup for weak secrets, non-PostgreSQL URLs, non-TLS database mode, insecure/wildcard browser origins, wildcard hosts, debug/docs exposure, partial OAuth pairs, unsafe callbacks, invalid encryption keys, or incomplete storage configuration. Gemini and OAuth providers remain optional and are excluded from core readiness.
+
+Authentication remains an HttpOnly JWT cookie plus double-submit CSRF. Production cookies are Secure. A same-origin TLS gateway is recommended; same-site subdomains require an explicit shared cookie domain. CORS never grants wildcard credentialed access. Proxy-forwarded headers are an operator boundary and may be trusted only from the actual gateway.
+
+`/health` is process liveness. `/ready` executes a bounded database probe and maps database failure to a safe 503. SQLAlchemy engine pool size, overflow, timeout, recycle, and asyncpg TLS mode are centralized. The application disposes the engine on lifespan shutdown. Production migration is a one-off Alembic operation before replicas start; convenient local Compose migration-on-start remains unchanged.
+
+Project document services now depend on `DocumentStorage`, not direct arbitrary filesystem operations. Both adapters enforce generated project-scoped keys and traversal protection. Local storage preserves the private named volume. S3-compatible storage uses server-side credentials, bounded client timeouts, no application retries, no public URL, and normalized missing/unavailable errors. Downloads stream only after project/RBAC checks. Configured S3 never silently falls back to local storage, and existing files are never moved automatically.
+
+The frontend resolves every application API path through one public `VITE_API_BASE_URL`; an empty value intentionally means same-origin. Production builds reject non-HTTPS non-empty API values. A multi-stage static Nginx image provides SPA fallback without the Vite development server. The backend production image runs as a non-root user and no longer runs Alembic in its image command.
+
+Local `docker-compose.yml` remains the development path. `docker-compose.prod.yml` is a production-like reference with separate one-off migration service and no bundled database, secret, or deployment action. GitHub Actions runs backend/PostgreSQL tests and Ruff plus frontend tests, TypeScript, and production build with read-only repository permission; it has no deployment credentials or job.
+
+Accepted boundaries are gateway-enforced rate/request-size limiting, no automatic cloud backup, no local/cloud synchronization, no high-availability orchestrator, and no automatic local-to-S3 copy. See `docs/PRODUCTION.md`, `docs/CLOUD_FREE_DEPLOYMENT.md`, `docs/BACKUP_RESTORE.md`, and `docs/V2_FEATURE_AUDIT.md`.

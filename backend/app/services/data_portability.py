@@ -33,6 +33,7 @@ from app.schemas.documents import (
     ReportType,
 )
 from app.services.audit import AuditService
+from app.services.authorization import AuthorizationService, Capability
 from app.services.control import ControlService
 from app.services.finance import FinanceService
 from app.services.people import PeopleService
@@ -47,12 +48,21 @@ class ReportingService:
         self.audit = AuditService(session, owner_user_id)
 
     async def report(self, project_id: UUID, report_type: ReportType) -> ReportRead:
+        authorization = AuthorizationService(self.session, self.owner_user_id)
+        await authorization.require(project_id, Capability.REPORTS_GENERATE)
+        can_finance = await authorization.can(project_id, Capability.FINANCE_READ)
+        if report_type == ReportType.BUDGET and not can_finance:
+            await authorization.require(project_id, Capability.FINANCE_READ)
         project = await ProjectService(self.session, self.owner_user_id).get(project_id)
         now = datetime.now(UTC)
         period_start = now - timedelta(days=7) if report_type == ReportType.WEEKLY else None
 
         work = await WorkPlanningService(self.session, self.owner_user_id).summary(project_id)
-        finance = await FinanceService(self.session, self.owner_user_id).analytics(project_id)
+        finance = (
+            await FinanceService(self.session, self.owner_user_id).analytics(project_id)
+            if can_finance
+            else None
+        )
         control = await ControlService(self.session, self.owner_user_id).summary(project_id)
         people_service = PeopleService(self.session, self.owner_user_id)
         people = await people_service.summary(project_id)
@@ -73,8 +83,10 @@ class ReportingService:
         delivery_section = ReportSection(
             key="delivery", title="Delivery", data=work.model_dump(mode="json")
         )
-        budget_section = ReportSection(
-            key="budget", title="Budget", data=finance.model_dump(mode="json")
+        budget_section = (
+            ReportSection(key="budget", title="Budget", data=finance.model_dump(mode="json"))
+            if finance is not None
+            else None
         )
 
         risks = list(
@@ -147,27 +159,36 @@ class ReportingService:
 
         sections = [project_section]
         if report_type == ReportType.PROJECT_SUMMARY:
-            sections.extend([delivery_section, budget_section, control_section, team_section])
+            sections.extend([delivery_section, control_section, team_section])
+            if budget_section is not None:
+                sections.insert(2, budget_section)
         elif report_type == ReportType.EXECUTIVE_SUMMARY:
-            totals = finance.totals
+            totals = finance.totals if finance is not None else None
+            executive_data = {
+                "project_status": project.status.value,
+                "task_progress_percent": work.progress,
+                "overdue_tasks": work.overdue_tasks,
+                "upcoming_milestones": work.upcoming_milestones,
+                "high_or_critical_risks": control.high_critical_risks,
+                "critical_issues": control.critical_issues,
+                "workload_warnings": people.workload_warning_count,
+            }
+            if totals is not None:
+                executive_data.update(
+                    {
+                        "budget_utilization_percent": totals.budget_utilization,
+                        "financial_status": totals.financial_status,
+                    }
+                )
             sections.append(
                 ReportSection(
                     key="executive",
                     title="Executive summary",
-                    data={
-                        "project_status": project.status.value,
-                        "task_progress_percent": work.progress,
-                        "overdue_tasks": work.overdue_tasks,
-                        "upcoming_milestones": work.upcoming_milestones,
-                        "budget_utilization_percent": totals.budget_utilization,
-                        "financial_status": totals.financial_status,
-                        "high_or_critical_risks": control.high_critical_risks,
-                        "critical_issues": control.critical_issues,
-                        "workload_warnings": people.workload_warning_count,
-                    },
+                    data=executive_data,
                 )
             )
         elif report_type == ReportType.BUDGET:
+            assert budget_section is not None
             sections.append(budget_section)
         elif report_type == ReportType.CONTROL:
             sections.append(control_section)
@@ -232,10 +253,11 @@ class ReportingService:
                         },
                     ),
                     delivery_section,
-                    budget_section,
                     control_section,
                 ]
             )
+            if budget_section is not None:
+                sections.append(budget_section)
 
         report = ReportRead(
             project_id=project_id,
@@ -330,6 +352,17 @@ class ExportService:
         self, project_id: UUID, dataset: ExportDataset
     ) -> tuple[list[str], list[list[object]]]:
         await ProjectService(self.session, self.owner_user_id).get(project_id)
+        capability = {
+            ExportDataset.EXPENSES: Capability.FINANCE_READ,
+            ExportDataset.ACTIVITY: Capability.AUDIT_READ,
+            ExportDataset.TASKS: Capability.TASKS_READ,
+            ExportDataset.MILESTONES: Capability.TASKS_READ,
+            ExportDataset.RISKS: Capability.CONTROL_READ,
+            ExportDataset.ISSUES: Capability.CONTROL_READ,
+            ExportDataset.CHANGES: Capability.CONTROL_READ,
+            ExportDataset.TEAM: Capability.PEOPLE_READ,
+        }[dataset]
+        await AuthorizationService(self.session, self.owner_user_id).require(project_id, capability)
         model, fields = self.MODELS[dataset]
         result = await self.session.execute(
             select(model).where(model.project_id == project_id).order_by(model.created_at)
@@ -505,6 +538,12 @@ class ImportService:
     async def preview(
         self, project_id: UUID, target: ImportTarget, filename: str, data: bytes
     ) -> ImportPreviewRead:
+        capability = (
+            Capability.FINANCE_MANAGE
+            if target == ImportTarget.EXPENSES
+            else Capability.TASKS_CREATE
+        )
+        await AuthorizationService(self.session, self.owner_user_id).require(project_id, capability)
         project = await ProjectService(self.session, self.owner_user_id).get(project_id)
         ProjectService._ensure_mutable(project)
         extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
@@ -568,6 +607,12 @@ class ImportService:
             raise AppError(
                 code="import_not_found", message="Import batch not found.", status_code=404
             )
+        capability = (
+            Capability.FINANCE_MANAGE
+            if batch.target == ImportTarget.EXPENSES
+            else Capability.TASKS_CREATE
+        )
+        await AuthorizationService(self.session, self.owner_user_id).require(project_id, capability)
         if batch.status != ImportStatus.VALIDATED:
             raise AppError(
                 code="import_already_confirmed",

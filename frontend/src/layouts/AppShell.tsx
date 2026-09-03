@@ -5,6 +5,7 @@ import { NavLink, Outlet } from "react-router-dom";
 
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { NotificationsMenu } from "../features/collaboration/components/NotificationsMenu";
 import { useAuth } from "../features/auth/AuthContext";
 
 const navigation = [
@@ -65,11 +66,12 @@ export function AppShell() {
             <span className="sr-only">{t("common.menu")}</span>
           </button>
           <div className="topbar-spacer" />
+          <NotificationsMenu />
           <LanguageSwitcher />
           <ThemeToggle />
           <div className="account-chip" title={user?.email}>
             <span>{user?.email.slice(0, 1).toUpperCase()}</span>
-            <p>{user?.email}</p>
+            <p>{user?.display_name ?? user?.email}</p>
           </div>
           <button className="icon-button" type="button" onClick={() => void logout()}>
             <LogOut size={18} />

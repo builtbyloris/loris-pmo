@@ -8,6 +8,7 @@ from app.models.control import Issue, Risk
 from app.models.people import Person, ProjectMember, Stakeholder, TaskAssignee
 from app.models.project import Project
 from app.models.task import Task
+from app.services.authorization import accessible_project_ids
 
 
 class PeopleRepository:
@@ -19,7 +20,8 @@ class PeopleRepository:
         return (
             await self.session.execute(
                 select(Project).where(
-                    Project.id == project_id, Project.owner_user_id == self.owner_user_id
+                    Project.id == project_id,
+                    Project.id.in_(accessible_project_ids(self.owner_user_id)),
                 )
             )
         ).scalar_one_or_none()
@@ -50,7 +52,7 @@ class PeopleRepository:
                 .where(
                     ProjectMember.id == member_id,
                     ProjectMember.project_id == project_id,
-                    Project.owner_user_id == self.owner_user_id,
+                    Project.id.in_(accessible_project_ids(self.owner_user_id)),
                 )
             )
         ).scalar_one_or_none()
@@ -94,7 +96,7 @@ class PeopleRepository:
                 .where(
                     Stakeholder.id == stakeholder_id,
                     Stakeholder.project_id == project_id,
-                    Project.owner_user_id == self.owner_user_id,
+                    Project.id.in_(accessible_project_ids(self.owner_user_id)),
                 )
             )
         ).scalar_one_or_none()

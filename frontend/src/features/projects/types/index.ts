@@ -34,7 +34,7 @@ export interface Project {
   priority: ProjectPriority;
   start_date: string | null;
   target_end_date: string | null;
-  planned_budget: string;
+  planned_budget: string | null;
   notes: string | null;
   archived_at: string | null;
   created_at: string;
@@ -67,7 +67,7 @@ export interface ProjectDraft {
   priority: ProjectPriority;
   start_date: string;
   target_end_date: string;
-  planned_budget: string;
+  planned_budget: string | null;
   notes?: string;
   objectives: Array<{ title: string }>;
   success_criteria: Array<{ description: string }>;

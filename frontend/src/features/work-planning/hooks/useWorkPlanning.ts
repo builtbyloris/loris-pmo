@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { peopleApi } from "../../people/api/peopleApi";
 import { workPlanningApi } from "../api/workPlanningApi";
-import type { MilestoneInput, Task, TaskInput, TaskStatus, WorkPlanningData } from "../types";
+import type { MilestoneInput, ScheduleChange, SchedulePreview, Task, TaskInput, TaskStatus, WorkPlanningData } from "../types";
 
 export function useWorkPlanning(projectId: string) {
   const { t } = useTranslation();
@@ -11,18 +11,20 @@ export function useWorkPlanning(projectId: string) {
   const [error, setError] = useState("");
   const [mutationError, setMutationError] = useState("");
   const [movingTaskId, setMovingTaskId] = useState("");
+  const [schedulePreview, setSchedulePreview] = useState<SchedulePreview | null>(null);
 
   const load = useCallback(async () => {
     setError("");
     try {
-      const [taskList, milestones, dependencies, summary, members] = await Promise.all([
+      const [taskList, milestones, dependencies, summary, members, schedule] = await Promise.all([
         workPlanningApi.listTasks(projectId),
         workPlanningApi.listMilestones(projectId),
         workPlanningApi.listDependencies(projectId),
         workPlanningApi.summary(projectId),
         peopleApi.listMembers(projectId),
+        workPlanningApi.schedule(projectId),
       ]);
-      setData({ tasks: taskList.items, milestones, dependencies, summary, members });
+      setData({ tasks: taskList.items, milestones, dependencies, summary, members, schedule });
     } catch {
       setError(t("workPlanning.loadError"));
     }
@@ -77,5 +79,19 @@ export function useWorkPlanning(projectId: string) {
     updateMilestone: (milestoneId: string, input: Partial<MilestoneInput>) => mutate(() => workPlanningApi.updateMilestone(projectId, milestoneId, input)),
     createDependency: (sourceId: string, targetId: string, type: "BLOCKS" | "DEPENDS_ON" | "RELATED_TO") => mutate(() => workPlanningApi.createDependency(projectId, sourceId, targetId, type)),
     deleteDependency: (dependencyId: string) => mutate(() => workPlanningApi.deleteDependency(projectId, dependencyId)),
+    schedulePreview,
+    previewSchedule: async (change: ScheduleChange) => {
+      setMutationError("");
+      try { const value = await workPlanningApi.previewSchedule(projectId, change); setSchedulePreview(value); return true; }
+      catch { setMutationError(t("workPlanning.schedule.previewError")); return false; }
+    },
+    cancelSchedulePreview: () => setSchedulePreview(null),
+    applySchedule: async () => {
+      if (!schedulePreview) return false;
+      const ok = await mutate(() => workPlanningApi.applySchedule(projectId, schedulePreview));
+      if (ok) setSchedulePreview(null);
+      return ok;
+    },
+    createBaseline: (replace = false) => mutate(() => workPlanningApi.createBaseline(projectId, replace)),
   };
 }
