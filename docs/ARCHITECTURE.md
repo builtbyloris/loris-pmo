@@ -1,6 +1,6 @@
 # Loris PMO architecture
 
-Status: V1.0.0 release baseline plus V2.1–V2.4 development architecture
+Status: V1.0.0 release baseline plus V2.1–V2.5 development architecture
 Date: 2026-09-03
 Product authority: `PROJECT_INTELLIGENCE_SPEC.md`
 
@@ -267,7 +267,7 @@ Errors use a stable envelope:
 
 Request IDs are accepted or generated per request and returned in `X-Request-ID`. Validation failures, expected application errors, and unexpected failures are normalized; normal responses never expose stack traces or ORM objects.
 
-The portfolio response aggregates real, non-archived project counts for the authenticated owner. It reports total, active, on-hold, and completed projects and returns zeroes for a new account; it never uses sample content. Work-planning responses use the same owner-scoped project lookup and return `404` for foreign identifiers.
+The portfolio response aggregates real, non-archived projects visible through authenticated membership. It reports total, active, on-hold, and completed projects and returns zeroes for a new account; it never uses sample content. Work-planning responses use the same centralized project authorization and return `404` for inaccessible identifiers.
 
 Scheduling dependencies are stored as the user-facing `BLOCKS`, `DEPENDS_ON`, or `RELATED_TO` relation. Cycle analysis normalizes `A BLOCKS B` and `B DEPENDS_ON A` to the same directed edge. Equivalent scheduling duplicates are rejected; related links are symmetric and normalized by identifier order.
 
@@ -311,7 +311,7 @@ AIProvider protocol
       `--> future provider
 ```
 
-`ProjectAssistantService` first resolves the owner-scoped project, then asks `ProjectContextBuilder` for a question-relevant package. The builder reuses finance, workload, work-planning, and project-intelligence services for facts and formulas. English/Italian keyword selection deterministically chooses work, finance, control, people, objectives, or memory sections. It caps critical tasks at 12, milestones and control records at 8, recent memory at 6 per type, pending actions at 8, and active alerts at 10. Ordering is deterministic by urgency, severity, due date, recency, and stable identifier.
+`ProjectAssistantService` first resolves permission-aware project access, then asks `ProjectContextBuilder` for a question-relevant package filtered by the caller's RBAC capabilities. The builder reuses finance, workload, work-planning, and project-intelligence services for facts and formulas. English/Italian keyword selection deterministically chooses work, finance, control, people, objectives, or memory sections. It caps critical tasks at 12, milestones and control records at 8, recent memory at 6 per type, pending actions at 8, and active alerts at 10. Ordering is deterministic by urgency, severity, due date, recency, and stable identifier.
 
 Gemini is called only through the provider protocol. The Interactions REST adapter sends the API key in the server-side `x-goog-api-key` header, applies centralized model/timeout/token settings, performs no automatic retry loop, sets `store=false`, and requests schema-constrained JSON. It parses only `model_output` text and never exposes thought steps. Provider transport, authentication, rate-limit, timeout, incomplete, empty, malformed, and contract failures map to safe public errors. The application and readiness endpoint do not require a key.
 
@@ -373,7 +373,7 @@ Deterministic analytics and the eight V1 automation rule families run synchronou
 
 ### Project intelligence and automation
 
-The intelligence service gathers owner-scoped operational facts once per project invocation. It returns a consistent KPI structure with `available` and `reason` fields. Objective progress is calculated only from applicable structured success criteria; schedule, budget, task, resource, and objective dimensions remain unavailable when their prerequisite data is absent.
+The intelligence service gathers permission-filtered operational facts once per project invocation. It returns a consistent KPI structure with `available` and `reason` fields. Objective progress is calculated only from applicable structured success criteria; schedule, budget, task, resource, and objective dimensions remain unavailable when their prerequisite data is absent.
 
 Health weights are Schedule 25%, Budget 20%, Tasks 20%, Risks 15%, Resources 10%, and Objectives 10%. Scores use documented penalties over stored facts. Unavailable dimensions are excluded and their weights are redistributed proportionally. Thresholds are Healthy 85–100, Watch 70–84, At Risk 50–69, and Critical 0–49. Structured drivers preserve the evidence behind movement.
 
@@ -482,7 +482,7 @@ Operational AI extends the existing provider-neutral service; it does not create
 
 ## Sprint 12 — documents, knowledge, and data portability
 
-Project documents use an owner-scoped metadata model plus a configurable local storage root (`DOCUMENT_STORAGE_PATH`). API responses never expose storage keys. Generated internal filenames and containment checks prevent path traversal; upload size and extension allowlists bound work. PDF, DOCX, XLSX, CSV, and TXT extraction is synchronous and bounded for V1. Images are stored with an explicit unsupported-knowledge status rather than fabricated OCR output.
+Project documents use a project-scoped, RBAC-protected metadata model plus a provider-neutral local or S3-compatible storage backend. API responses never expose storage keys. Generated internal filenames and containment checks prevent path traversal; upload size and extension allowlists bound work. PDF, DOCX, XLSX, CSV, and TXT extraction is synchronous and bounded for V1. Images are stored with an explicit unsupported-knowledge status rather than fabricated OCR output.
 
 Extracted text is split deterministically into bounded overlapping chunks with real page/sheet/section metadata when available. Retrieval is deterministic lexical scoring within one owned project. The Project Assistant adds only relevant top-five excerpts, labels them untrusted data, and registers each `document_chunk:<uuid>` reference in the backend evidence catalog. Provider output cannot introduce an unregistered document reference.
 
@@ -589,3 +589,32 @@ Google Calendar, Gmail, and GitHub are read-only. Calendar import uses a short-l
 AI context never queries a provider. It includes only bounded, available `ExternalLink` records already selected by an authorized user and visible to the caller. Each becomes a backend-owned evidence identifier; external strings are explicitly untrusted, cannot change system instructions or permissions, and fabricated/cross-project/unavailable identifiers remain invalid. Provider content cannot grant tools or operational mutation.
 
 Provider 401/403, not-found, rate-limit, timeout, unavailable, and malformed responses map to stable safe application errors without upstream bodies. Manual refresh updates safe status/timestamps; a missing provider object marks its link unavailable but cannot delete a Meeting, task, issue, or other local fact. See `docs/INTEGRATIONS.md` for setup, scopes, credential rotation, disconnect, and recovery procedures.
+
+
+## 20. V2.5 cloud and production readiness
+
+V2.5 keeps the modular monolith and local Compose topology. It adds an explicit production profile rather than introducing cloud-specific domain code.
+
+```text
+Environment-validated FastAPI
+  |-- exact CORS / trusted hosts / secure cookie + CSRF policy
+  |-- request correlation / redacted errors / structured console logs
+  |-- configurable PostgreSQL pool + TLS
+  `-- DocumentStorage protocol
+       |-- LocalDocumentStorage
+       `-- S3DocumentStorage (private S3-compatible API)
+```
+
+`Settings` is the single environment authority. Development and test retain safe local defaults; production fails startup for weak secrets, non-PostgreSQL URLs, non-TLS database mode, insecure/wildcard browser origins, wildcard hosts, debug/docs exposure, partial OAuth pairs, unsafe callbacks, invalid encryption keys, or incomplete storage configuration. Gemini and OAuth providers remain optional and are excluded from core readiness.
+
+Authentication remains an HttpOnly JWT cookie plus double-submit CSRF. Production cookies are Secure. A same-origin TLS gateway is recommended; same-site subdomains require an explicit shared cookie domain. CORS never grants wildcard credentialed access. Proxy-forwarded headers are an operator boundary and may be trusted only from the actual gateway.
+
+`/health` is process liveness. `/ready` executes a bounded database probe and maps database failure to a safe 503. SQLAlchemy engine pool size, overflow, timeout, recycle, and asyncpg TLS mode are centralized. The application disposes the engine on lifespan shutdown. Production migration is a one-off Alembic operation before replicas start; convenient local Compose migration-on-start remains unchanged.
+
+Project document services now depend on `DocumentStorage`, not direct arbitrary filesystem operations. Both adapters enforce generated project-scoped keys and traversal protection. Local storage preserves the private named volume. S3-compatible storage uses server-side credentials, bounded client timeouts, no application retries, no public URL, and normalized missing/unavailable errors. Downloads stream only after project/RBAC checks. Configured S3 never silently falls back to local storage, and existing files are never moved automatically.
+
+The frontend resolves every application API path through one public `VITE_API_BASE_URL`; an empty value intentionally means same-origin. Production builds reject non-HTTPS non-empty API values. A multi-stage static Nginx image provides SPA fallback without the Vite development server. The backend production image runs as a non-root user and no longer runs Alembic in its image command.
+
+Local `docker-compose.yml` remains the development path. `docker-compose.prod.yml` is a production-like reference with separate one-off migration service and no bundled database, secret, or deployment action. GitHub Actions runs backend/PostgreSQL tests and Ruff plus frontend tests, TypeScript, and production build with read-only repository permission; it has no deployment credentials or job.
+
+Accepted boundaries are gateway-enforced rate/request-size limiting, no automatic cloud backup, no local/cloud synchronization, no high-availability orchestrator, and no automatic local-to-S3 copy. See `docs/PRODUCTION.md`, `docs/CLOUD_FREE_DEPLOYMENT.md`, `docs/BACKUP_RESTORE.md`, and `docs/V2_FEATURE_AUDIT.md`.

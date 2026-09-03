@@ -18,4 +18,5 @@ backend/.data/
 # Local release/operator artifacts
 .env.*
 !.env.example
+!.env.production.example
 backups/

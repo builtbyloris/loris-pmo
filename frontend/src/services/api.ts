@@ -1,4 +1,15 @@
 import type { ApiErrorPayload, User } from "../types/api";
+import { normalizeApiBase } from "./api-base";
+
+const API_BASE_URL = normalizeApiBase(import.meta.env.VITE_API_BASE_URL, import.meta.env.PROD);
+
+export function apiUrl(path: string): string {
+  if (/^https?:\/\//i.test(path)) return path;
+  if (!path.startsWith("/")) {
+    throw new Error("API paths must be absolute application paths.");
+  }
+  return `${API_BASE_URL}${path}`;
+}
 
 export class ApiError extends Error {
   constructor(
@@ -26,7 +37,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
     if (csrfToken) headers.set("X-CSRF-Token", decodeURIComponent(csrfToken));
   }
 
-  const response = await fetch(path, { ...init, headers, credentials: "include" });
+  const response = await fetch(apiUrl(path), { ...init, headers, credentials: "include" });
   if (!response.ok) {
     let payload: ApiErrorPayload = {};
     try {

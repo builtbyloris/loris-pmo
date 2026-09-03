@@ -28,6 +28,7 @@ from app.schemas.documents import DocumentUpdate
 from app.services.audit import AuditService
 from app.services.authorization import AuthorizationService, Capability, accessible_project_ids
 from app.services.projects import ProjectService
+from app.storage import LocalDocumentStorage, create_document_storage
 
 ALLOWED = {"pdf", "docx", "xlsx", "csv", "txt", "png", "jpg", "jpeg", "webp"}
 EXTRACTABLE = {"pdf", "docx", "xlsx", "csv", "txt"}
@@ -116,7 +117,7 @@ class DocumentService:
         self.owner_user_id = owner_user_id
         self.settings = settings
         self.audit = AuditService(session, owner_user_id)
-        self.root = Path(settings.document_storage_path).expanduser().resolve()
+        self.storage = create_document_storage(settings)
 
     async def _project(self, project_id: UUID, *, mutable: bool = False) -> Project:
         project = await ProjectService(self.session, self.owner_user_id).get(project_id)
@@ -190,13 +191,8 @@ class DocumentService:
         document_id = uuid4()
         internal = f"{document_id.hex}.{extension}"
         relative = Path(str(project_id)) / internal
-        target = (self.root / relative).resolve()
-        if self.root not in target.parents:
-            raise AppError(
-                code="invalid_document_path", message="Invalid document path.", status_code=400
-            )
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(content)
+        storage_key = relative.as_posix()
+        self.storage.put(storage_key, content, upload.content_type or "application/octet-stream")
         document = ProjectDocument(
             id=document_id,
             project_id=project_id,
@@ -207,7 +203,7 @@ class DocumentService:
             size_bytes=len(content),
             category=category,
             description=description,
-            storage_key=str(relative),
+            storage_key=storage_key,
             status=DocumentStatus.PROCESSING
             if extension in EXTRACTABLE
             else DocumentStatus.UNSUPPORTED,
@@ -255,14 +251,12 @@ class DocumentService:
         return await self._document(project_id, document.id)
 
     def path_for(self, document: ProjectDocument) -> Path:
-        path = (self.root / document.storage_key).resolve()
-        if self.root not in path.parents or not path.is_file():
-            raise AppError(
-                code="document_file_missing",
-                message="Document file is unavailable.",
-                status_code=404,
-            )
-        return path
+        if not isinstance(self.storage, LocalDocumentStorage):
+            raise RuntimeError("A local path is unavailable for object storage")
+        return self.storage.path_for(document.storage_key)
+
+    def open_file(self, document: ProjectDocument):
+        return self.storage.open(document.storage_key)
 
     async def update(
         self, project_id: UUID, document_id: UUID, data: DocumentUpdate
@@ -292,7 +286,6 @@ class DocumentService:
     async def delete(self, project_id: UUID, document_id: UUID) -> None:
         await self._project(project_id, mutable=True)
         document = await self._document(project_id, document_id)
-        path = (self.root / document.storage_key).resolve()
         self.audit.record(
             project_id=project_id,
             action="document.deleted",
@@ -307,5 +300,4 @@ class DocumentService:
         )
         await self.session.delete(document)
         await self.session.commit()
-        if self.root in path.parents:
-            path.unlink(missing_ok=True)
+        self.storage.delete(document.storage_key)

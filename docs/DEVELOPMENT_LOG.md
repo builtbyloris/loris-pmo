@@ -396,3 +396,62 @@ Decision: Admit only explicit authorized external links into the existing backen
 Reason: Gemini receives no live provider access, credentials, inbox/repository dump, tools, or write capability. Permission filtering occurs before context construction, content cannot override system rules, and fabricated/cross-project/private/finance-restricted evidence remains invalid.
 
 Known V2.4 boundaries: no webhooks or background synchronization, no provider write-back, no Gmail body/attachment ingestion, no shared OAuth accounts, no autonomous AI execution, and no cloud secret manager. GitHub's default `read:user` scope supports public repositories; private repository access requires an explicit operator scope override. Live provider acceptance requires operator-owned OAuth applications and credentials and is therefore optional when unavailable.
+
+
+## 2026-09-02 — V2.5 cloud and production readiness
+
+Decision: Preserve local Docker Compose as the default and add a strict environment-validated production profile.
+
+Reason: Cloud readiness must not require cloud credentials or regress local data. Production now fails closed for unsafe secrets, database/TLS, origins, hosts, OAuth, docs/debug, and storage configuration, while optional Gemini and integration providers remain non-blocking.
+
+Decision: Keep one PostgreSQL/Alembic application path and make production migrations an explicit one-off operation.
+
+Reason: Managed PostgreSQL does not justify a second persistence architecture. Configurable pooling and TLS cover remote operation; removing migration execution from the production image command prevents concurrent replicas from racing schema upgrades. Local Compose retains migration-on-start convenience.
+
+Decision: Introduce a provider-neutral `DocumentStorage` contract with local and S3-compatible implementations, and stream authorized downloads through FastAPI.
+
+Reason: Core document behavior must not depend on a public filesystem path or one object provider. Generated keys, containment, server-side credentials, private access, bounded timeouts, and normalized failures preserve security. S3 failure never falls back to local and no existing file is migrated automatically.
+
+Decision: Recommend a same-origin TLS gateway for hosted use and preserve the existing double-submit CSRF design.
+
+Reason: The frontend must read the CSRF cookie. A gateway or deliberately configured same-site subdomains make production cookies work without weakening authentication; unrelated provider default domains are not treated as safely compatible.
+
+Decision: Add build/test CI and production-like container references without deployment automation.
+
+Reason: V2 technical completion needs repeatable quality gates, not authority to publish infrastructure. The workflow uses test-only values, minimal read permission, and no production secrets. The backend image runs non-root; the frontend is a static Nginx build with SPA fallback.
+
+Decision: Document a dated zero-cost demonstration topology but keep it explicitly non-SLA and optional.
+
+Reason: Free tiers change, sleep, impose quotas, and may require account validation. Provider-neutral interfaces and independent local/cloud data keep local Compose the reliable fallback.
+
+No V2.5 schema migration was created. Alembic head remains `20260904_0016`; V2.5 changes configuration, runtime boundaries, storage transport, containers, CI, and operations documentation only.
+
+## 2026-09-04 — V2.5 final cleanup and validation recovery
+
+Resumed the preserved `v2-development` worktree without reset, restart, release, merge, or feature additions. Only final audit/status documentation changed in this recovery pass.
+
+Revalidated 146 backend tests, then the separately configured PostgreSQL connectivity test (one additional pass); 46 frontend tests; Ruff; TypeScript build checks; production frontend build; and Alembic current/head at `20260904_0016`. Existing Python 3.14 dependency deprecation warnings and the frontend chunk-size advisory are non-blocking. Prior disposable migration, production-like container, authenticated document smoke, and backup checks remain recorded validation evidence.
+
+Targeted production boundary checks found three reproducible blockers that the existing passing suite did not cover:
+
+- A real Uvicorn process returns redacted HTTP 500 JSON but still prints a synthetic private exception marker and traceback through its own error logger.
+- The backend image's `localhost` health probe gets HTTP 400 with the production example's API-only trusted hosts.
+- Production Compose rejects the documented empty same-origin API base during interpolation.
+
+No real secret or project content was used in the error diagnostic. The transient process was terminated, no diagnostic file was created, and no application behavior was changed. Final audit/README/roadmap now report **V2 NOT COMPLETE** pending these fixes rather than retaining the previous premature completion claim.
+
+Cleanup verification found no remaining V2.5 smoke containers or databases, no temporary production environment file, and no V2.5 temporary workspace files. Existing local counts remain one user, three projects, and one document. User-owned historical backups and pre-existing Docker volumes were preserved.
+
+## 2026-09-04 — V2.5 verified blocker fixes
+
+Scope: fixed only the three reproduced blockers, preserving the existing architecture and all other V2.5 work.
+
+- Production Uvicorn/asyncio exception-bearing records are sanitized before handlers; formatted lifespan tracebacks are covered. Structured application errors keep request IDs, runtime errors keep safe type/OS error number, ordinary operational messages remain visible, and development/test runtime logging is restored. A permanent test-only Uvicorn factory exercises the real post-response log path without adding a production diagnostic route.
+- The image healthcheck connects to loopback with the first configured public trusted Host header. No additional trusted host, wildcard, or authorization bypass is introduced.
+- Compose permits empty/unset `VITE_API_BASE_URL` for same-origin. Shared build/runtime origin validation and API-base tests cover empty, HTTPS split-origin, and malformed values. OAuth remains backend-routed; no UI behavior was redesigned.
+
+Validation: 150 backend tests including PostgreSQL connectivity; 56 frontend tests; 11 focused production/runtime tests; Ruff; TypeScript; empty and split-origin production builds; invalid-base build rejection. Rebuilt production backend/frontend containers became healthy as non-root/read-only processes. Disposable TLS-enabled PostgreSQL migrated from empty to `20260904_0016`; health/readiness passed. Both a real local Uvicorn subprocess and a rebuilt Docker diagnostic process returned redacted 500 JSON with correlated structured logs and no synthetic marker or traceback. Public Host acceptance and untrusted Host rejection both passed.
+
+Authenticated smoke checks passed project/RBAC, scheduling, knowledge/integration status, reports, exports, documents, task imports, login, secure cookies, and logout. An initial smoke harness used the wrong project-prefixed integration-status URL; correcting the harness to the existing global endpoint resolved its 405 without an application change. No external AI/OAuth call was made.
+
+All disposable containers/database contents, test document volume, network, image tags, temporary environment, and TLS files were removed. Existing local counts remain one user, three projects, and one document; local health/readiness and Alembic head are unchanged. The earlier incomplete verdict is superseded by the runtime-backed **V2 TECHNICALLY COMPLETE** audit. No merge, tag, release, cloud deployment, or redesign was performed.

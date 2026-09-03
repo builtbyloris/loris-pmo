@@ -2,7 +2,7 @@
 
 Loris PMO is a professional-grade project management and project intelligence platform. It combines operational project control, deterministic analytics, multi-user collaboration, advanced scheduling, and evidence-backed AI assistance in a secure role-based workspace.
 
-This public GitHub repository contains the stable **v1.0.0** release on `main` and unreleased V2 development on `v2-development`. The current development milestone is **V2.4 Integrations**. No `v2.0.0` release or tag exists.
+This public GitHub repository contains the stable **v1.0.0** release on `main` and unreleased V2 development on `v2-development`. The current development milestone is **V2.5 Cloud & Production Readiness**. No `v2.0.0` release or tag exists.
 
 ## Overview
 
@@ -68,7 +68,16 @@ V2 development is available on `v2-development` and has not been released as `v2
 - Provider-neutral adapters, manual refresh, safe reauthorization/failure states, and preserved local records
 - Project membership, RBAC, account isolation, audit history, and prompt-injection-safe external evidence
 
-V2.5 is the next roadmap milestone and is not implemented yet.
+**V2.5 — Cloud & Production Readiness**
+
+- Fail-closed development/test/production configuration and safe configuration check
+- Secure production cookies, exact CORS, trusted hosts, security headers, and request correlation
+- Managed-PostgreSQL pool/TLS configuration with explicit one-off migration workflow
+- Provider-neutral private document storage with local and S3-compatible adapters
+- Static production frontend and non-root backend images while preserving local Compose
+- Local/cloud backup guidance, optional dated zero-cost deployment plan, and build/test CI
+
+V2.1–V2.5 are technically complete on the unreleased development branch. The three final production logging/configuration blockers were fixed and runtime-validated; see the [V2 feature audit](docs/V2_FEATURE_AUDIT.md). No cloud deployment, merge, release, or `v2.0.0` tag has been created.
 
 ## AI philosophy
 
@@ -93,7 +102,7 @@ AI is a copilot, not the project manager.
 | AI | Provider-neutral generation/embedding services, Gemini REST APIs, structured JSON |
 | Documents/data | pypdf, python-docx, openpyxl, ReportLab |
 | Testing | Pytest, HTTPX, Vitest, React Testing Library, Ruff |
-| Infrastructure | Docker Compose |
+| Infrastructure | Local Docker Compose, production container references, GitHub Actions CI |
 
 ## Architecture
 
@@ -177,7 +186,7 @@ docker compose exec backend python -m app.cli create-user
 You may supply only the email argument; the password is still entered securely without terminal echo:
 
 ```bash
-docker compose exec backend python -m app.cli create-user --email you@example.test
+docker compose exec backend python -m app.cli create-user --email you@example.com
 ```
 
 Never put real credentials in source files, command history, screenshots, or documentation.
@@ -188,17 +197,19 @@ Copy `.env.example` to the ignored `.env` file and replace every credential plac
 
 - `SECRET_KEY`: JWT signing secret, minimum 32 characters
 - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `DATABASE_URL`: local PostgreSQL configuration
-- `FRONTEND_URL`: allowed browser origin
+- `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS`, `TRUSTED_HOSTS`: browser and host boundaries
+- `DATABASE_SSL_MODE` and pool settings: managed PostgreSQL transport/capacity controls
 - `GEMINI_API_KEY`: optional, backend-only Gemini credential
 - `GEMINI_MODEL`: defaults to `gemini-3.6-flash`
 - `AI_TIMEOUT_SECONDS`, `AI_MAX_OUTPUT_TOKENS`, `AI_TEMPERATURE`: centralized bounded generation controls
-- `DOCUMENT_STORAGE_PATH`, `DOCUMENT_MAX_UPLOAD_MB`: private storage location and upload limit
+- `DOCUMENT_STORAGE_BACKEND`, `DOCUMENT_STORAGE_PATH`, `DOCUMENT_MAX_UPLOAD_MB`: private storage mode/location/limit
+- `S3_*`: optional backend-only S3-compatible object-storage configuration
 - `INTEGRATION_TOKEN_ENCRYPTION_KEY`: dedicated Fernet key for OAuth token encryption at rest
 - Google/GitHub OAuth client, redirect, and scope settings: optional; integrations stay unavailable when absent
 
 Do not commit `.env`. `.env.example` contains placeholders only.
 
-Provider setup, redirect URI, scope, encryption-key rotation, disconnect, and recovery guidance is in [Integrations](docs/INTEGRATIONS.md).
+Provider setup, redirect URI, scope, encryption-key rotation, disconnect, and recovery guidance is in [Integrations](docs/INTEGRATIONS.md). Production deployment and configuration are documented in [Production operations](docs/PRODUCTION.md); the optional non-SLA example is in [Zero-cost cloud deployment](docs/CLOUD_FREE_DEPLOYMENT.md).
 
 ## Running tests
 
@@ -271,7 +282,7 @@ Demo records never run at startup. The recommended demo uses a separate Compose 
 - ✅ V2.2 Advanced Scheduling
 - ✅ V2.3 AI & Knowledge 2.0
 - ✅ V2.4 Integrations
-- ⏳ V2.5 Cloud & Production Readiness
+- ✅ V2.5 Cloud & Production Readiness
 
 V2 has not been released as `v2.0.0`. The authoritative runtime release value remains `backend/app/version.py` at `1.0.0`; V2 development intentionally does not create or move release tags.
 
@@ -300,7 +311,10 @@ Additional accepted boundaries are documented in the [V1 feature audit](docs/V1_
 - Semantic vectors use bounded PostgreSQL-compatible JSON storage and application-side ranking; no dedicated vector index or external vector database
 - Embedding and reindex work is synchronous; no background indexing queue
 - No realtime provider push/webhook synchronization; integrations use explicit bounded refresh
-- No cloud deployment yet
+- No cloud deployment is performed by the repository; deployment remains optional and operator-controlled
+- Free-tier cloud examples have quotas, sleep/cold starts, changing terms, and no SLA
+- No automatic cloud backup, local/cloud synchronization, or automatic local-to-S3 migration
+- Rate/request-size limiting is delegated to the trusted production gateway
 
 ## Roadmap
 
@@ -308,9 +322,9 @@ Additional accepted boundaries are documented in the [V1 feature audit](docs/V1_
 - ✅ V2.2 — Advanced Scheduling
 - ✅ V2.3 — AI & Knowledge 2.0
 - ✅ V2.4 — Integrations
-- ⏳ V2.5 — Cloud & Production Readiness
+- ✅ V2.5 — Cloud & Production Readiness
 
-See [V2_ROADMAP.md](docs/V2_ROADMAP.md) for the detailed development plan. Roadmap items are not implemented until explicitly marked complete.
+See [V2_ROADMAP.md](docs/V2_ROADMAP.md) and the evidence-backed [V2 feature audit](docs/V2_FEATURE_AUDIT.md). V2 is technically complete but remains unreleased; release actions require explicit approval.
 
 ## License
 

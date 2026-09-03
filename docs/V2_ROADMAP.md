@@ -1,6 +1,6 @@
 # Loris PMO V2 roadmap
 
-Status: active development on `v2-development`
+Status: V2 technically complete on unreleased `v2-development`
 Baseline: immutable `v1.0.0` release
 
 ## V2.1 — Multi-user, RBAC, and collaboration foundation
@@ -63,8 +63,18 @@ Only explicit authorized external links may enter the existing backend-owned AI 
 
 See [Integrations](INTEGRATIONS.md) for operator setup, scopes, rotation, lifecycle, and failure recovery.
 
-## Planned V2 increment
+## V2.5 — Cloud and production readiness
 
-- V2.5: cloud and production readiness, including deployment/storage choices only when separately designed and authorized.
+V2.5 implements fail-closed production configuration, secure cookie/CORS/host boundaries, health/readiness, application/runtime safe structured logs and request IDs, managed PostgreSQL pool/TLS settings, explicit one-off migration operations, provider-neutral local/S3-compatible private document storage, frontend API-base configuration, production container references, CI, backup/recovery guidance, and an optional dated zero-cost cloud plan. The three final runtime/configuration blockers are resolved with regression coverage; see [V2 feature audit](V2_FEATURE_AUDIT.md).
 
-This roadmap does not change the published V1 release notes or the `v1.0.0` tag.
+Local Compose remains the preferred runtime and requires no cloud credentials. Production deployment is not automated. A same-origin TLS gateway is recommended for the current cookie/CSRF model; rate and request-size enforcement belongs at that trusted gateway. Cloud backup, local/cloud synchronization, automatic local-to-S3 migration, and SLA/high-availability orchestration are accepted non-blocking limitations.
+
+## Final V2 milestone state
+
+- ✅ V2.1 — Multi-user, RBAC & Collaboration
+- ✅ V2.2 — Advanced Scheduling
+- ✅ V2.3 — AI & Knowledge 2.0
+- ✅ V2.4 — Integrations
+- ✅ V2.5 — Cloud & Production Readiness
+
+V2 is technically complete and has not been released as `v2.0.0`. This roadmap does not change the published V1 release notes, the `v1.0.0` tag, `main`, or release history. No V3 roadmap or redesign is started; further work and release actions require explicit approval.

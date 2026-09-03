@@ -2,7 +2,7 @@ import secrets
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Cookie, Depends, Header
+from fastapi import Cookie, Depends, Header, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.tokens import decode_access_token
@@ -28,6 +28,7 @@ def get_token_payload(
 
 
 async def get_current_user(
+    request: Request,
     payload: Annotated[dict, Depends(get_token_payload)],
     session: Annotated[AsyncSession, Depends(get_db)],
 ) -> User:
@@ -42,6 +43,7 @@ async def get_current_user(
         raise AppError(
             code="invalid_session", message="Your session is invalid or expired.", status_code=401
         )
+    request.state.user_id = str(user.id)
     return user
 
 

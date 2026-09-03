@@ -1,6 +1,6 @@
 # Integrations
 
-Status: V2.4 development on `v2-development`
+Status: V2.4 complete on unreleased `v2-development`
 
 V2.4 adds optional, read-only Google and GitHub integrations. PostgreSQL remains the factual source of truth. External data is browsed only on an explicit user action, and an operational Meeting is created only after a separate preview and confirmation. Provider content cannot mutate tasks, issues, milestones, finance, or other project records.
 
@@ -83,3 +83,5 @@ Encryption-key rotation is an operator-controlled maintenance operation. Existin
 Connection, disconnection, project attachment, refresh, link, unlink, and confirmed Meeting import actions create append-only audit events, with selected project-visible link/import activity also represented in the Project Log. Audit metadata contains safe identifiers and provider/kind status only—never access tokens, refresh tokens, authorization codes, request headers, email bodies, prompts, or raw provider responses.
 
 V2.4 intentionally has no webhook ingestion, background synchronization, Gmail body/attachment ingestion, write-back, autonomous AI action, ownership transfer, or cloud secret manager. Provider calls require live network access and configured operator-owned OAuth applications; automated tests use deterministic provider doubles.
+
+Production deployments must use HTTPS callback URLs and must pass `python -m app.cli check-config` before migration/startup. The integration key is an operational recovery dependency: if it is lost, stored OAuth credentials cannot be decrypted and users must reconnect. See [Production operations](PRODUCTION.md) and [Backup and Restore](BACKUP_RESTORE.md).

@@ -1,8 +1,9 @@
 from typing import Annotated
+from urllib.parse import quote
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile, status
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import Response, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.dependencies import get_ai_provider, get_embedding_provider
@@ -115,7 +116,7 @@ async def download_document(
 ):
     service = DocumentService(session, user.id, settings)
     document = await service._document(project_id, document_id)
-    path = service.path_for(document)
+    stream = service.open_file(document)
     AuditService(session, user.id).record(
         project_id=project_id,
         action="document.downloaded",
@@ -123,7 +124,20 @@ async def download_document(
         entity_id=document.id,
     )
     await session.commit()
-    return FileResponse(path, media_type=document.mime_type, filename=document.original_filename)
+
+    def content():
+        try:
+            while chunk := stream.read(64 * 1024):
+                yield chunk
+        finally:
+            stream.close()
+
+    filename = quote(document.original_filename)
+    return StreamingResponse(
+        content(),
+        media_type=document.mime_type,
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"},
+    )
 
 
 @router.delete(
